@@ -414,3 +414,151 @@ html {
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
   border-color: rgba(255, 255, 255, 0.2);
 }
+
+/* 3D Effects */
+.perspective-container {
+  perspective: 1000px;
+  transform-style: preserve-3d;
+}
+
+.float-3d {
+  animation: float3d 20s ease-in-out infinite;
+  transform-style: preserve-3d;
+}
+
+@keyframes float3d {
+  0%, 100% {
+    transform: translateZ(0px) rotateX(0deg) rotateY(0deg);
+  }
+  25% {
+    transform: translateZ(50px) rotateX(10deg) rotateY(15deg);
+  }
+  50% {
+    transform: translateZ(100px) rotateX(-10deg) rotateY(-15deg);
+  }
+  75% {
+    transform: translateZ(50px) rotateX(5deg) rotateY(10deg);
+  }
+}
+
+.orbital-element {
+  position: absolute;
+  animation: orbit 30s linear infinite;
+  transform-style: preserve-3d;
+}
+
+@keyframes orbit {
+  from {
+    transform: rotateY(0deg) translateX(200px) rotateY(0deg);
+  }
+  to {
+    transform: rotateY(360deg) translateX(200px) rotateY(-360deg);
+  }
+}
+
+.depth-shadow {
+  box-shadow: 
+    0 10px 20px rgba(0, 0, 0, 0.1),
+    0 20px 40px rgba(0, 0, 0, 0.1),
+    0 40px 80px rgba(0, 0, 0, 0.1);
+}
+
+.holographic {
+  background: linear-gradient(
+    135deg,
+    rgba(255, 0, 150, 0.3),
+    rgba(0, 255, 255, 0.3),
+    rgba(255, 0, 150, 0.3)
+  );
+  background-size: 200% 200%;
+  animation: holographic 5s ease infinite;
+}
+
+@keyframes holographic {
+  0% {
+    background-position: 0% 0%;
+  }
+  50% {
+    background-position: 100% 100%;
+  }
+  100% {
+    background-position: 0% 0%;
+  }
+}
+
+.parallax-layer {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+}
+
+.geometric-shape {
+  position: absolute;
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.2) 0%, rgba(236, 72, 153, 0.2) 100%);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* Scrollable Cards */
+.cards-scroll-container {
+  scroll-behavior: smooth;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+}
+
+.cards-scroll-container::-webkit-scrollbar {
+  height: 4px;
+}
+
+.cards-scroll-container::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 2px;
+}
+
+.cards-scroll-container::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 2px;
+}
+
+.card-snap {
+  scroll-snap-align: center;
+  scroll-snap-stop: always;
+}
+
+/* Gesture Indicator */
+@keyframes swipe-hint {
+  0%, 100% {
+    transform: translateX(0);
+    opacity: 0.5;
+  }
+  50% {
+    transform: translateX(20px);
+    opacity: 1;
+  }
+}
+
+.swipe-indicator {
+  animation: swipe-hint 2s ease-in-out infinite;
+}
+
+/* Quill Animation */
+@keyframes quill-write {
+  0% {
+    transform: translateX(-100%) rotate(-15deg);
+    opacity: 0;
+  }
+  20% {
+    opacity: 1;
+  }
+  80% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(100%) rotate(15deg);
+    opacity: 0;
+  }
+}
+
+.quill-animation {
+  animation: quill-write 6s ease-in-out infinite;
+}
