@@ -5,9 +5,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Commands
 
 ### Development
-- `pnpm dev` - Start development server with Turbopack on http://localhost:3000
-- `pnpm build` - Build for production
-- `pnpm start` - Start production server
+- `npm run dev` - Start development server with Turbopack on http://localhost:3000
+- `npm run build` - Build for production
+- `npm run start` - Start production server
+
+### Package Management
+- **IMPORTANT**: Only use npm for package management (not pnpm, yarn, etc.)
 
 ## Architecture Overview
 

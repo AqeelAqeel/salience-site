@@ -64,12 +64,12 @@ export default function HomePage() {
         </div>
 
         {/* Hero Section */}
-        <section className="min-h-screen flex items-center justify-center px-4 sm:px-6 lg:px-8 relative pt-16">
+        <section className="min-h-screen flex items-center justify-center px-4 sm:px-6 lg:px-8 relative pt-8 -mt-8">
           <div className="absolute inset-0 sunrise-bg opacity-20" />
           
           <div className="relative z-10 max-w-7xl mx-auto w-full text-center">
             {/* Main graphic from assets - Made Much Bigger */}
-            <div className="mb-12 mx-auto w-80 h-80 md:w-96 md:h-96 lg:w-[500px] lg:h-[500px] xl:w-[600px] xl:h-[600px] relative">
+            <div className="mb-8 mx-auto w-96 h-96 md:w-[500px] md:h-[500px] lg:w-[650px] lg:h-[650px] xl:w-[750px] xl:h-[750px] relative">
               <Image 
                 src="/assets/Salience_Logo_Cover_Art-removebg-preview (1).png" 
                 alt="Salience Logo" 

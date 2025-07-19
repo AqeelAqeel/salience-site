@@ -9,7 +9,9 @@ const Header = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const navItems = [
+    { label: 'campfire', href: '/campfire' },
     { label: 'thesis', href: '/thesis' },
+    { label: 'chat analysis', href: '/chat-analysis' },
   ];
 
   return (
