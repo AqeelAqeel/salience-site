@@ -6,6 +6,7 @@ import Header from '@/components/header';
 import { LavaLamp } from '@/components/lava-lamp';
 import Image from 'next/image';
 import { useEffect, useState } from 'react';
+import { StreamingText } from '@/components/streaming-text';
 
 export default function HomePage() {
   const [mounted, setMounted] = useState(false);
@@ -112,6 +113,22 @@ export default function HomePage() {
           <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 animate-bounce">
             <div className="w-6 h-10 border-2 border-orange-300 rounded-full flex justify-center">
               <div className="w-1 h-3 bg-orange-400 rounded-full mt-2 animate-pulse" />
+            </div>
+          </div>
+        </section>
+
+        {/* Streaming Text Section */}
+        <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-white to-orange-50/30 relative overflow-hidden">
+          <div className="max-w-6xl mx-auto relative z-10">
+            <div className="text-center mb-12">
+              <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-8">
+                <StreamingText className="text-5xl md:text-6xl lg:text-7xl" />
+              </h2>
+              <p className="text-xl md:text-2xl text-gray-700 leading-relaxed max-w-4xl mx-auto">
+                The system exists because of necessary constraints and designs to get things happening. 
+                We remove those limitations. The individualized nuances don't have to exist anymore as 
+                creation can create. Creation and synergies are infinite.
+              </p>
             </div>
           </div>
         </section>
