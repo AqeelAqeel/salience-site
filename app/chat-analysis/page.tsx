@@ -6,8 +6,9 @@ import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
-import { ScrollArea } from '@/components/ui/scroll-area'
-import { Send, Sparkles, MessageSquare, Circle } from 'lucide-react'
+import { Separator } from '@/components/ui/separator'
+import { ChatBubble, ChatInput, ChatContainer, ChatHeader, ChatMessages } from '@/components/ui/chat-bubble'
+import { Send, Sparkles, MessageSquare, Circle, Bot, User } from 'lucide-react'
 
 type Message = {
   role: 'user' | 'assistant'
@@ -260,59 +261,61 @@ export default function ChatAnalysisPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-zinc-950 to-zinc-900 py-12 px-4">
+    <div className="min-h-screen bg-gradient-to-b from-background via-background to-secondary/20 py-16 px-4">
       <div className="mx-auto max-w-7xl">
-        <div className="mb-12 text-center">
-          <h1 className="text-4xl font-bold text-white mb-4">
-            What if we could use chat and behavioral messaging to understand you?
+        <div className="mb-16 text-center space-y-4">
+          <h1 className="text-5xl font-bold tracking-tight">
+            <span className="sun-gradient-text">Personalized AI</span>
+            <br />
+            <span className="text-foreground">That Understands You</span>
           </h1>
-          <p className="text-zinc-400 text-lg max-w-3xl mx-auto">
+          <p className="text-muted-foreground text-lg max-w-3xl mx-auto leading-relaxed">
             Upload your messages and experience how AI can adapt to your unique communication style
           </p>
         </div>
 
         {/* Progress Indicator */}
-        <div className="max-w-3xl mx-auto mb-8">
+        <div className="max-w-3xl mx-auto mb-12">
           <div className="flex items-center justify-center space-x-8">
-            <div className="flex items-center space-x-2">
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                currentStep === 'input' ? 'bg-yellow-500' : 'bg-green-500'
+            <div className="flex items-center space-x-3">
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 ${
+                currentStep === 'input' ? 'bg-primary shadow-lg shadow-primary/25' : 'bg-primary/20 border-2 border-primary'
               }`}>
-                <Circle className="w-4 h-4 text-white fill-white" />
+                <Circle className="w-5 h-5 text-primary-foreground" fill="currentColor" />
               </div>
-              <span className={`text-sm font-medium ${
-                currentStep === 'input' ? 'text-white' : 'text-zinc-400'
+              <span className={`text-sm font-medium transition-colors ${
+                currentStep === 'input' ? 'text-foreground' : 'text-muted-foreground'
               }`}>
-                Part 1: Input Your Info
+                Upload Your Messages
               </span>
             </div>
-            <div className="w-16 h-0.5 bg-zinc-700" />
-            <div className="flex items-center space-x-2">
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                currentStep === 'chat' ? 'bg-green-500' : currentStep === 'input' && isAnalyzing ? 'bg-yellow-500' : 'bg-red-500'
+            <Separator className="w-20" />
+            <div className="flex items-center space-x-3">
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 ${
+                currentStep === 'chat' ? 'bg-primary shadow-lg shadow-primary/25' : currentStep === 'input' && isAnalyzing ? 'bg-primary/50' : 'bg-muted'
               }`}>
-                <Circle className="w-4 h-4 text-white fill-white" />
+                <Circle className="w-5 h-5 text-primary-foreground" fill="currentColor" />
               </div>
-              <span className={`text-sm font-medium ${
-                currentStep === 'chat' ? 'text-white' : 'text-zinc-400'
+              <span className={`text-sm font-medium transition-colors ${
+                currentStep === 'chat' ? 'text-foreground' : 'text-muted-foreground'
               }`}>
-                Part 2: See Before/After Chat
+                Experience Personalized Chat
               </span>
             </div>
           </div>
         </div>
 
         {!userProfile ? (
-          <Card className="max-w-3xl mx-auto border-zinc-800 bg-zinc-900/50">
-            <CardHeader>
-              <CardTitle className="text-white">Upload Your Messages</CardTitle>
-              <CardDescription className="text-zinc-400">
+          <Card className="max-w-3xl mx-auto border-border/50 shadow-xl bg-card/80 backdrop-blur-sm">
+            <CardHeader className="space-y-2">
+              <CardTitle className="text-2xl">Upload Your Messages</CardTitle>
+              <CardDescription className="text-base">
                 Paste your messages below to help us understand your writing style
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6">
-              <div>
-                <Label htmlFor="messages" className="text-white mb-2 block">
+            <CardContent className="space-y-8">
+              <div className="space-y-3">
+                <Label htmlFor="messages" className="text-base font-medium">
                   Your Messages
                 </Label>
                 <Textarea
@@ -320,16 +323,16 @@ export default function ChatAnalysisPage() {
                   placeholder="Paste your messages here..."
                   value={uploadedMessages}
                   onChange={(e) => setUploadedMessages(e.target.value)}
-                  className="min-h-[200px] bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-500"
+                  className="min-h-[240px] bg-secondary/30 border-border/50 focus:border-primary/50 transition-colors resize-none"
                 />
-                <p className="mt-2 text-sm text-zinc-400">
-                  <strong>Tip:</strong> Copy and paste from iMessage, email threads, or Twitter exchanges 
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  <span className="font-medium text-foreground">Tip:</span> Copy and paste from iMessage, email threads, or social media 
                   to capture your authentic writing style
                 </p>
               </div>
 
-              <div>
-                <Label className="text-white mb-4 block">
+              <div className="space-y-4">
+                <Label className="text-base font-medium">
                   Formality Level (Optional)
                 </Label>
                 <div className="flex items-center space-x-4">
@@ -337,11 +340,11 @@ export default function ChatAnalysisPage() {
                   <div className="flex-1 relative py-3">
                     <div className="relative">
                       {/* Track */}
-                      <div className="w-full h-2 bg-zinc-800 rounded-full relative">
+                      <div className="w-full h-3 bg-secondary rounded-full relative overflow-hidden">
                         {/* Custom range fill from center */}
                         {formality.length > 0 && (
                           <div 
-                            className="absolute h-full bg-white rounded-full transition-all duration-200"
+                            className="absolute h-full bg-gradient-to-r from-primary to-accent rounded-full transition-all duration-300 ease-out"
                             style={{
                               left: formality[0] < 50 ? `${formality[0]}%` : '50%',
                               right: formality[0] > 50 ? `${100 - formality[0]}%` : '50%',
@@ -351,11 +354,11 @@ export default function ChatAnalysisPage() {
                       </div>
                       {/* Thumb container with proper positioning */}
                       <div 
-                        className="absolute top-0 w-full h-2"
-                        style={{ marginTop: '-8px' }}
+                        className="absolute top-0 w-full h-3"
+                        style={{ marginTop: '-10px' }}
                       >
                         <div 
-                          className="absolute w-6 h-6 bg-white rounded-full shadow-lg transition-all duration-200 cursor-pointer border-2 border-zinc-900"
+                          className="absolute w-7 h-7 bg-primary rounded-full shadow-lg transition-all duration-200 cursor-pointer border-2 border-background hover:scale-110"
                           style={{
                             left: formality.length > 0 ? `${formality[0]}%` : '50%',
                             transform: 'translateX(-50%)',
@@ -376,14 +379,14 @@ export default function ChatAnalysisPage() {
                   </div>
                   <span className="text-2xl">👼</span>
                 </div>
-                <div className="flex justify-between mt-2 text-xs text-zinc-500">
-                  <span>Casual/Unhinged</span>
-                  <span>Formal/Professional</span>
+                <div className="flex justify-between mt-3 text-xs text-muted-foreground font-medium">
+                  <span>Casual</span>
+                  <span>Professional</span>
                 </div>
                 {formality.length > 0 && (
-                  <div className="text-center mt-2">
-                    <span className="text-2xl">{getFormalityEmoji(formality[0])}</span>
-                    <p className="text-xs text-zinc-400 mt-1">Click to adjust</p>
+                  <div className="text-center mt-4">
+                    <span className="text-3xl">{getFormalityEmoji(formality[0])}</span>
+                    <p className="text-xs text-muted-foreground mt-2">Drag to adjust</p>
                   </div>
                 )}
               </div>
@@ -391,37 +394,47 @@ export default function ChatAnalysisPage() {
               <Button
                 onClick={analyzeMessages}
                 disabled={!uploadedMessages.trim() || isAnalyzing}
-                className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                className="w-full h-12 text-base font-medium bg-primary hover:bg-primary/90 shadow-lg shadow-primary/25 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
               >
-                {isAnalyzing ? 'Analyzing...' : 'Analyze My Messages'}
+                {isAnalyzing ? (
+                  <span className="flex items-center gap-2">
+                    <Sparkles className="w-5 h-5 animate-pulse" />
+                    Analyzing Your Style...
+                  </span>
+                ) : (
+                  <span className="flex items-center gap-2">
+                    <Sparkles className="w-5 h-5" />
+                    Analyze My Messages
+                  </span>
+                )}
               </Button>
             </CardContent>
           </Card>
         ) : (
-          <div className="space-y-6">
+          <div className="space-y-8">
             {/* Profile Card - Only show when initial input is visible */}
             {showInitialInput && (
-              <Card className="border-zinc-800 bg-zinc-900/50 max-w-3xl mx-auto">
-                <CardHeader className="flex flex-row items-center justify-between">
-                  <CardTitle className="text-white">Your Communication Profile</CardTitle>
+              <Card className="border-border/50 shadow-xl bg-card/80 backdrop-blur-sm max-w-3xl mx-auto">
+                <CardHeader className="flex flex-row items-center justify-between pb-4">
+                  <CardTitle className="text-2xl">Your Communication Profile</CardTitle>
                   <Button
                     onClick={clearData}
                     variant="outline"
                     size="sm"
-                    className="border-zinc-700 text-zinc-300 hover:bg-zinc-800"
+                    className="hover:bg-secondary"
                   >
                     Start Over
                   </Button>
                 </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div>
-                      <span className="text-zinc-400">Writing Style:</span>
-                      <p className="text-white">{userProfile.writingStyle}</p>
+                <CardContent className="space-y-6">
+                  <div className="grid grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <span className="text-sm font-medium text-muted-foreground">Writing Style</span>
+                      <p className="text-base font-medium">{userProfile.writingStyle}</p>
                     </div>
-                    <div>
-                      <span className="text-zinc-400">Message Patterns:</span>
-                      <p className="text-white">
+                    <div className="space-y-2">
+                      <span className="text-sm font-medium text-muted-foreground">Message Patterns</span>
+                      <p className="text-base font-medium">
                         {typeof userProfile.messagePatterns === 'string' 
                           ? userProfile.messagePatterns 
                           : JSON.stringify(userProfile.messagePatterns)}
@@ -429,11 +442,11 @@ export default function ChatAnalysisPage() {
                     </div>
                   </div>
                   {userProfile.characteristics && userProfile.characteristics.length > 0 && (
-                    <div className="mt-4">
-                      <span className="text-zinc-400 text-sm">Key Characteristics:</span>
-                      <div className="flex flex-wrap gap-2 mt-2">
+                    <div className="space-y-3">
+                      <span className="text-sm font-medium text-muted-foreground">Key Characteristics</span>
+                      <div className="flex flex-wrap gap-2">
                         {userProfile.characteristics.map((char, idx) => (
-                          <span key={idx} className="px-2 py-1 bg-zinc-800 text-white text-xs rounded">
+                          <span key={idx} className="px-3 py-1.5 bg-secondary text-secondary-foreground text-sm font-medium rounded-full">
                             {char}
                           </span>
                         ))}
@@ -447,15 +460,15 @@ export default function ChatAnalysisPage() {
             {/* Initial message input */}
             {showInitialInput && (
               <div className="max-w-2xl mx-auto">
-                <Card className="border-zinc-800 bg-zinc-900/50">
-                  <CardHeader>
-                    <CardTitle className="text-white text-center">Start Your Conversation</CardTitle>
-                    <CardDescription className="text-zinc-400 text-center">
+                <Card className="border-border/50 shadow-xl bg-card/80 backdrop-blur-sm">
+                  <CardHeader className="text-center space-y-2">
+                    <CardTitle className="text-2xl">Start Your Conversation</CardTitle>
+                    <CardDescription className="text-base">
                       Send your first message to see how both AI assistants respond differently
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <div className="flex gap-2">
+                    <div className="flex gap-3">
                       <Input
                         value={currentInput}
                         onChange={(e) => setCurrentInput(e.target.value)}
@@ -465,14 +478,14 @@ export default function ChatAnalysisPage() {
                           }
                         }}
                         placeholder="Type your message..."
-                        className="bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-500"
+                        className="h-12 bg-secondary/30 border-border/50 focus:border-primary/50 transition-colors"
                       />
                       <Button
                         onClick={sendInitialMessage}
                         disabled={!currentInput.trim()}
-                        className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                        className="h-12 px-6 bg-primary hover:bg-primary/90 shadow-lg shadow-primary/25"
                       >
-                        <Send className="h-4 w-4" />
+                        <Send className="h-5 w-5" />
                       </Button>
                     </div>
                   </CardContent>
@@ -482,160 +495,105 @@ export default function ChatAnalysisPage() {
 
             {/* Split chat view */}
             {!showInitialInput && (
-              <div className="grid grid-cols-2 gap-8">
+              <div className="grid lg:grid-cols-2 gap-8">
                 {/* Standard Chat */}
-                <div className="space-y-4">
-                  <div className="text-center">
-                    <h3 className="text-lg font-semibold text-white flex items-center justify-center gap-2">
-                      <MessageSquare className="h-5 w-5" />
-                      Standard Chat
+                <div className="space-y-6">
+                  <div className="text-center space-y-2">
+                    <h3 className="text-xl font-semibold flex items-center justify-center gap-2">
+                      <Bot className="h-5 w-5 text-muted-foreground" />
+                      Standard Assistant
                     </h3>
-                    <p className="text-sm text-zinc-400">Regular AI assistant</p>
+                    <p className="text-sm text-muted-foreground">Generic AI responses</p>
                   </div>
                   
-                  <Card className="border-zinc-800 bg-zinc-900/50 h-[600px] flex flex-col">
-                    <CardContent className="flex-1 p-4 overflow-hidden">
-                      <ScrollArea className="h-full">
-                        <div className="space-y-4 px-4">
-                          {chat1Messages.map((msg, idx) => (
-                            <div
-                              key={idx}
-                              className={`flex ${
-                                msg.role === 'user' ? 'justify-end' : 'justify-start'
-                              }`}
-                            >
-                              <div
-                                className={`max-w-[80%] p-3 rounded-lg ${
-                                  msg.role === 'user'
-                                    ? 'bg-blue-600 text-white ml-auto'
-                                    : 'bg-zinc-700 text-white'
-                                }`}
-                              >
-                                {msg.content}
-                              </div>
-                            </div>
-                          ))}
-                          {isChat1Loading && (
-                            <div className="flex justify-start">
-                              <div className="bg-zinc-700 text-white p-3 rounded-lg">
-                                <div className="flex space-x-1">
-                                  <div className="w-2 h-2 bg-zinc-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-                                  <div className="w-2 h-2 bg-zinc-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                                  <div className="w-2 h-2 bg-zinc-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
-                                </div>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      </ScrollArea>
-                    </CardContent>
-                    <div className="p-4 border-t border-zinc-800">
-                      <div className="flex gap-2">
-                        <Input
-                          value={chat1Input}
-                          onChange={(e) => setChat1Input(e.target.value)}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                              sendMessage('chat1', chat1Input)
-                            }
-                          }}
-                          placeholder="Type your message..."
-                          className="bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-500"
-                          disabled={isChat1Loading}
-                        />
-                        <Button
-                          onClick={() => sendMessage('chat1', chat1Input)}
-                          disabled={!chat1Input.trim() || isChat1Loading}
-                          className="bg-blue-600 hover:bg-blue-700"
+                  <ChatContainer height="700px">
+                    <ChatHeader
+                      title="AI Assistant"
+                      subtitle="Standard responses"
+                      avatar={{ fallback: "AI" }}
+                      status="online"
+                    />
+                    <ChatMessages>
+                      {chat1Messages.map((msg, idx) => (
+                        <ChatBubble
+                          key={idx}
+                          variant={msg.role === 'user' ? 'sent' : 'received'}
+                          avatar={msg.role === 'assistant' ? { fallback: "AI" } : undefined}
+                          timestamp={new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
                         >
-                          <Send className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  </Card>
+                          {msg.content}
+                        </ChatBubble>
+                      ))}
+                      {isChat1Loading && (
+                        <ChatBubble
+                          variant="received"
+                          avatar={{ fallback: "AI" }}
+                          isTyping
+                        />
+                      )}
+                    </ChatMessages>
+                    <ChatInput
+                      onSend={(message) => sendMessage('chat1', message)}
+                      disabled={isChat1Loading}
+                      placeholder="Type your message..."
+                    />
+                  </ChatContainer>
                 </div>
 
                 {/* Personalized Chat */}
-                <div className="space-y-4">
-                  <div className="text-center">
-                    <h3 className="text-lg font-semibold text-white flex items-center justify-center gap-2">
-                      <Sparkles className="h-5 w-5 text-purple-500" />
-                      Personalized Chat
+                <div className="space-y-6">
+                  <div className="text-center space-y-2">
+                    <h3 className="text-xl font-semibold flex items-center justify-center gap-2">
+                      <Sparkles className="h-5 w-5 text-primary" />
+                      Personalized Assistant
                     </h3>
-                    <p className="text-sm text-zinc-400">Adapts to your style</p>
+                    <p className="text-sm text-muted-foreground">Adapts to your communication style</p>
                   </div>
                   
-                  <Card className="border-zinc-800 bg-zinc-900/50 h-[600px] flex flex-col">
-                    <CardContent className="flex-1 p-4 overflow-hidden">
-                      <ScrollArea className="h-full">
-                        <div className="space-y-4 px-4">
-                          {chat2Messages.map((msg, idx) => (
-                            <div
-                              key={idx}
-                              className={`flex ${
-                                msg.role === 'user' ? 'justify-end' : 'justify-start'
-                              }`}
-                            >
-                              <div
-                                className={`max-w-[80%] p-3 rounded-lg ${
-                                  msg.role === 'user'
-                                    ? 'bg-purple-600 text-white ml-auto'
-                                    : 'bg-zinc-700 text-white'
-                                }`}
-                              >
-                                {msg.content}
-                              </div>
-                            </div>
-                          ))}
-                          {isChat2Loading && (
-                            <div className="flex justify-start">
-                              <div className="bg-zinc-700 text-white p-3 rounded-lg">
-                                <div className="flex space-x-1">
-                                  <div className="w-2 h-2 bg-zinc-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-                                  <div className="w-2 h-2 bg-zinc-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                                  <div className="w-2 h-2 bg-zinc-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
-                                </div>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      </ScrollArea>
-                    </CardContent>
-                    <div className="p-4 border-t border-zinc-800">
-                      <div className="flex gap-2">
-                        <Input
-                          value={chat2Input}
-                          onChange={(e) => setChat2Input(e.target.value)}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                              sendMessage('chat2', chat2Input)
-                            }
-                          }}
-                          placeholder="Type your message..."
-                          className="bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-500"
-                          disabled={isChat2Loading}
-                        />
-                        <Button
-                          onClick={() => sendMessage('chat2', chat2Input)}
-                          disabled={!chat2Input.trim() || isChat2Loading}
-                          className="bg-purple-600 hover:bg-purple-700"
+                  <ChatContainer height="700px" className="border-primary/20">
+                    <ChatHeader
+                      title="Personalized AI"
+                      subtitle="Matches your style"
+                      avatar={{ fallback: "ME" }}
+                      status="online"
+                    />
+                    <ChatMessages>
+                      {chat2Messages.map((msg, idx) => (
+                        <ChatBubble
+                          key={idx}
+                          variant={msg.role === 'user' ? 'sent' : 'received'}
+                          avatar={msg.role === 'assistant' ? { fallback: "ME" } : undefined}
+                          timestamp={new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
                         >
-                          <Send className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  </Card>
+                          {msg.content}
+                        </ChatBubble>
+                      ))}
+                      {isChat2Loading && (
+                        <ChatBubble
+                          variant="received"
+                          avatar={{ fallback: "ME" }}
+                          isTyping
+                        />
+                      )}
+                    </ChatMessages>
+                    <ChatInput
+                      onSend={(message) => sendMessage('chat2', message)}
+                      disabled={isChat2Loading}
+                      placeholder="Type your message..."
+                    />
+                  </ChatContainer>
                 </div>
               </div>
             )}
 
             {/* Start Over button when chat is active */}
             {!showInitialInput && (
-              <div className="text-center mt-6">
+              <div className="text-center mt-8">
                 <Button
                   onClick={clearData}
                   variant="outline"
-                  className="border-zinc-700 text-zinc-300 hover:bg-zinc-800"
+                  size="lg"
+                  className="hover:bg-secondary"
                 >
                   Start Over
                 </Button>

@@ -85,14 +85,14 @@ export default function HomePage() {
               <span className="sun-gradient-text">make it personal.</span>
             </h1>
             
-            <p className="text-xl md:text-2xl lg:text-3xl text-gray-700 leading-relaxed mb-12 max-w-4xl mx-auto">
+            <p className="text-xl md:text-2xl lg:text-3xl text-muted-foreground leading-relaxed mb-12 max-w-4xl mx-auto font-medium">
               Transform consciousness into creation. Where minimalism meets the future of design innovation.
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button
                 size="lg"
-                className="group relative rounded-full px-8 py-6 text-lg bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white border-0 shadow-lg shadow-orange-500/25 sun-glow"
+                className="group relative rounded-full px-8 py-6 text-lg bg-primary hover:bg-primary/90 text-primary-foreground border-0 shadow-lg shadow-primary/25 sun-glow transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
                 onClick={scrollToVideo}
               >
                 watch the event
@@ -102,7 +102,7 @@ export default function HomePage() {
               <Button
                 size="lg"
                 variant="outline"
-                className="rounded-full px-8 py-6 text-lg border-orange-300 text-gray-700 hover:bg-orange-50 hover:border-orange-400 transition-all"
+                className="rounded-full px-8 py-6 text-lg border-border hover:bg-secondary hover:border-primary/30 transition-all duration-300"
               >
                 what we announced
               </Button>
@@ -111,20 +111,20 @@ export default function HomePage() {
 
           {/* Scroll indicator */}
           <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 animate-bounce">
-            <div className="w-6 h-10 border-2 border-orange-300 rounded-full flex justify-center">
-              <div className="w-1 h-3 bg-orange-400 rounded-full mt-2 animate-pulse" />
+            <div className="w-6 h-10 border-2 border-primary/30 rounded-full flex justify-center">
+              <div className="w-1 h-3 bg-primary rounded-full mt-2 animate-pulse" />
             </div>
           </div>
         </section>
 
         {/* Streaming Text Section */}
-        <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-white to-orange-50/30 relative overflow-hidden">
+        <section className="py-24 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-background via-secondary/10 to-background relative overflow-hidden">
           <div className="max-w-6xl mx-auto relative z-10">
-            <div className="text-center mb-12">
+            <div className="text-center mb-12 space-y-8">
               <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-8">
                 <StreamingText className="text-5xl md:text-6xl lg:text-7xl" />
               </h2>
-              <p className="text-xl md:text-2xl text-gray-700 leading-relaxed max-w-4xl mx-auto">
+              <p className="text-xl md:text-2xl text-muted-foreground leading-relaxed max-w-4xl mx-auto font-medium">
                 The system exists because of necessary constraints and designs to get things happening. 
                 We remove those limitations. The individualized nuances don't have to exist anymore as 
                 creation can create. Creation and synergies are infinite.
@@ -134,8 +134,8 @@ export default function HomePage() {
         </section>
 
         {/* Video Section */}
-        <section id="video-section" className="py-24 px-4 sm:px-6 lg:px-8 bg-white relative">
-          <div className="absolute inset-0 bg-gradient-to-b from-orange-50/50 to-white" />
+        <section id="video-section" className="py-32 px-4 sm:px-6 lg:px-8 bg-background relative">
+          <div className="absolute inset-0 bg-gradient-to-b from-secondary/20 to-background" />
           
           <div className="max-w-5xl mx-auto relative z-10">
             <h2 className="text-4xl md:text-5xl font-bold text-center mb-16">
@@ -143,16 +143,16 @@ export default function HomePage() {
             </h2>
             
             <div className="video-border">
-              <div className="bg-gray-900 rounded-xl aspect-video flex items-center justify-center">
+              <div className="bg-card rounded-xl aspect-video flex items-center justify-center border border-border/50">
                 {/* Video placeholder - replace with your video */}
-                <div className="text-white text-center">
-                  <div className="mb-4">
-                    <div className="w-20 h-20 mx-auto bg-gradient-to-br from-orange-500 to-red-500 rounded-full flex items-center justify-center backdrop-blur-sm">
-                      <div className="w-0 h-0 border-l-[20px] border-l-white border-t-[12px] border-t-transparent border-b-[12px] border-b-transparent ml-2" />
+                <div className="text-foreground text-center">
+                  <div className="mb-6">
+                    <div className="w-24 h-24 mx-auto bg-gradient-to-br from-primary to-accent rounded-full flex items-center justify-center backdrop-blur-sm shadow-lg shadow-primary/25">
+                      <div className="w-0 h-0 border-l-[24px] border-l-primary-foreground border-t-[15px] border-t-transparent border-b-[15px] border-b-transparent ml-2" />
                     </div>
                   </div>
-                  <p className="text-lg opacity-80">Commercial Video Placeholder</p>
-                  <p className="text-sm opacity-60 mt-2">Replace with your video content</p>
+                  <p className="text-lg font-medium">Commercial Video Placeholder</p>
+                  <p className="text-sm text-muted-foreground mt-2">Replace with your video content</p>
                 </div>
               </div>
             </div>
@@ -160,7 +160,7 @@ export default function HomePage() {
         </section>
 
         {/* Bridging Section - New Interactive Ecosystem */}
-        <section className="py-32 px-4 sm:px-6 lg:px-8 relative bg-gradient-to-b from-white to-orange-50/30">
+        <section className="py-40 px-4 sm:px-6 lg:px-8 relative bg-gradient-to-b from-background via-secondary/10 to-background">
           <div className="max-w-7xl mx-auto">
             {/* Section Header */}
             <h2 className="text-5xl md:text-6xl font-bold text-center mb-24">
@@ -200,11 +200,11 @@ export default function HomePage() {
                     </div>
 
                     {/* Surrounding nodes */}
-                    {leftNodes.map((node, index) => {
+                    {mounted && leftNodes.map((node, index) => {
                       const radius = 150;
                       const angleRad = (node.angle * Math.PI) / 180;
-                      const x = Math.cos(angleRad) * radius;
-                      const y = Math.sin(angleRad) * radius;
+                      const x = Math.round(Math.cos(angleRad) * radius * 100) / 100;
+                      const y = Math.round(Math.sin(angleRad) * radius * 100) / 100;
                       
                       return (
                         <div
@@ -214,8 +214,8 @@ export default function HomePage() {
                             left: '50%',
                             top: '50%',
                             transform: `translate(calc(-50% + ${x}px), calc(-50% + ${y}px))`,
-                            animationDelay: `${index * 0.2}s`
-                          }}
+                            '--animation-delay': `${index * 0.2}s`
+                          } as React.CSSProperties}
                           onMouseEnter={() => setHoveredNode(node.id)}
                           onMouseLeave={() => setHoveredNode(null)}
                         >
@@ -271,11 +271,11 @@ export default function HomePage() {
                     </div>
 
                     {/* Connected nodes with web-like structure */}
-                    {rightNodes.map((node, index) => {
+                    {mounted && rightNodes.map((node, index) => {
                       const radius = 140;
                       const angleRad = (node.angle * Math.PI) / 180;
-                      const x = Math.cos(angleRad) * radius;
-                      const y = Math.sin(angleRad) * radius;
+                      const x = Math.round(Math.cos(angleRad) * radius * 100) / 100;
+                      const y = Math.round(Math.sin(angleRad) * radius * 100) / 100;
                       
                       return (
                         <div
@@ -285,8 +285,8 @@ export default function HomePage() {
                             left: '50%',
                             top: '50%',
                             transform: `translate(calc(-50% + ${x}px), calc(-50% + ${y}px))`,
-                            animationDelay: `${index * 0.15}s`
-                          }}
+                            '--animation-delay': `${index * 0.15}s`
+                          } as React.CSSProperties}
                           onMouseEnter={() => setHoveredNode(node.id)}
                           onMouseLeave={() => setHoveredNode(null)}
                         >
@@ -343,22 +343,22 @@ export default function HomePage() {
             </div>
 
             {/* Bottom description */}
-            <div className="mt-16 text-center max-w-3xl mx-auto">
-              <p className="text-lg md:text-xl text-gray-600">
+            <div className="mt-20 text-center max-w-3xl mx-auto">
+              <p className="text-lg md:text-xl text-muted-foreground font-medium leading-relaxed">
                 From scattered focus to unified consciousness. Salience bridges your fragmented digital life into harmonious flow.
               </p>
             </div>
 
             {/* Call to Action */}
-            <div className="mt-20 text-center space-y-8">
-              <h3 className="text-2xl md:text-3xl font-bold text-gray-800">
+            <div className="mt-24 text-center space-y-10">
+              <h3 className="text-3xl md:text-4xl font-bold">
                 Ready to explore deeper?
               </h3>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <div className="flex flex-col sm:flex-row gap-6 justify-center">
                 <a href="/campfire">
                   <Button 
                     size="lg"
-                    className="rounded-full px-8 py-4 text-lg bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white shadow-lg hover:shadow-xl transition-all duration-300"
+                    className="rounded-full px-10 py-6 text-lg bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/25 hover:shadow-xl transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
                   >
                     🔥 Sit at the Campfire
                     <ArrowRight className="ml-3 h-5 w-5" />
@@ -368,7 +368,7 @@ export default function HomePage() {
                   <Button 
                     size="lg"
                     variant="outline"
-                    className="rounded-full px-8 py-4 text-lg border-gray-300 text-gray-700 hover:bg-gray-50 shadow-md hover:shadow-lg transition-all duration-300"
+                    className="rounded-full px-10 py-6 text-lg border-border hover:bg-secondary hover:border-primary/30 shadow-md hover:shadow-lg transition-all duration-300"
                   >
                     Read Our Thesis
                     <ArrowRight className="ml-3 h-5 w-5" />
