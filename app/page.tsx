@@ -6,7 +6,6 @@ import Header from '@/components/header';
 import { LavaLamp } from '@/components/lava-lamp';
 import Image from 'next/image';
 import { useEffect, useState } from 'react';
-import { StreamingText } from '@/components/streaming-text';
 
 export default function HomePage() {
   const [mounted, setMounted] = useState(false);
@@ -54,7 +53,7 @@ export default function HomePage() {
       <LavaLamp side="left" />
       <LavaLamp side="right" />
       
-      <main className="relative overflow-hidden">
+      <main className="relative overflow-hidden bg-[#0a0a0a] min-h-screen">
         {/* Background Pattern */}
         <div className="absolute inset-0 dotted-pattern opacity-30" />
         <div className="absolute inset-0 noise-texture" />
@@ -66,93 +65,81 @@ export default function HomePage() {
 
         {/* Hero Section */}
         <section className="min-h-screen flex items-center justify-center px-4 sm:px-6 lg:px-8 relative pt-8 -mt-8">
-          <div className="absolute inset-0 sunrise-bg opacity-20" />
           
           <div className="relative z-10 max-w-7xl mx-auto w-full text-center">
-            {/* Main graphic from assets - Made Much Bigger */}
-            <div className="mb-8 mx-auto w-96 h-96 md:w-[500px] md:h-[500px] lg:w-[650px] lg:h-[650px] xl:w-[750px] xl:h-[750px] relative">
-              <Image 
-                src="/assets/Salience_Logo_Cover_Art-removebg-preview (1).png" 
-                alt="Salience Logo" 
-                fill
-                className="object-contain"
-                priority
-              />
-            </div>
-            
-            {/* Giant tagline */}
-            <h1 className="text-6xl sm:text-7xl md:text-8xl lg:text-9xl font-bold tracking-tight mb-12">
-              <span className="sun-gradient-text">make it personal.</span>
+            {/* Giant H1 with split gradient */}
+            <h1 className="text-7xl sm:text-8xl md:text-9xl lg:text-[12rem] xl:text-[14rem] font-bold tracking-tight mb-16 leading-none">
+              <span className="being-gradient-text">Being;</span>{' '}
+              <span className="understood-gradient-text drop-shadow-2xl">Understood.</span>
             </h1>
             
-            <p className="text-xl md:text-2xl lg:text-3xl text-muted-foreground leading-relaxed mb-12 max-w-4xl mx-auto font-medium">
-              Transform consciousness into creation. Where minimalism meets the future of design innovation.
+            <p className="text-xl md:text-2xl lg:text-3xl text-cyan-300 leading-relaxed mb-12 max-w-4xl mx-auto font-medium mystical-glow">
+              Salience builds bridges to the other side. Transform consciousness into creation. Where minimalism meets the future of design innovation.
             </p>
             
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button
-                size="lg"
-                className="group relative rounded-full px-8 py-6 text-lg bg-primary hover:bg-primary/90 text-primary-foreground border-0 shadow-lg shadow-primary/25 sun-glow transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
-                onClick={scrollToVideo}
-              >
-                watch the event
-                <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
-              </Button>
-              
-              <Button
-                size="lg"
-                variant="outline"
-                className="rounded-full px-8 py-6 text-lg border-border hover:bg-secondary hover:border-primary/30 transition-all duration-300"
-              >
-                what we announced
-              </Button>
-            </div>
           </div>
 
-          {/* Scroll indicator */}
-          <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 animate-bounce">
-            <div className="w-6 h-10 border-2 border-primary/30 rounded-full flex justify-center">
-              <div className="w-1 h-3 bg-primary rounded-full mt-2 animate-pulse" />
+        </section>
+
+        {/* App Grid Section */}
+        <section className="py-24 px-4 sm:px-6 lg:px-8 relative">
+          <div className="max-w-6xl mx-auto relative z-10">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8 mb-16 max-w-4xl mx-auto">
+              {/* App Tiles */}
+              <div className="app-tile bg-gradient-to-br from-orange-500 to-red-500" data-label="retentech.ai" tabIndex={0}>
+                <span className="app-name">retentech.ai</span>
+              </div>
+              <div className="app-tile bg-gradient-to-br from-blue-500 to-purple-500" data-label="okaybestie.com" tabIndex={0}>
+                <span className="app-name">okaybestie.com</span>
+              </div>
+              <div className="app-tile bg-gradient-to-br from-green-500 to-teal-500" data-label="morelore.app" tabIndex={0}>
+                <span className="app-name">morelore.app</span>
+              </div>
+              <div className="app-tile bg-gradient-to-br from-pink-500 to-rose-500" data-label="chaos.energy" tabIndex={0}>
+                <span className="app-name">chaos.energy</span>
+              </div>
             </div>
           </div>
         </section>
 
-        {/* Streaming Text Section */}
-        <section className="py-24 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-background via-secondary/10 to-background relative overflow-hidden">
-          <div className="max-w-6xl mx-auto relative z-10">
-            <div className="text-center mb-12 space-y-8">
-              <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-8">
-                <StreamingText className="text-5xl md:text-6xl lg:text-7xl" />
-              </h2>
-              <p className="text-xl md:text-2xl text-muted-foreground leading-relaxed max-w-4xl mx-auto font-medium">
-                The system exists because of necessary constraints and designs to get things happening. 
-                We remove those limitations. The individualized nuances don't have to exist anymore as 
-                creation can create. Creation and synergies are infinite.
-              </p>
-            </div>
+        {/* Manifest Section */}
+        <section className="py-16 px-4 sm:px-6 lg:px-8 relative">
+          <div className="max-w-4xl mx-auto text-center">
+            <p className="text-lg md:text-xl text-white/90 leading-relaxed font-medium italic mb-8">
+              The system exists because of necessary constraints and designs to get things happening. 
+              We remove those limitations. The individualized nuances don't have to exist anymore as 
+              creation can create. Creation and synergies are infinite.
+            </p>
+            <Button
+              size="lg"
+              variant="outline"
+              className="rounded-full px-8 py-4 text-base border-white/30 text-white hover:bg-white/10 hover:border-white/50 backdrop-blur-md transition-all duration-300"
+            >
+              read more
+            </Button>
           </div>
         </section>
 
         {/* Video Section */}
-        <section id="video-section" className="py-32 px-4 sm:px-6 lg:px-8 bg-background relative">
-          <div className="absolute inset-0 bg-gradient-to-b from-secondary/20 to-background" />
+        <section id="video-section" className="py-32 px-4 sm:px-6 lg:px-8 bg-black relative mystical-bg">
+          <div className="absolute inset-0 bg-gradient-to-b from-purple-900/20 to-black" />
           
           <div className="max-w-5xl mx-auto relative z-10">
             <h2 className="text-4xl md:text-5xl font-bold text-center mb-16">
-              <span className="sun-gradient-text">Experience the Vision</span>
+              <span className="mystical-gradient-text">Experience the Vision</span>
             </h2>
             
             <div className="video-border">
-              <div className="bg-card rounded-xl aspect-video flex items-center justify-center border border-border/50">
+              <div className="bg-black/80 rounded-xl aspect-video flex items-center justify-center border border-purple-500/30 backdrop-blur-sm">
                 {/* Video placeholder - replace with your video */}
-                <div className="text-foreground text-center">
+                <div className="text-white text-center">
                   <div className="mb-6">
-                    <div className="w-24 h-24 mx-auto bg-gradient-to-br from-primary to-accent rounded-full flex items-center justify-center backdrop-blur-sm shadow-lg shadow-primary/25">
-                      <div className="w-0 h-0 border-l-[24px] border-l-primary-foreground border-t-[15px] border-t-transparent border-b-[15px] border-b-transparent ml-2" />
+                    <div className="w-24 h-24 mx-auto bg-gradient-to-br from-purple-500 to-cyan-500 rounded-full flex items-center justify-center backdrop-blur-sm shadow-lg shadow-purple-500/50 mystical-glow">
+                      <div className="w-0 h-0 border-l-[24px] border-l-white border-t-[15px] border-t-transparent border-b-[15px] border-b-transparent ml-2" />
                     </div>
                   </div>
-                  <p className="text-lg font-medium">Commercial Video Placeholder</p>
-                  <p className="text-sm text-muted-foreground mt-2">Replace with your video content</p>
+                  <p className="text-lg font-medium text-cyan-300 mystical-glow">Commercial Video Placeholder</p>
+                  <p className="text-sm text-purple-300 mt-2">Replace with your video content</p>
                 </div>
               </div>
             </div>
@@ -160,11 +147,11 @@ export default function HomePage() {
         </section>
 
         {/* Bridging Section - New Interactive Ecosystem */}
-        <section className="py-40 px-4 sm:px-6 lg:px-8 relative bg-gradient-to-b from-background via-secondary/10 to-background">
+        <section className="py-40 px-4 sm:px-6 lg:px-8 relative bg-black mystical-bg">
           <div className="max-w-7xl mx-auto">
             {/* Section Header */}
             <h2 className="text-5xl md:text-6xl font-bold text-center mb-24">
-              <span className="sun-gradient-text">Bridging to post-scarcity.</span>
+              <span className="mystical-gradient-text">Bridging to post-scarcity.</span>
             </h2>
 
             {/* Three-column layout with centered background logo */}
@@ -344,33 +331,32 @@ export default function HomePage() {
 
             {/* Bottom description */}
             <div className="mt-20 text-center max-w-3xl mx-auto">
-              <p className="text-lg md:text-xl text-muted-foreground font-medium leading-relaxed">
-                From scattered focus to unified consciousness. Salience bridges your fragmented digital life into harmonious flow.
+              <p className="text-lg md:text-xl text-cyan-300 font-medium leading-relaxed mystical-glow">
+                From scattered focus to unified consciousness.<br />Salience bridges your fragmented digital life into harmonious flow.
               </p>
             </div>
 
             {/* Call to Action */}
             <div className="mt-24 text-center space-y-10">
-              <h3 className="text-3xl md:text-4xl font-bold">
+              <h3 className="text-3xl md:text-4xl font-bold text-white">
                 Ready to explore deeper?
               </h3>
               <div className="flex flex-col sm:flex-row gap-6 justify-center">
-                <a href="/campfire">
+                <a href="/cross-the-bridge">
                   <Button 
                     size="lg"
-                    className="rounded-full px-10 py-6 text-lg bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/25 hover:shadow-xl transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
+                    className="rounded-full px-10 py-6 text-lg bg-white/20 hover:bg-white/30 text-white border border-white/30 backdrop-blur-md shadow-lg shadow-black/25 hover:shadow-xl transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
                   >
-                    🔥 Sit at the Campfire
+                    🌉 Cross the Bridge
                     <ArrowRight className="ml-3 h-5 w-5" />
                   </Button>
                 </a>
-                <a href="/thesis">
+                <a href="/heavens-gate">
                   <Button 
                     size="lg"
-                    variant="outline"
-                    className="rounded-full px-10 py-6 text-lg border-border hover:bg-secondary hover:border-primary/30 shadow-md hover:shadow-lg transition-all duration-300"
+                    className="rounded-full px-10 py-6 text-lg bg-white/20 hover:bg-white/30 text-white border border-white/30 backdrop-blur-md shadow-lg shadow-black/25 hover:shadow-xl transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
                   >
-                    Read Our Thesis
+                    🌌 Heaven's Gate?
                     <ArrowRight className="ml-3 h-5 w-5" />
                   </Button>
                 </a>

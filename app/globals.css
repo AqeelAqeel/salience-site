@@ -84,6 +84,7 @@
     line-height: 1.6;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    background: #0a0a0a !important; /* Force onyx black background */
   }
   
   h1, h2, h3, h4, h5, h6 {
@@ -310,7 +311,12 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply text-foreground;
+    background: #0a0a0a !important; /* Onyx black background */
+  }
+  
+  main {
+    background: #0a0a0a !important; /* Ensure main also has onyx background */
   }
 }
 
@@ -642,10 +648,26 @@ html {
 .video-border {
   position: relative;
   padding: 3px;
-  background: linear-gradient(45deg, #FF6F61 0%, #FFB347 25%, #FF1744 50%, #FF69B4 75%, #FF6F61 100%);
+  background: linear-gradient(45deg, 
+    #8b5cf6 0%, 
+    #06b6d4 25%, 
+    #10b981 50%, 
+    #f59e0b 75%, 
+    #ec4899 100%);
   background-size: 400% 400%;
-  animation: borderGradient 20s ease infinite;
+  animation: mysticalBorder 15s ease infinite;
   border-radius: 1rem;
+  box-shadow: 
+    0 0 20px rgba(139, 92, 246, 0.4),
+    0 0 40px rgba(139, 92, 246, 0.2);
+}
+
+@keyframes mysticalBorder {
+  0% { background-position: 0% 50%; }
+  25% { background-position: 100% 50%; }
+  50% { background-position: 100% 100%; }
+  75% { background-position: 0% 100%; }
+  100% { background-position: 0% 50%; }
 }
 
 @keyframes borderGradient {
@@ -1005,4 +1027,244 @@ html {
     linear-gradient(to right, hsl(var(--border) / 0.1) 1px, transparent 1px),
     linear-gradient(to bottom, hsl(var(--border) / 0.1) 1px, transparent 1px);
   background-size: 60px 60px;
+}
+
+/* Split Gradient Text for H1 */
+.being-gradient-text {
+  background: linear-gradient(135deg, #FF6F61 0%, #FFB347 50%, #FF1744 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  background-size: 200% 200%;
+  animation: sunGradient 15s ease infinite;
+  filter: drop-shadow(0 0 30px rgba(255, 255, 255, 0.3)) drop-shadow(0 0 60px rgba(255, 255, 255, 0.1));
+}
+
+.understood-gradient-text {
+  background: linear-gradient(315deg, #EE4E34 0%, #FF69B4 50%, #9B59B6 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  background-size: 200% 200%;
+  animation: sunGradient 15s ease infinite reverse;
+  filter: drop-shadow(0 0 30px rgba(255, 255, 255, 0.4)) drop-shadow(0 0 60px rgba(255, 255, 255, 0.2));
+}
+
+/* App Tiles */
+.app-tile {
+  @apply relative rounded-2xl p-6 md:p-8 aspect-square flex items-center justify-center;
+  @apply cursor-pointer transition-all duration-500 hover:scale-105;
+  @apply shadow-lg hover:shadow-2xl;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.3),
+    0 0 0 1px rgba(255, 255, 255, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.app-tile:hover,
+.app-tile:active {
+  background: black !important;
+  transform: translateY(-4px) scale(1.02);
+  box-shadow: 
+    0 20px 40px rgba(0, 0, 0, 0.4),
+    0 0 0 1px rgba(255, 255, 255, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
+/* Remove this rule since labels are now visible by default */
+
+/* Individual tile colors on hover */
+.app-tile[data-label="retentech.ai"]:hover .app-name,
+.app-tile[data-label="retentech.ai"]:active .app-name {
+  color: #f97316; /* orange-500 */
+}
+
+.app-tile[data-label="okaybestie.com"]:hover .app-name,
+.app-tile[data-label="okaybestie.com"]:active .app-name {
+  color: #8b5cf6; /* purple-500 */
+}
+
+.app-tile[data-label="morelore.app"]:hover .app-name,
+.app-tile[data-label="morelore.app"]:active .app-name {
+  color: #10b981; /* green-500 */
+}
+
+.app-tile[data-label="chaos.energy"]:hover .app-name,
+.app-tile[data-label="chaos.energy"]:active .app-name {
+  color: #ec4899; /* pink-500 */
+}
+
+.app-name {
+  @apply text-white font-semibold text-sm md:text-base text-center;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+  transition: all 0.5s ease;
+  opacity: 1;
+}
+
+/* Enhanced mobile touch support */
+@media (hover: none) and (pointer: coarse) {
+  .app-tile {
+    -webkit-tap-highlight-color: transparent;
+  }
+  
+  .app-tile:active,
+  .app-tile:focus {
+    background: black !important;
+    outline: none;
+  }
+  
+  .app-tile:active .app-name,
+  .app-tile:focus .app-name {
+    color: inherit;
+  }
+  
+  /* Individual mobile colors */
+  .app-tile[data-label="retentech.ai"]:active .app-name,
+  .app-tile[data-label="retentech.ai"]:focus .app-name {
+    color: #f97316 !important;
+  }
+  
+  .app-tile[data-label="okaybestie.com"]:active .app-name,
+  .app-tile[data-label="okaybestie.com"]:focus .app-name {
+    color: #8b5cf6 !important;
+  }
+  
+  .app-tile[data-label="morelore.app"]:active .app-name,
+  .app-tile[data-label="morelore.app"]:focus .app-name {
+    color: #10b981 !important;
+  }
+  
+  .app-tile[data-label="chaos.energy"]:active .app-name,
+  .app-tile[data-label="chaos.energy"]:focus .app-name {
+    color: #ec4899 !important;
+  }
+}
+
+/* Enhanced white shadow effects */
+.drop-shadow-2xl {
+  filter: drop-shadow(0 0 40px rgba(255, 255, 255, 0.5)) drop-shadow(0 0 80px rgba(255, 255, 255, 0.2));
+}
+
+/* Mystical Effects */
+.mystical-bg {
+  background: 
+    radial-gradient(circle at 20% 30%, rgba(147, 51, 234, 0.1) 0%, transparent 50%),
+    radial-gradient(circle at 80% 70%, rgba(59, 130, 246, 0.1) 0%, transparent 50%),
+    radial-gradient(circle at 50% 50%, rgba(16, 185, 129, 0.05) 0%, transparent 50%),
+    #0a0a0a;
+  position: relative;
+}
+
+.mystical-bg::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: 
+    radial-gradient(circle at 25% 25%, rgba(236, 72, 153, 0.08) 0%, transparent 40%),
+    radial-gradient(circle at 75% 75%, rgba(168, 85, 247, 0.08) 0%, transparent 40%);
+  animation: mysticalPulse 20s ease-in-out infinite;
+}
+
+@keyframes mysticalPulse {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 0.7; }
+}
+
+.mystical-gradient-text {
+  background: linear-gradient(135deg, 
+    #fbbf24 0%, 
+    #f59e0b 25%, 
+    #ec4899 50%, 
+    #8b5cf6 75%, 
+    #06b6d4 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  background-size: 300% 300%;
+  animation: mysticalShimmer 8s ease-in-out infinite;
+  filter: drop-shadow(0 0 20px rgba(251, 191, 36, 0.5)) 
+          drop-shadow(0 0 40px rgba(236, 72, 153, 0.3));
+}
+
+@keyframes mysticalShimmer {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+.mystical-glow {
+  color: #67e8f9;
+  text-shadow: 
+    0 0 10px rgba(103, 232, 249, 0.8),
+    0 0 20px rgba(103, 232, 249, 0.5),
+    0 0 30px rgba(103, 232, 249, 0.3);
+  animation: subtleGlow 4s ease-in-out infinite;
+}
+
+@keyframes subtleGlow {
+  0%, 100% { 
+    text-shadow: 
+      0 0 10px rgba(103, 232, 249, 0.8),
+      0 0 20px rgba(103, 232, 249, 0.5),
+      0 0 30px rgba(103, 232, 249, 0.3);
+  }
+  50% { 
+    text-shadow: 
+      0 0 15px rgba(103, 232, 249, 1),
+      0 0 30px rgba(103, 232, 249, 0.7),
+      0 0 45px rgba(103, 232, 249, 0.5);
+  }
+}
+
+/* Enhanced node styling for mystical feel */
+.central-node {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 1.5rem;
+  background: rgba(0, 0, 0, 0.8);
+  border-radius: 50%;
+  box-shadow: 
+    0 0 20px rgba(147, 51, 234, 0.4),
+    0 0 40px rgba(147, 51, 234, 0.2),
+    inset 0 2px 0 rgba(255, 255, 255, 0.1);
+  border: 2px solid rgba(147, 51, 234, 0.6);
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.central-node-connected {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  background: rgba(0, 0, 0, 0.9);
+  border-radius: 50%;
+  box-shadow: 
+    0 0 30px rgba(16, 185, 129, 0.6),
+    0 0 60px rgba(16, 185, 129, 0.3),
+    inset 0 2px 0 rgba(255, 255, 255, 0.2);
+  border: 2px solid rgba(16, 185, 129, 0.8);
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Mobile responsive adjustments for new elements */
+@media (max-width: 768px) {
+  .being-gradient-text,
+  .understood-gradient-text {
+    font-size: clamp(3rem, 12vw, 8rem);
+  }
+  
+  .app-tile {
+    @apply p-4;
+  }
+  
+  .app-name {
+    @apply text-sm;
+  }
+  
+  .mystical-bg::before {
+    opacity: 0.5;
+  }
 }

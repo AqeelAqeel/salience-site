@@ -21,9 +21,9 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`bg-gradient-to-b from-orange-50 to-white ${inter.className}`}
+      className={`bg-[#0a0a0a] ${inter.className}`}
     >
-      <body className="min-h-[100dvh] bg-gradient-to-b from-orange-50/50 to-white text-gray-900">
+      <body className="min-h-[100dvh] bg-[#0a0a0a] text-white">
         {children}
       </body>
     </html>
