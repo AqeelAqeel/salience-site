@@ -360,6 +360,15 @@ export default function HomePage() {
                     <ArrowRight className="ml-3 h-5 w-5" />
                   </Button>
                 </a>
+                <a href="/chat-analysis">
+                  <Button 
+                    size="lg"
+                    className="rounded-full px-10 py-6 text-lg bg-white/20 hover:bg-white/30 text-white border border-white/30 backdrop-blur-md shadow-lg shadow-black/25 hover:shadow-xl transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
+                  >
+                    🔍 try anal?
+                    <ArrowRight className="ml-3 h-5 w-5" />
+                  </Button>
+                </a>
               </div>
             </div>
           </div>

@@ -261,15 +261,15 @@ export default function ChatAnalysisPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background via-background to-secondary/20 py-16 px-4">
+    <div className="min-h-screen bg-black mystical-bg py-16 px-4">
       <div className="mx-auto max-w-7xl">
         <div className="mb-16 text-center space-y-4">
           <h1 className="text-5xl font-bold tracking-tight">
-            <span className="sun-gradient-text">Personalized AI</span>
+            <span className="mystical-gradient-text">Personalized AI</span>
             <br />
-            <span className="text-foreground">That Understands You</span>
+            <span className="text-white">That Understands You</span>
           </h1>
-          <p className="text-muted-foreground text-lg max-w-3xl mx-auto leading-relaxed">
+          <p className="text-cyan-300 mystical-glow text-lg max-w-3xl mx-auto leading-relaxed">
             Upload your messages and experience how AI can adapt to your unique communication style
           </p>
         </div>
@@ -284,7 +284,7 @@ export default function ChatAnalysisPage() {
                 <Circle className="w-5 h-5 text-primary-foreground" fill="currentColor" />
               </div>
               <span className={`text-sm font-medium transition-colors ${
-                currentStep === 'input' ? 'text-foreground' : 'text-muted-foreground'
+                currentStep === 'input' ? 'text-white' : 'text-white/60'
               }`}>
                 Upload Your Messages
               </span>
@@ -297,7 +297,7 @@ export default function ChatAnalysisPage() {
                 <Circle className="w-5 h-5 text-primary-foreground" fill="currentColor" />
               </div>
               <span className={`text-sm font-medium transition-colors ${
-                currentStep === 'chat' ? 'text-foreground' : 'text-muted-foreground'
+                currentStep === 'chat' ? 'text-white' : 'text-white/60'
               }`}>
                 Experience Personalized Chat
               </span>
@@ -306,16 +306,16 @@ export default function ChatAnalysisPage() {
         </div>
 
         {!userProfile ? (
-          <Card className="max-w-3xl mx-auto border-border/50 shadow-xl bg-card/80 backdrop-blur-sm">
+          <Card className="max-w-3xl mx-auto border-purple-500/30 shadow-xl bg-black/80 backdrop-blur-sm">
             <CardHeader className="space-y-2">
-              <CardTitle className="text-2xl">Upload Your Messages</CardTitle>
-              <CardDescription className="text-base">
+              <CardTitle className="text-2xl text-white">Upload Your Messages</CardTitle>
+              <CardDescription className="text-base text-cyan-300 mystical-glow">
                 Paste your messages below to help us understand your writing style
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-8">
               <div className="space-y-3">
-                <Label htmlFor="messages" className="text-base font-medium">
+                <Label htmlFor="messages" className="text-base font-medium text-white">
                   Your Messages
                 </Label>
                 <Textarea
@@ -323,16 +323,16 @@ export default function ChatAnalysisPage() {
                   placeholder="Paste your messages here..."
                   value={uploadedMessages}
                   onChange={(e) => setUploadedMessages(e.target.value)}
-                  className="min-h-[240px] bg-secondary/30 border-border/50 focus:border-primary/50 transition-colors resize-none"
+                  className="min-h-[240px] bg-black/60 border-purple-500/30 focus:border-cyan-500/50 transition-colors resize-none text-white placeholder:text-white/60"
                 />
-                <p className="text-sm text-muted-foreground leading-relaxed">
-                  <span className="font-medium text-foreground">Tip:</span> Copy and paste from iMessage, email threads, or social media 
+                <p className="text-sm text-purple-300 leading-relaxed">
+                  <span className="font-medium text-white">Tip:</span> Copy and paste from iMessage, email threads, or social media 
                   to capture your authentic writing style
                 </p>
               </div>
 
               <div className="space-y-4">
-                <Label className="text-base font-medium">
+                <Label className="text-base font-medium text-white">
                   Formality Level (Optional)
                 </Label>
                 <div className="flex items-center space-x-4">
@@ -340,11 +340,11 @@ export default function ChatAnalysisPage() {
                   <div className="flex-1 relative py-3">
                     <div className="relative">
                       {/* Track */}
-                      <div className="w-full h-3 bg-secondary rounded-full relative overflow-hidden">
+                      <div className="w-full h-3 bg-white/20 rounded-full relative overflow-hidden">
                         {/* Custom range fill from center */}
                         {formality.length > 0 && (
                           <div 
-                            className="absolute h-full bg-gradient-to-r from-primary to-accent rounded-full transition-all duration-300 ease-out"
+                            className="absolute h-full bg-gradient-to-r from-purple-500 to-cyan-500 rounded-full transition-all duration-300 ease-out"
                             style={{
                               left: formality[0] < 50 ? `${formality[0]}%` : '50%',
                               right: formality[0] > 50 ? `${100 - formality[0]}%` : '50%',
@@ -358,7 +358,7 @@ export default function ChatAnalysisPage() {
                         style={{ marginTop: '-10px' }}
                       >
                         <div 
-                          className="absolute w-7 h-7 bg-primary rounded-full shadow-lg transition-all duration-200 cursor-pointer border-2 border-background hover:scale-110"
+                          className="absolute w-7 h-7 bg-cyan-500 rounded-full shadow-lg transition-all duration-200 cursor-pointer border-2 border-black hover:scale-110 shadow-cyan-500/50"
                           style={{
                             left: formality.length > 0 ? `${formality[0]}%` : '50%',
                             transform: 'translateX(-50%)',
@@ -379,14 +379,14 @@ export default function ChatAnalysisPage() {
                   </div>
                   <span className="text-2xl">👼</span>
                 </div>
-                <div className="flex justify-between mt-3 text-xs text-muted-foreground font-medium">
+                <div className="flex justify-between mt-3 text-xs text-white/70 font-medium">
                   <span>Casual</span>
                   <span>Professional</span>
                 </div>
                 {formality.length > 0 && (
                   <div className="text-center mt-4">
                     <span className="text-3xl">{getFormalityEmoji(formality[0])}</span>
-                    <p className="text-xs text-muted-foreground mt-2">Drag to adjust</p>
+                    <p className="text-xs text-purple-300 mt-2">Drag to adjust</p>
                   </div>
                 )}
               </div>
@@ -394,7 +394,7 @@ export default function ChatAnalysisPage() {
               <Button
                 onClick={analyzeMessages}
                 disabled={!uploadedMessages.trim() || isAnalyzing}
-                className="w-full h-12 text-base font-medium bg-primary hover:bg-primary/90 shadow-lg shadow-primary/25 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
+                className="w-full h-12 text-base font-medium bg-gradient-to-r from-purple-600 to-cyan-600 hover:from-purple-500 hover:to-cyan-500 text-white shadow-lg shadow-purple-500/25 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] mystical-glow"
               >
                 {isAnalyzing ? (
                   <span className="flex items-center gap-2">
@@ -414,14 +414,14 @@ export default function ChatAnalysisPage() {
           <div className="space-y-8">
             {/* Profile Card - Only show when initial input is visible */}
             {showInitialInput && (
-              <Card className="border-border/50 shadow-xl bg-card/80 backdrop-blur-sm max-w-3xl mx-auto">
+              <Card className="border-purple-500/30 shadow-xl bg-black/80 backdrop-blur-sm max-w-3xl mx-auto">
                 <CardHeader className="flex flex-row items-center justify-between pb-4">
-                  <CardTitle className="text-2xl">Your Communication Profile</CardTitle>
+                  <CardTitle className="text-2xl text-white">Your Communication Profile</CardTitle>
                   <Button
                     onClick={clearData}
                     variant="outline"
                     size="sm"
-                    className="hover:bg-secondary"
+                    className="hover:bg-white/10 text-white border-white/30"
                   >
                     Start Over
                   </Button>
@@ -429,12 +429,12 @@ export default function ChatAnalysisPage() {
                 <CardContent className="space-y-6">
                   <div className="grid grid-cols-2 gap-6">
                     <div className="space-y-2">
-                      <span className="text-sm font-medium text-muted-foreground">Writing Style</span>
-                      <p className="text-base font-medium">{userProfile.writingStyle}</p>
+                      <span className="text-sm font-medium text-purple-300">Writing Style</span>
+                      <p className="text-base font-medium text-white">{userProfile.writingStyle}</p>
                     </div>
                     <div className="space-y-2">
-                      <span className="text-sm font-medium text-muted-foreground">Message Patterns</span>
-                      <p className="text-base font-medium">
+                      <span className="text-sm font-medium text-purple-300">Message Patterns</span>
+                      <p className="text-base font-medium text-white">
                         {typeof userProfile.messagePatterns === 'string' 
                           ? userProfile.messagePatterns 
                           : JSON.stringify(userProfile.messagePatterns)}
@@ -443,10 +443,10 @@ export default function ChatAnalysisPage() {
                   </div>
                   {userProfile.characteristics && userProfile.characteristics.length > 0 && (
                     <div className="space-y-3">
-                      <span className="text-sm font-medium text-muted-foreground">Key Characteristics</span>
+                      <span className="text-sm font-medium text-purple-300">Key Characteristics</span>
                       <div className="flex flex-wrap gap-2">
                         {userProfile.characteristics.map((char, idx) => (
-                          <span key={idx} className="px-3 py-1.5 bg-secondary text-secondary-foreground text-sm font-medium rounded-full">
+                          <span key={idx} className="px-3 py-1.5 bg-purple-600/30 text-cyan-300 text-sm font-medium rounded-full border border-purple-500/50">
                             {char}
                           </span>
                         ))}
@@ -460,10 +460,10 @@ export default function ChatAnalysisPage() {
             {/* Initial message input */}
             {showInitialInput && (
               <div className="max-w-2xl mx-auto">
-                <Card className="border-border/50 shadow-xl bg-card/80 backdrop-blur-sm">
+                <Card className="border-purple-500/30 shadow-xl bg-black/80 backdrop-blur-sm">
                   <CardHeader className="text-center space-y-2">
-                    <CardTitle className="text-2xl">Start Your Conversation</CardTitle>
-                    <CardDescription className="text-base">
+                    <CardTitle className="text-2xl text-white">Start Your Conversation</CardTitle>
+                    <CardDescription className="text-base text-cyan-300 mystical-glow">
                       Send your first message to see how both AI assistants respond differently
                     </CardDescription>
                   </CardHeader>
@@ -478,12 +478,12 @@ export default function ChatAnalysisPage() {
                           }
                         }}
                         placeholder="Type your message..."
-                        className="h-12 bg-secondary/30 border-border/50 focus:border-primary/50 transition-colors"
+                        className="h-12 bg-black/60 border-purple-500/30 focus:border-cyan-500/50 transition-colors text-white placeholder:text-white/60"
                       />
                       <Button
                         onClick={sendInitialMessage}
                         disabled={!currentInput.trim()}
-                        className="h-12 px-6 bg-primary hover:bg-primary/90 shadow-lg shadow-primary/25"
+                        className="h-12 px-6 bg-gradient-to-r from-purple-600 to-cyan-600 hover:from-purple-500 hover:to-cyan-500 text-white shadow-lg shadow-purple-500/25 mystical-glow"
                       >
                         <Send className="h-5 w-5" />
                       </Button>
@@ -499,11 +499,11 @@ export default function ChatAnalysisPage() {
                 {/* Standard Chat */}
                 <div className="space-y-6">
                   <div className="text-center space-y-2">
-                    <h3 className="text-xl font-semibold flex items-center justify-center gap-2">
-                      <Bot className="h-5 w-5 text-muted-foreground" />
+                    <h3 className="text-xl font-semibold flex items-center justify-center gap-2 text-white">
+                      <Bot className="h-5 w-5 text-white/70" />
                       Standard Assistant
                     </h3>
-                    <p className="text-sm text-muted-foreground">Generic AI responses</p>
+                    <p className="text-sm text-purple-300">Generic AI responses</p>
                   </div>
                   
                   <ChatContainer height="700px">
@@ -543,14 +543,14 @@ export default function ChatAnalysisPage() {
                 {/* Personalized Chat */}
                 <div className="space-y-6">
                   <div className="text-center space-y-2">
-                    <h3 className="text-xl font-semibold flex items-center justify-center gap-2">
-                      <Sparkles className="h-5 w-5 text-primary" />
+                    <h3 className="text-xl font-semibold flex items-center justify-center gap-2 text-white">
+                      <Sparkles className="h-5 w-5 text-cyan-400 mystical-glow" />
                       Personalized Assistant
                     </h3>
-                    <p className="text-sm text-muted-foreground">Adapts to your communication style</p>
+                    <p className="text-sm text-cyan-300 mystical-glow">Adapts to your communication style</p>
                   </div>
                   
-                  <ChatContainer height="700px" className="border-primary/20">
+                  <ChatContainer height="700px" className="border-cyan-500/30 shadow-lg shadow-cyan-500/20">
                     <ChatHeader
                       title="Personalized AI"
                       subtitle="Matches your style"
@@ -593,7 +593,7 @@ export default function ChatAnalysisPage() {
                   onClick={clearData}
                   variant="outline"
                   size="lg"
-                  className="hover:bg-secondary"
+                  className="hover:bg-white/10 text-white border-white/30"
                 >
                   Start Over
                 </Button>
