@@ -110,13 +110,7 @@ export default function HomePage() {
               We remove those limitations. The individualized nuances don't have to exist anymore as 
               creation can create. Creation and synergies are infinite.
             </p>
-            <Button
-              size="lg"
-              variant="outline"
-              className="rounded-full px-8 py-4 text-base border-white/30 text-white hover:bg-white/10 hover:border-white/50 backdrop-blur-md transition-all duration-300"
-            >
-              read more
-            </Button>
+            
           </div>
         </section>
 
@@ -341,32 +335,29 @@ export default function HomePage() {
               <h3 className="text-3xl md:text-4xl font-bold text-white">
                 Ready to explore deeper?
               </h3>
-              <div className="flex flex-col sm:flex-row gap-6 justify-center">
-                <a href="/cross-the-bridge">
+              <div className="flex flex-col sm:flex-row gap-6 justify-center max-w-4xl mx-auto">
+                <a href="/cross-the-bridge" className="flex-1">
                   <Button 
                     size="lg"
-                    className="rounded-full px-10 py-6 text-lg bg-white/20 hover:bg-white/30 text-white border border-white/30 backdrop-blur-md shadow-lg shadow-black/25 hover:shadow-xl transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
+                    className="rounded-full px-10 py-6 text-lg bg-white/20 hover:bg-white/30 text-white border border-white/30 backdrop-blur-md shadow-lg shadow-black/25 hover:shadow-xl transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] w-full"
                   >
                     🌉 Cross the Bridge
-                    <ArrowRight className="ml-3 h-5 w-5" />
                   </Button>
                 </a>
-                <a href="/heavens-gate">
+                <a href="/heavens-gate" className="flex-1">
                   <Button 
                     size="lg"
-                    className="rounded-full px-10 py-6 text-lg bg-white/20 hover:bg-white/30 text-white border border-white/30 backdrop-blur-md shadow-lg shadow-black/25 hover:shadow-xl transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
+                    className="rounded-full px-10 py-6 text-lg bg-white/20 hover:bg-white/30 text-white border border-white/30 backdrop-blur-md shadow-lg shadow-black/25 hover:shadow-xl transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] w-full"
                   >
                     🌌 Heaven's Gate?
-                    <ArrowRight className="ml-3 h-5 w-5" />
                   </Button>
                 </a>
-                <a href="/chat-analysis">
+                <a href="/chat-analysis" className="flex-1">
                   <Button 
                     size="lg"
-                    className="rounded-full px-10 py-6 text-lg bg-white/20 hover:bg-white/30 text-white border border-white/30 backdrop-blur-md shadow-lg shadow-black/25 hover:shadow-xl transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
+                    className="rounded-full px-10 py-6 text-lg bg-white/20 hover:bg-white/30 text-white border border-white/30 backdrop-blur-md shadow-lg shadow-black/25 hover:shadow-xl transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] w-full"
                   >
                     🔍 try anal?
-                    <ArrowRight className="ml-3 h-5 w-5" />
                   </Button>
                 </a>
               </div>
