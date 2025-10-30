@@ -1,60 +1,55 @@
-import { NextResponse } from 'next/server'
-import OpenAI from 'openai'
+import { NextResponse } from "next/server";
+import OpenAI from "openai";
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
-})
+});
 
 export async function POST(request: Request) {
   try {
-    const { message, chatId, userProfile, previousMessages } = await request.json()
+    const { messages, userContext } = await request.json();
 
-    let systemPrompt = ''
-
-    if (chatId === 'chat1') {
-      systemPrompt = `You are a helpful AI assistant. Respond naturally and be conversational.`
-    } else {
-      systemPrompt = `You are an AI assistant that has analyzed the user's communication style. Adapt your responses to match their patterns:
-
-Writing Style: ${userProfile.writingStyle}
-Message Patterns: ${userProfile.messagePatterns}
-Key Characteristics: ${userProfile.characteristics.join(', ')}
-
-Mirror their:
-- Capitalization patterns (all lowercase, proper case, etc.)
-- Punctuation usage (minimal, proper, excessive)
-- Message length and structure
-- Vocabulary and abbreviation preferences
-- Emotional expression style
-- Response tempo and energy level
-
-Important: Match their communication style naturally without explicitly mentioning that you're doing so. If they write in all lowercase with minimal punctuation, do the same. If they use lots of emojis and exclamation points, mirror that energy. The goal is to make the conversation feel natural and comfortable for them.`
+    if (!process.env.OPENAI_API_KEY) {
+      return NextResponse.json(
+        { error: "OpenAI API key not configured" },
+        { status: 500 }
+      );
     }
 
-    const messages = [
-      { role: 'system', content: systemPrompt },
-      ...previousMessages.map((msg: any) => ({
-        role: msg.role,
-        content: msg.content
+    // Build system prompt with user context
+    let systemPrompt = `You are a helpful, empathetic AI assistant focused on understanding and helping the user. 
+You should be conversational, warm, and genuinely interested in learning about the user.
+
+When the user shares information about themselves, acknowledge it warmly and ask thoughtful follow-up questions to understand them better. Help them explore their thoughts and feelings.`;
+
+    if (userContext && userContext.trim()) {
+      systemPrompt += `\n\nHere's what I know about the user so far:\n${userContext}\n\nUse this context to provide more personalized and relevant responses. Reference previous information they've shared when relevant.`;
+    }
+
+    // Convert messages to OpenAI format
+    const openAIMessages = [
+      { role: "system" as const, content: systemPrompt },
+      ...messages.map((msg: any) => ({
+        role: msg.role as "user" | "assistant",
+        content: msg.content,
       })),
-      { role: 'user', content: message }
-    ]
+    ];
 
     const completion = await openai.chat.completions.create({
-      model: 'gpt-4-turbo-preview',
-      messages,
-      temperature: chatId === 'chat1' ? 0.7 : 0.8,
-      max_tokens: 150,
-    })
+      model: "gpt-4-turbo-preview",
+      messages: openAIMessages,
+      temperature: 0.7,
+      max_tokens: 800,
+    });
 
-    const response = completion.choices[0].message.content
+    const responseContent = completion.choices[0]?.message?.content || "I'm sorry, I couldn't generate a response.";
 
-    return NextResponse.json({ response })
+    return NextResponse.json({ content: responseContent });
   } catch (error) {
-    console.error('Error in chat:', error)
+    console.error("Chat API error:", error);
     return NextResponse.json(
-      { error: 'Failed to generate response' },
+      { error: "Failed to process chat request" },
       { status: 500 }
-    )
+    );
   }
 }

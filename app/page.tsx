@@ -335,7 +335,7 @@ export default function HomePage() {
               <h3 className="text-3xl md:text-4xl font-bold text-white">
                 Ready to explore deeper?
               </h3>
-              <div className="flex flex-col sm:flex-row gap-6 justify-center max-w-4xl mx-auto">
+              <div className="flex flex-col sm:flex-row gap-6 justify-center max-w-5xl mx-auto">
                 <a href="/cross-the-bridge" className="flex-1">
                   <Button 
                     size="lg"
@@ -358,6 +358,14 @@ export default function HomePage() {
                     className="rounded-full px-10 py-6 text-lg bg-white/20 hover:bg-white/30 text-white border border-white/30 backdrop-blur-md shadow-lg shadow-black/25 hover:shadow-xl transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] w-full"
                   >
                     🔍 try anal?
+                  </Button>
+                </a>
+                <a href="/cognition-covenance" className="flex-1">
+                  <Button 
+                    size="lg"
+                    className="rounded-full px-10 py-6 text-lg bg-white/20 hover:bg-white/30 text-white border border-white/30 backdrop-blur-md shadow-lg shadow-black/25 hover:shadow-xl transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] w-full"
+                  >
+                    🧠 Cognition Coven
                   </Button>
                 </a>
               </div>

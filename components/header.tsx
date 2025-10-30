@@ -9,9 +9,11 @@ const Header = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const navItems = [
+    { label: 'home', href: '/' },
     { label: 'cross the bridge', href: '/cross-the-bridge' },
     { label: 'heaven\'s gate?', href: '/heavens-gate' },
     { label: 'chat analysis', href: '/chat-analysis' },
+    { label: 'cognition covenant', href: '/cognition-covenance' },
   ];
 
   return (

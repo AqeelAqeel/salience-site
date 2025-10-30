@@ -6,6 +6,7 @@
     "start": "next start"
   },
   "dependencies": {
+    "@radix-ui/react-progress": "^1.1.7",
     "@tailwindcss/postcss": "4.1.7",
     "@types/node": "^22.15.18",
     "@types/react": "19.1.4",
@@ -15,7 +16,7 @@
     "clsx": "^2.1.1",
     "lucide-react": "^0.511.0",
     "next": "15.4.0-canary.47",
-    "openai": "^5.10.1",
+    "openai": "^5.23.2",
     "postcss": "^8.5.3",
     "radix-ui": "^1.4.2",
     "react": "19.1.0",

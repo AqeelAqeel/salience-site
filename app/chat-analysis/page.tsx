@@ -8,7 +8,8 @@ import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Separator } from '@/components/ui/separator'
 import { ChatBubble, ChatInput, ChatContainer, ChatHeader, ChatMessages } from '@/components/ui/chat-bubble'
-import { Send, Sparkles, MessageSquare, Circle, Bot, User } from 'lucide-react'
+import { Send, Sparkles, MessageSquare, Circle, Bot, User, Home } from 'lucide-react'
+import Link from 'next/link'
 
 type Message = {
   role: 'user' | 'assistant'
@@ -263,6 +264,12 @@ export default function ChatAnalysisPage() {
   return (
     <div className="min-h-screen bg-black mystical-bg py-16 px-4">
       <div className="mx-auto max-w-7xl">
+        {/* Home Button */}
+        <Link href="/" className="inline-flex items-center gap-2 mb-8 text-purple-400 hover:text-purple-300 transition-colors">
+          <Home className="w-5 h-5" />
+          <span>Back to Home</span>
+        </Link>
+        
         <div className="mb-16 text-center space-y-4">
           <h1 className="text-5xl font-bold tracking-tight">
             <span className="mystical-gradient-text">Personalized AI</span>
