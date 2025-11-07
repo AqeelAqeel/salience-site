@@ -3,7 +3,13 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Menu, X } from 'lucide-react';
+import { Menu, X, ChevronDown } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 const Header = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -12,8 +18,12 @@ const Header = () => {
     { label: 'home', href: '/' },
     { label: 'cross the bridge', href: '/cross-the-bridge' },
     { label: 'heaven\'s gate?', href: '/heavens-gate' },
+  ];
+
+  const researchItems = [
     { label: 'chat analysis', href: '/chat-analysis' },
     { label: 'cognition covenant', href: '/cognition-covenance' },
+    { label: 'cognition conductor', href: '/cognition-conductor' },
   ];
 
   return (
@@ -42,6 +52,24 @@ const Header = () => {
                 <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-primary transition-all duration-300 group-hover:w-full"></span>
               </Link>
             ))}
+            
+            {/* Research Dropdown */}
+            <DropdownMenu>
+              <DropdownMenuTrigger className="text-white/70 hover:text-white transition-colors font-medium lowercase text-lg relative group flex items-center gap-1 bg-transparent border-none outline-none">
+                research
+                <ChevronDown className="h-4 w-4 transition-transform group-data-[state=open]:rotate-180" />
+                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-primary transition-all duration-300 group-hover:w-full"></span>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="bg-black/90 backdrop-blur-lg border border-white/20 text-white">
+                {researchItems.map((item) => (
+                  <DropdownMenuItem key={item.label} className="hover:bg-white/10 focus:bg-white/10">
+                    <Link href={item.href} className="w-full lowercase">
+                      {item.label}
+                    </Link>
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
           </nav>
 
         </div>

@@ -1253,18 +1253,91 @@ html {
 @media (max-width: 768px) {
   .being-gradient-text,
   .understood-gradient-text {
-    font-size: clamp(3rem, 12vw, 8rem);
+    font-size: clamp(3rem, 12vw, 6rem);
+    line-height: 1.1;
   }
   
   .app-tile {
-    @apply p-4;
+    @apply p-6;
+    min-height: 120px;
   }
   
   .app-name {
-    @apply text-sm;
+    @apply text-base;
   }
   
   .mystical-bg::before {
     opacity: 0.5;
   }
+  
+  .glass-dark {
+    @apply p-6;
+  }
+  
+  .prose-lg,
+  .prose-xl,
+  .prose-2xl {
+    font-size: 1rem;
+    line-height: 1.6;
+  }
+  
+  .prose-lg p,
+  .prose-xl p,
+  .prose-2xl p {
+    margin-bottom: 1rem;
+  }
+}
+
+/* Tablet responsive adjustments */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .being-gradient-text,
+  .understood-gradient-text {
+    font-size: clamp(5rem, 10vw, 10rem);
+  }
+  
+  .glass-dark {
+    @apply p-10;
+  }
+}
+
+/* Large screen optimizations */
+@media (min-width: 1920px) {
+  .max-w-8xl {
+    max-width: 96rem;
+  }
+  
+  .being-gradient-text,
+  .understood-gradient-text {
+    font-size: clamp(12rem, 8vw, 16rem);
+  }
+}
+
+/* Enhanced spacing utilities */
+.space-luxury {
+  @apply space-y-20 md:space-y-32 lg:space-y-40;
+}
+
+.container-luxury {
+  @apply max-w-8xl mx-auto px-6 sm:px-8 lg:px-12 xl:px-16;
+}
+
+/* Better text hierarchy */
+.text-hero {
+  @apply text-6xl sm:text-7xl md:text-8xl lg:text-9xl xl:text-[10rem] 2xl:text-[12rem];
+}
+
+.text-section-title {
+  @apply text-4xl md:text-5xl lg:text-6xl xl:text-7xl;
+}
+
+.text-card-title {
+  @apply text-2xl md:text-3xl lg:text-4xl;
+}
+
+.text-body-large {
+  @apply text-lg md:text-xl lg:text-2xl;
+}
+
+.text-body-xl {
+  @apply text-xl md:text-2xl lg:text-3xl;
 }

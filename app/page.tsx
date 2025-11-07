@@ -64,27 +64,42 @@ export default function HomePage() {
         </div>
 
         {/* Hero Section */}
-        <section className="min-h-screen flex items-center justify-center px-4 sm:px-6 lg:px-8 relative pt-8 -mt-8">
+        <section className="min-h-screen flex items-center justify-center px-6 sm:px-8 lg:px-12 xl:px-16 relative pt-16 -mt-16">
           
           <div className="relative z-10 max-w-7xl mx-auto w-full text-center">
             {/* Giant H1 with split gradient */}
-            <h1 className="text-7xl sm:text-8xl md:text-9xl lg:text-[12rem] xl:text-[14rem] font-bold tracking-tight mb-16 leading-none">
-              <span className="being-gradient-text">Being;</span>{' '}
+            <h1 className="text-6xl sm:text-7xl md:text-8xl lg:text-[10rem] xl:text-[12rem] 2xl:text-[14rem] font-bold tracking-tight mb-20 md:mb-24 lg:mb-32 leading-none">
+              <span className="being-gradient-text">Being;</span>
+              <br className="hidden sm:block" />
               <span className="understood-gradient-text drop-shadow-2xl">Understood.</span>
             </h1>
             
-            <p className="text-xl md:text-2xl lg:text-3xl text-cyan-300 leading-relaxed mb-12 max-w-4xl mx-auto font-medium mystical-glow">
-              Salience builds bridges to the other side. Transform consciousness into creation. Where minimalism meets the future of design innovation.
-            </p>
+            <div className="max-w-5xl mx-auto mb-16 md:mb-20 lg:mb-24">
+              <p className="text-xl md:text-2xl lg:text-3xl xl:text-4xl text-cyan-300 leading-relaxed font-medium mystical-glow mb-8">
+                Salience builds bridges to the other side.
+              </p>
+              <p className="text-lg md:text-xl lg:text-2xl text-white/80 leading-relaxed font-light max-w-4xl mx-auto">
+                Transform consciousness into creation. Where minimalism meets the future of design innovation.
+              </p>
+            </div>
             
           </div>
 
         </section>
 
         {/* App Grid Section */}
-        <section className="py-24 px-4 sm:px-6 lg:px-8 relative">
-          <div className="max-w-6xl mx-auto relative z-10">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8 mb-16 max-w-4xl mx-auto">
+        <section className="py-32 md:py-40 lg:py-48 px-6 sm:px-8 lg:px-12 xl:px-16 relative">
+          <div className="max-w-7xl mx-auto relative z-10">
+            <div className="mb-24 md:mb-32 text-center">
+              <h2 className="text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold mb-8 md:mb-12">
+                <span className="mystical-gradient-text">Our Ecosystem</span>
+              </h2>
+              <p className="text-lg md:text-xl lg:text-2xl text-white/70 max-w-4xl mx-auto leading-relaxed">
+                Four interconnected experiences, each a window into different dimensions of human-computer symbiosis.
+              </p>
+            </div>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 md:gap-12 lg:gap-16 max-w-7xl mx-auto">
               {/* App Tiles */}
               <div className="app-tile bg-gradient-to-br from-orange-500 to-red-500" data-label="retentech.ai" tabIndex={0}>
                 <span className="app-name">retentech.ai</span>
@@ -102,38 +117,154 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* Manifest Section */}
-        <section className="py-16 px-4 sm:px-6 lg:px-8 relative">
-          <div className="max-w-4xl mx-auto text-center">
-            <p className="text-lg md:text-xl text-white/90 leading-relaxed font-medium italic mb-8">
-              The system exists because of necessary constraints and designs to get things happening. 
-              We remove those limitations. The individualized nuances don't have to exist anymore as 
-              creation can create. Creation and synergies are infinite.
-            </p>
+        {/* Philosophy & Manifesto Section */}
+        <section className="py-40 md:py-48 lg:py-56 px-6 sm:px-8 lg:px-12 xl:px-16 relative mystical-bg">
+          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/20 to-transparent" />
+          
+          <div className="max-w-6xl mx-auto relative z-10">
+            <div className="text-center mb-24 md:mb-32">
+              <h2 className="text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold mb-12 md:mb-16">
+                <span className="mystical-gradient-text">Our Worldview</span>
+              </h2>
+            </div>
             
+            <div className="space-y-16 md:space-y-20 lg:space-y-24">
+              
+              {/* Core Philosophy */}
+              <div className="glass-dark rounded-3xl p-8 md:p-12 lg:p-16 border border-white/10">
+                <h3 className="text-2xl md:text-3xl lg:text-4xl font-semibold mb-8 md:mb-12 text-center">
+                  <span className="text-gradient">Why We Exist</span>
+                </h3>
+                <div className="prose prose-lg md:prose-xl lg:prose-2xl prose-invert max-w-none text-center">
+                  <p className="text-white/90 leading-relaxed mb-8 md:mb-12">
+                    We exist because of the <em>cataclysms of inefficiency</em> — the accumulated design choices, 
+                    human conditions, behaviors, and biases that create friction in systems meant to serve us.
+                  </p>
+                  <p className="text-white/80 leading-relaxed">
+                    We believe in the positive-sum values of focusing on <strong>nuances and imperfections</strong> — 
+                    the room for improvement that others overlook — while respecting what already works.
+                  </p>
+                </div>
+              </div>
+              
+              {/* What We Do */}
+              <div className="glass-dark rounded-3xl p-8 md:p-12 lg:p-16 border border-white/10">
+                <h3 className="text-2xl md:text-3xl lg:text-4xl font-semibold mb-8 md:mb-12 text-center">
+                  <span className="text-gradient">What We Do</span>
+                </h3>
+                <div className="prose prose-lg md:prose-xl lg:prose-2xl prose-invert max-w-none text-center">
+                  <p className="text-white/90 leading-relaxed mb-8 md:mb-12">
+                    We don't rest on what's working — we <em>raise our defaults and baselines every day</em>. 
+                    Through technology, research, and integrating what already exists, we refuse to default 
+                    to provider laziness or become marginalized by their practical priorities.
+                  </p>
+                  <p className="text-white/80 leading-relaxed">
+                    <strong>We have agency, but are not an agency.</strong> We build personalized nuance into 
+                    scalable systems that integrate with the status quo, because we experience what's all too common 
+                    and know what's possible with the technology already in our hands.
+                  </p>
+                </div>
+              </div>
+              
+              {/* Context Engineering Philosophy */}
+              <div className="glass-dark rounded-3xl p-8 md:p-12 lg:p-16 border border-white/10">
+                <h3 className="text-2xl md:text-3xl lg:text-4xl font-semibold mb-8 md:mb-12 text-center">
+                  <span className="text-gradient">Context as Product</span>
+                </h3>
+                <div className="prose prose-lg md:prose-xl lg:prose-2xl prose-invert max-w-none text-center">
+                  <p className="text-white/90 leading-relaxed mb-8 md:mb-12">
+                    Most software still treats context as a static backdrop. <em>We treat it as the product.</em>
+                  </p>
+                  <p className="text-white/80 leading-relaxed">
+                    Our context-engineering continuously fuses implicit and explicit signals — text tone, 
+                    scroll patterns, referrer data, metadata, behavioral traces — to generate real-time 
+                    personalized experiences that understand <strong>who's there, why they're there, 
+                    and what moves the needle next.</strong>
+                  </p>
+                </div>
+              </div>
+              
+            </div>
           </div>
         </section>
 
-        {/* Video Section */}
-        <section id="video-section" className="py-32 px-4 sm:px-6 lg:px-8 bg-black relative mystical-bg">
+        {/* Technical Deep Dive Section */}
+        <section id="video-section" className="py-40 md:py-48 lg:py-56 px-6 sm:px-8 lg:px-12 xl:px-16 bg-black relative mystical-bg">
           <div className="absolute inset-0 bg-gradient-to-b from-purple-900/20 to-black" />
           
-          <div className="max-w-5xl mx-auto relative z-10">
-            <h2 className="text-4xl md:text-5xl font-bold text-center mb-16">
-              <span className="mystical-gradient-text">Experience the Vision</span>
-            </h2>
+          <div className="max-w-7xl mx-auto relative z-10">
+            <div className="text-center mb-24 md:mb-32">
+              <h2 className="text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold mb-12 md:mb-16">
+                <span className="mystical-gradient-text">How It Works</span>
+              </h2>
+              <p className="text-xl md:text-2xl lg:text-3xl text-white/80 max-w-5xl mx-auto leading-relaxed">
+                Context-engineering that doesn't just react — it understands, learns, and evolves.
+              </p>
+            </div>
             
-            <div className="video-border">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 md:gap-16 lg:gap-20 mb-20 md:mb-32">
+              {/* Front-end Applications */}
+              <div className="glass-dark rounded-3xl p-8 md:p-12 border border-white/10">
+                <h3 className="text-2xl md:text-3xl lg:text-4xl font-semibold mb-8 text-cyan-300">
+                  Front-End Intelligence
+                </h3>
+                <ul className="space-y-4 md:space-y-6 text-white/80 text-lg md:text-xl">
+                  <li className="flex items-start gap-4">
+                    <span className="text-cyan-400 text-2xl">•</span>
+                    <span>Ad-supported publishers with adaptive widgets</span>
+                  </li>
+                  <li className="flex items-start gap-4">
+                    <span className="text-cyan-400 text-2xl">•</span>
+                    <span>E-commerce sites with intelligent chat layers</span>
+                  </li>
+                  <li className="flex items-start gap-4">
+                    <span className="text-cyan-400 text-2xl">•</span>
+                    <span>In-page concierges that raise engagement</span>
+                  </li>
+                  <li className="flex items-start gap-4">
+                    <span className="text-cyan-400 text-2xl">•</span>
+                    <span>Real-time conversion optimization</span>
+                  </li>
+                </ul>
+              </div>
+              
+              {/* Back-end Systems */}
+              <div className="glass-dark rounded-3xl p-8 md:p-12 border border-white/10">
+                <h3 className="text-2xl md:text-3xl lg:text-4xl font-semibold mb-8 text-purple-300">
+                  Enterprise Integration
+                </h3>
+                <ul className="space-y-4 md:space-y-6 text-white/80 text-lg md:text-xl">
+                  <li className="flex items-start gap-4">
+                    <span className="text-purple-400 text-2xl">•</span>
+                    <span>Slack threads that understand intent</span>
+                  </li>
+                  <li className="flex items-start gap-4">
+                    <span className="text-purple-400 text-2xl">•</span>
+                    <span>Notion docs with responsive surfaces</span>
+                  </li>
+                  <li className="flex items-start gap-4">
+                    <span className="text-purple-400 text-2xl">•</span>
+                    <span>Dashboards that translate human needs</span>
+                  </li>
+                  <li className="flex items-start gap-4">
+                    <span className="text-purple-400 text-2xl">•</span>
+                    <span>Local learning with secure context storage</span>
+                  </li>
+                </ul>
+              </div>
+            </div>
+            
+            {/* Video Placeholder */}
+            <div className="video-border max-w-5xl mx-auto">
               <div className="bg-black/80 rounded-xl aspect-video flex items-center justify-center border border-purple-500/30 backdrop-blur-sm">
-                {/* Video placeholder - replace with your video */}
                 <div className="text-white text-center">
                   <div className="mb-6">
                     <div className="w-24 h-24 mx-auto bg-gradient-to-br from-purple-500 to-cyan-500 rounded-full flex items-center justify-center backdrop-blur-sm shadow-lg shadow-purple-500/50 mystical-glow">
                       <div className="w-0 h-0 border-l-[24px] border-l-white border-t-[15px] border-t-transparent border-b-[15px] border-b-transparent ml-2" />
                     </div>
                   </div>
-                  <p className="text-lg font-medium text-cyan-300 mystical-glow">Commercial Video Placeholder</p>
-                  <p className="text-sm text-purple-300 mt-2">Replace with your video content</p>
+                  <p className="text-lg font-medium text-cyan-300 mystical-glow">Demo Video Placeholder</p>
+                  <p className="text-sm text-purple-300 mt-2">Context-engineering in action</p>
                 </div>
               </div>
             </div>
@@ -141,12 +272,17 @@ export default function HomePage() {
         </section>
 
         {/* Bridging Section - New Interactive Ecosystem */}
-        <section className="py-40 px-4 sm:px-6 lg:px-8 relative bg-black mystical-bg">
+        <section className="py-48 md:py-56 lg:py-64 px-6 sm:px-8 lg:px-12 xl:px-16 relative bg-black mystical-bg">
           <div className="max-w-7xl mx-auto">
             {/* Section Header */}
-            <h2 className="text-5xl md:text-6xl font-bold text-center mb-24">
-              <span className="mystical-gradient-text">Bridging to post-scarcity.</span>
-            </h2>
+            <div className="text-center mb-32 md:mb-40">
+              <h2 className="text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-bold mb-12 md:mb-16">
+                <span className="mystical-gradient-text">Bridging to post-scarcity.</span>
+              </h2>
+              <p className="text-xl md:text-2xl lg:text-3xl text-white/70 max-w-5xl mx-auto leading-relaxed">
+                From fragmented digital chaos to unified, intelligent harmony.
+              </p>
+            </div>
 
             {/* Three-column layout with centered background logo */}
             <div className="relative">
@@ -324,48 +460,55 @@ export default function HomePage() {
             </div>
 
             {/* Bottom description */}
-            <div className="mt-20 text-center max-w-3xl mx-auto">
-              <p className="text-lg md:text-xl text-cyan-300 font-medium leading-relaxed mystical-glow">
-                From scattered focus to unified consciousness.<br />Salience bridges your fragmented digital life into harmonious flow.
+            <div className="mt-24 md:mt-32 text-center max-w-5xl mx-auto">
+              <p className="text-xl md:text-2xl lg:text-3xl text-cyan-300 font-medium leading-relaxed mystical-glow mb-8">
+                From scattered focus to unified consciousness.
+              </p>
+              <p className="text-lg md:text-xl lg:text-2xl text-white/70 leading-relaxed">
+                Salience bridges your fragmented digital life into harmonious flow.
               </p>
             </div>
 
             {/* Call to Action */}
-            <div className="mt-24 text-center space-y-10">
-              <h3 className="text-3xl md:text-4xl font-bold text-white">
+            <div className="mt-32 md:mt-40 lg:mt-48 text-center space-y-12 md:space-y-16">
+              <h3 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-8">
                 Ready to explore deeper?
               </h3>
-              <div className="flex flex-col sm:flex-row gap-6 justify-center max-w-5xl mx-auto">
-                <a href="/cross-the-bridge" className="flex-1">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 md:gap-12 max-w-7xl mx-auto">
+                <a href="/cross-the-bridge" className="group">
                   <Button 
                     size="lg"
-                    className="rounded-full px-10 py-6 text-lg bg-white/20 hover:bg-white/30 text-white border border-white/30 backdrop-blur-md shadow-lg shadow-black/25 hover:shadow-xl transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] w-full"
+                    className="rounded-2xl px-8 py-8 md:px-10 md:py-10 text-lg md:text-xl bg-white/15 hover:bg-white/25 text-white border border-white/20 backdrop-blur-md shadow-xl hover:shadow-2xl transition-all duration-500 hover:scale-[1.05] active:scale-[0.95] w-full h-full min-h-[120px] flex flex-col items-center justify-center gap-4 mystical-glow"
                   >
-                    🌉 Cross the Bridge
+                    <span className="text-3xl">🌉</span>
+                    <span className="font-semibold">Cross the Bridge</span>
                   </Button>
                 </a>
-                <a href="/heavens-gate" className="flex-1">
+                <a href="/heavens-gate" className="group">
                   <Button 
                     size="lg"
-                    className="rounded-full px-10 py-6 text-lg bg-white/20 hover:bg-white/30 text-white border border-white/30 backdrop-blur-md shadow-lg shadow-black/25 hover:shadow-xl transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] w-full"
+                    className="rounded-2xl px-8 py-8 md:px-10 md:py-10 text-lg md:text-xl bg-white/15 hover:bg-white/25 text-white border border-white/20 backdrop-blur-md shadow-xl hover:shadow-2xl transition-all duration-500 hover:scale-[1.05] active:scale-[0.95] w-full h-full min-h-[120px] flex flex-col items-center justify-center gap-4 mystical-glow"
                   >
-                    🌌 Heaven's Gate?
+                    <span className="text-3xl">🌌</span>
+                    <span className="font-semibold">Heaven's Gate?</span>
                   </Button>
                 </a>
-                <a href="/chat-analysis" className="flex-1">
+                <a href="/chat-analysis" className="group">
                   <Button 
                     size="lg"
-                    className="rounded-full px-10 py-6 text-lg bg-white/20 hover:bg-white/30 text-white border border-white/30 backdrop-blur-md shadow-lg shadow-black/25 hover:shadow-xl transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] w-full"
+                    className="rounded-2xl px-8 py-8 md:px-10 md:py-10 text-lg md:text-xl bg-white/15 hover:bg-white/25 text-white border border-white/20 backdrop-blur-md shadow-xl hover:shadow-2xl transition-all duration-500 hover:scale-[1.05] active:scale-[0.95] w-full h-full min-h-[120px] flex flex-col items-center justify-center gap-4 mystical-glow"
                   >
-                    🔍 try anal?
+                    <span className="text-3xl">🔍</span>
+                    <span className="font-semibold">try anal?</span>
                   </Button>
                 </a>
-                <a href="/cognition-covenance" className="flex-1">
+                <a href="/cognition-covenance" className="group">
                   <Button 
                     size="lg"
-                    className="rounded-full px-10 py-6 text-lg bg-white/20 hover:bg-white/30 text-white border border-white/30 backdrop-blur-md shadow-lg shadow-black/25 hover:shadow-xl transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] w-full"
+                    className="rounded-2xl px-8 py-8 md:px-10 md:py-10 text-lg md:text-xl bg-white/15 hover:bg-white/25 text-white border border-white/20 backdrop-blur-md shadow-xl hover:shadow-2xl transition-all duration-500 hover:scale-[1.05] active:scale-[0.95] w-full h-full min-h-[120px] flex flex-col items-center justify-center gap-4 mystical-glow"
                   >
-                    🧠 Cognition Coven
+                    <span className="text-3xl">🧠</span>
+                    <span className="font-semibold">Cognition Coven</span>
                   </Button>
                 </a>
               </div>
