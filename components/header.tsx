@@ -16,8 +16,12 @@ const Header = () => {
 
   const navItems = [
     { label: 'home', href: '/' },
+  ];
+
+  const thesesItems = [
     { label: 'cross the bridge', href: '/cross-the-bridge' },
     { label: 'heaven\'s gate?', href: '/heavens-gate' },
+    { label: 'scaling negligience', href: '/scaling-negligience' },
   ];
 
   const researchItems = [
@@ -52,6 +56,24 @@ const Header = () => {
                 <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-primary transition-all duration-300 group-hover:w-full"></span>
               </Link>
             ))}
+            
+            {/* Theses Dropdown */}
+            <DropdownMenu>
+              <DropdownMenuTrigger className="text-white/70 hover:text-white transition-colors font-medium lowercase text-lg relative group flex items-center gap-1 bg-transparent border-none outline-none">
+                theses
+                <ChevronDown className="h-4 w-4 transition-transform group-data-[state=open]:rotate-180" />
+                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-primary transition-all duration-300 group-hover:w-full"></span>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="bg-black/90 backdrop-blur-lg border border-white/20 text-white">
+                {thesesItems.map((item) => (
+                  <DropdownMenuItem key={item.label} className="hover:bg-white/10 focus:bg-white/10">
+                    <Link href={item.href} className="w-full lowercase">
+                      {item.label}
+                    </Link>
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
             
             {/* Research Dropdown */}
             <DropdownMenu>
