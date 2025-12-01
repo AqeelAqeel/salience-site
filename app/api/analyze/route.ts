@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import OpenAI from "openai";
 
-const openai = new OpenAI({
+// Lazy initialization to avoid build-time errors when OPENAI_API_KEY is not set
+const getOpenAI = () => new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
@@ -47,6 +48,7 @@ Please provide a detailed analysis in the following format:
 
 Provide your analysis in a structured JSON format.`;
 
+    const openai = getOpenAI();
     const completion = await openai.chat.completions.create({
       model: "gpt-4-turbo-preview",
       messages: [

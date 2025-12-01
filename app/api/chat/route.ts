@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import OpenAI from "openai";
 
-const openai = new OpenAI({
+// Lazy initialization to avoid build-time errors when OPENAI_API_KEY is not set
+const getOpenAI = () => new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
@@ -15,6 +16,8 @@ export async function POST(request: Request) {
         { status: 500 }
       );
     }
+
+    const openai = getOpenAI();
 
     // Build system prompt with user context
     let systemPrompt = `You are a helpful, empathetic AI assistant focused on understanding and helping the user. 

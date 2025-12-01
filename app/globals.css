@@ -39,6 +39,66 @@ h1, h2, h3, h4, h5, h6 {
   filter: drop-shadow(0 0 30px rgba(255, 255, 255, 0.4)) drop-shadow(0 0 60px rgba(255, 255, 255, 0.2));
 }
 
+/* Metallic Gradient Text - positioned bottom-right of text */
+.metallic-gradient-text {
+  position: relative;
+  display: inline-block;
+}
+
+.metallic-gradient-text::after {
+  content: attr(data-text);
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 60%;
+  height: 50%;
+  background: linear-gradient(
+    135deg,
+    #C0C0C0 0%,
+    #E8E8E8 15%,
+    #B8B8B8 30%,
+    #F0F0F0 45%,
+    #A0A0A0 60%,
+    #D8D8D8 75%,
+    #C8C8C8 90%,
+    #E0E0E0 100%
+  );
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  background-size: 200% 200%;
+  animation: metallicShine 6s ease-in-out infinite;
+  mask-image: linear-gradient(135deg, transparent 40%, black 100%);
+  -webkit-mask-image: linear-gradient(135deg, transparent 40%, black 100%);
+  pointer-events: none;
+}
+
+@keyframes metallicShine {
+  0%, 100% { background-position: 0% 0%; }
+  50% { background-position: 100% 100%; }
+}
+
+/* Alternative: Full metallic effect for specific use */
+.full-metallic-text {
+  background: linear-gradient(
+    135deg,
+    #C0C0C0 0%,
+    #E8E8E8 15%,
+    #B8B8B8 30%,
+    #F5F5F5 45%,
+    #A8A8A8 60%,
+    #E0E0E0 75%,
+    #D0D0D0 90%,
+    #F0F0F0 100%
+  );
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  background-size: 300% 300%;
+  animation: metallicShine 8s ease-in-out infinite;
+  filter: drop-shadow(0 0 20px rgba(255, 255, 255, 0.3));
+}
+
 .mystical-gradient-text {
   background: linear-gradient(135deg, 
     #fbbf24 0%, 
@@ -497,6 +557,34 @@ h1, h2, h3, h4, h5, h6 {
 /* Enhanced drop shadow effects */
 .drop-shadow-2xl {
   filter: drop-shadow(0 0 40px rgba(255, 255, 255, 0.5)) drop-shadow(0 0 80px rgba(255, 255, 255, 0.2));
+}
+
+/* Human Imagination Wheel Animations */
+@keyframes spin-slow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes orbit {
+  from { transform: rotate(0deg) translateX(48px); }
+  to { transform: rotate(360deg) translateX(48px); }
+}
+
+.animate-spin-slow {
+  animation: spin-slow 20s linear infinite;
+}
+
+.animate-orbit {
+  animation: orbit 8s linear infinite;
+}
+
+.animate-pulse-slow {
+  animation: pulse 4s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
 }
 
 /* Responsive adjustments */

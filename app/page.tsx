@@ -1,7 +1,7 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, Zap, Brain, Target, MessageSquare, BarChart3, Layers } from 'lucide-react';
 import Header from '@/components/header';
 import { LavaLamp } from '@/components/lava-lamp';
 import Image from 'next/image';
@@ -48,58 +48,88 @@ export default function HomePage() {
   return (
     <>
       <Header />
-      
+
       {/* Lava Lamps on both sides */}
       <LavaLamp side="left" />
       <LavaLamp side="right" />
-      
+
       <main className="relative overflow-hidden bg-[#0a0a0a] min-h-screen">
         {/* Background Pattern */}
         <div className="absolute inset-0 dotted-pattern opacity-30" />
         <div className="absolute inset-0 noise-texture" />
-        
+
         {/* Sun Rays Animation */}
         <div className="absolute inset-0 overflow-hidden">
           <div className="sun-rays" />
         </div>
 
         {/* Hero Section */}
-        <section className="min-h-screen flex items-center justify-center px-6 sm:px-8 lg:px-12 xl:px-16 relative pt-16 -mt-16">
-          
+        <section className="min-h-screen flex items-center justify-center px-4 sm:px-8 lg:px-12 xl:px-16 relative pt-16 -mt-16">
+
           <div className="relative z-10 max-w-7xl mx-auto w-full text-center">
-            {/* Giant H1 with split gradient */}
-            <h1 className="text-6xl sm:text-7xl md:text-8xl lg:text-[10rem] xl:text-[12rem] 2xl:text-[14rem] font-bold tracking-tight mb-20 md:mb-24 lg:mb-32 leading-none">
+            {/* Giant H1 */}
+            <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-bold tracking-tight mb-6 md:mb-10 leading-tight">
               <span className="being-gradient-text">Being;</span>
-              <br className="hidden sm:block" />
               <span className="understood-gradient-text drop-shadow-2xl">Understood.</span>
             </h1>
-            
-            <div className="max-w-5xl mx-auto mb-16 md:mb-20 lg:mb-24">
-              <p className="text-xl md:text-2xl lg:text-3xl xl:text-4xl text-cyan-300 leading-relaxed font-medium mystical-glow mb-8">
-                Salience builds bridges to the other side.
-              </p>
-              <p className="text-lg md:text-xl lg:text-2xl text-white/80 leading-relaxed font-light max-w-4xl mx-auto">
-                Transform consciousness into creation. Where minimalism meets the future of design innovation.
-              </p>
-            </div>
-            
+
+            <p className="text-lg md:text-xl lg:text-2xl text-white/50 mb-16 md:mb-24 lg:mb-32">
+              More Empathetic Systems.
+            </p>
+
           </div>
 
         </section>
 
+        {/* Solutions w/o Sacrifice Section */}
+        <section className="py-24 md:py-40 lg:py-56 px-4 sm:px-8 lg:px-12 xl:px-16 relative">
+          <div className="max-w-6xl mx-auto relative z-10 text-center">
+            <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold mb-6 md:mb-10">
+              <span className="mystical-gradient-text">Solutions w/o Sacrifice</span>
+            </h2>
+            <p className="text-base md:text-lg lg:text-xl text-white/70 max-w-3xl mx-auto leading-relaxed mb-12 md:mb-16">
+              Build empathetic, human-designed solutions. Everything that makes you, YOU, included.
+            </p>
+
+            {/* KPI Cards */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 lg:gap-8 max-w-5xl mx-auto">
+              <div className="glass-dark p-5 md:p-8 text-center">
+                <Zap className="w-8 h-8 md:w-10 md:h-10 mx-auto mb-4 text-cyan-400" />
+                <h3 className="text-base md:text-lg font-semibold text-white mb-2">Dynamic UX</h3>
+                <p className="text-xs md:text-sm text-white/60">Adapts in real-time</p>
+              </div>
+              <div className="glass-dark p-5 md:p-8 text-center">
+                <BarChart3 className="w-8 h-8 md:w-10 md:h-10 mx-auto mb-4 text-purple-400" />
+                <h3 className="text-base md:text-lg font-semibold text-white mb-2">Higher Throughput</h3>
+                <p className="text-xs md:text-sm text-white/60">Ship faster</p>
+              </div>
+              <div className="glass-dark p-5 md:p-8 text-center">
+                <Brain className="w-8 h-8 md:w-10 md:h-10 mx-auto mb-4 text-pink-400" />
+                <h3 className="text-base md:text-lg font-semibold text-white mb-2">Less Cognitive Load</h3>
+                <p className="text-xs md:text-sm text-white/60">More signal</p>
+              </div>
+              <div className="glass-dark p-5 md:p-8 text-center">
+                <Target className="w-8 h-8 md:w-10 md:h-10 mx-auto mb-4 text-orange-400" />
+                <h3 className="text-base md:text-lg font-semibold text-white mb-2">KPIs Hit</h3>
+                <p className="text-xs md:text-sm text-white/60">Systematically</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
         {/* App Grid Section */}
-        <section className="py-32 md:py-40 lg:py-48 px-6 sm:px-8 lg:px-12 xl:px-16 relative">
+        <section className="py-20 md:py-32 lg:py-48 px-4 sm:px-8 lg:px-12 xl:px-16 relative">
           <div className="max-w-7xl mx-auto relative z-10">
-            <div className="mb-24 md:mb-32 text-center">
-              <h2 className="text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold mb-8 md:mb-12">
+            <div className="mb-12 md:mb-20 text-center">
+              <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-4 md:mb-6">
                 <span className="mystical-gradient-text">Our Ecosystem</span>
               </h2>
-              <p className="text-lg md:text-xl lg:text-2xl text-white/70 max-w-4xl mx-auto leading-relaxed">
-                Four interconnected experiences, each a window into different dimensions of human-computer symbiosis.
+              <p className="text-sm md:text-base lg:text-lg text-white/60 max-w-2xl mx-auto">
+                Four interconnected experiences in human-computer symbiosis.
               </p>
             </div>
-            
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 md:gap-12 lg:gap-16 max-w-7xl mx-auto">
+
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-8 lg:gap-12 max-w-5xl mx-auto">
               {/* App Tiles */}
               <div className="app-tile bg-gradient-to-br from-orange-500 to-red-500" data-label="retentech.ai" tabIndex={0}>
                 <span className="app-name">retentech.ai</span>
@@ -110,161 +140,260 @@ export default function HomePage() {
               <div className="app-tile bg-gradient-to-br from-green-500 to-teal-500" data-label="morelore.app" tabIndex={0}>
                 <span className="app-name">morelore.app</span>
               </div>
-              <div className="app-tile bg-gradient-to-br from-pink-500 to-rose-500" data-label="chaos.energy" tabIndex={0}>
+              <a href="https://chaos.energy" target="_blank" rel="noopener noreferrer" className="app-tile bg-gradient-to-br from-pink-500 to-rose-500" data-label="chaos.energy" tabIndex={0}>
                 <span className="app-name">chaos.energy</span>
-              </div>
+              </a>
             </div>
           </div>
         </section>
 
-        {/* Philosophy & Manifesto Section */}
-        <section className="py-40 md:py-48 lg:py-56 px-6 sm:px-8 lg:px-12 xl:px-16 relative mystical-bg">
+        {/* Product Offerings Section */}
+        <section className="py-20 md:py-40 lg:py-56 px-4 sm:px-8 lg:px-12 xl:px-16 relative mystical-bg">
           <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/20 to-transparent" />
-          
+
           <div className="max-w-6xl mx-auto relative z-10">
-            <div className="text-center mb-24 md:mb-32">
-              <h2 className="text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold mb-12 md:mb-16">
-                <span className="mystical-gradient-text">Our Worldview</span>
+            <div className="text-center mb-12 md:mb-20">
+              <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-6 md:mb-10">
+                <span className="mystical-gradient-text">What We Build</span>
               </h2>
+
+              {/* Human Imagination Engine Wheel */}
+              <div className="flex flex-col items-center mb-8 md:mb-12">
+                <p className="text-sm md:text-base text-white/50 mb-6">Human imagination has never been the bottleneck.</p>
+
+                <div className="relative w-[200px] h-[200px] md:w-[280px] md:h-[280px]">
+                  {/* Rotating outer ring */}
+                  <div className="absolute inset-0 rounded-full border-2 border-dashed border-white/20 animate-spin-slow" />
+
+                  {/* Static wheel segments with labels */}
+                  {['Inspiration', 'Ideation', 'Implementation', 'Insights'].map((label, i) => {
+                    const angle = (i * 90 - 45) * (Math.PI / 180);
+                    const radius = 70;
+                    const mdRadius = 100;
+                    return (
+                      <div
+                        key={label}
+                        className="absolute text-[10px] md:text-xs font-medium text-white/70 whitespace-nowrap"
+                        style={{
+                          left: '50%',
+                          top: '50%',
+                          transform: `translate(-50%, -50%) translate(${Math.cos(angle) * radius}px, ${Math.sin(angle) * radius}px)`,
+                        }}
+                      >
+                        <span className="hidden md:inline" style={{
+                          position: 'absolute',
+                          left: '50%',
+                          top: '50%',
+                          transform: `translate(-50%, -50%) translate(${Math.cos(angle) * (mdRadius - radius)}px, ${Math.sin(angle) * (mdRadius - radius)}px)`,
+                        }}>{label}</span>
+                        <span className="md:hidden">{label}</span>
+                      </div>
+                    );
+                  })}
+
+                  {/* Arrows between segments */}
+                  <svg className="absolute inset-0 w-full h-full animate-pulse-slow" viewBox="0 0 200 200">
+                    <defs>
+                      <marker id="arrowhead" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto">
+                        <path d="M0,0 L6,3 L0,6 Z" fill="rgba(103, 232, 249, 0.6)" />
+                      </marker>
+                    </defs>
+                    {/* Circular arrow path */}
+                    <circle
+                      cx="100"
+                      cy="100"
+                      r="50"
+                      fill="none"
+                      stroke="rgba(103, 232, 249, 0.3)"
+                      strokeWidth="2"
+                      strokeDasharray="8 4"
+                      className="animate-spin-slow"
+                      style={{ transformOrigin: 'center' }}
+                    />
+                  </svg>
+
+                  {/* Center circle - Human Imagination */}
+                  <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-20 h-20 md:w-28 md:h-28 rounded-full bg-gradient-to-br from-cyan-500/20 to-purple-500/20 border border-cyan-400/30 flex items-center justify-center backdrop-blur-sm">
+                    <div className="text-center">
+                      <span className="text-lg md:text-2xl">🧠</span>
+                      <p className="text-[8px] md:text-[10px] text-cyan-300 font-medium mt-1">Human<br/>Imagination</p>
+                    </div>
+                  </div>
+
+                  {/* Rotating indicator dot */}
+                  <div className="absolute top-1/2 left-1/2 w-2 h-2 md:w-3 md:h-3 rounded-full bg-cyan-400 shadow-lg shadow-cyan-400/50 animate-orbit" style={{ transformOrigin: '-48px center' }} />
+                </div>
+              </div>
             </div>
-            
-            <div className="space-y-16 md:space-y-20 lg:space-y-24">
-              
-              {/* Core Philosophy */}
-              <div className="glass-dark rounded-3xl p-8 md:p-12 lg:p-16 border border-white/10">
-                <h3 className="text-2xl md:text-3xl lg:text-4xl font-semibold mb-8 md:mb-12 text-center">
-                  <span className="text-gradient">Why We Exist</span>
+
+            <div className="space-y-8 md:space-y-16 lg:space-y-24">
+
+              {/* Slack-Native Product Ops Orchestrator */}
+              <div className="glass-dark rounded-2xl md:rounded-3xl p-6 md:p-10 lg:p-14 border border-white/10">
+                <div className="flex items-center gap-3 mb-4 md:mb-6">
+                  <MessageSquare className="w-6 h-6 md:w-8 md:h-8 text-purple-400" />
+                  <a href="https://chaos.energy" target="_blank" rel="noopener noreferrer" className="text-purple-400 hover:text-purple-300 transition-colors">
+                    <span className="text-xs md:text-sm uppercase tracking-wider font-medium">chaos.energy</span>
+                  </a>
+                </div>
+                <h3 className="text-xl md:text-3xl lg:text-4xl font-bold mb-3 md:mb-5 text-white">
+                  Product Ops Orchestrator
                 </h3>
-                <div className="prose prose-lg md:prose-xl lg:prose-2xl prose-invert max-w-none text-center">
-                  <p className="text-white/90 leading-relaxed mb-8 md:mb-12">
-                    We exist because of the <em>cataclysms of inefficiency</em> — the accumulated design choices, 
-                    human conditions, behaviors, and biases that create friction in systems meant to serve us.
-                  </p>
-                  <p className="text-white/80 leading-relaxed">
-                    We believe in the positive-sum values of focusing on <strong>nuances and imperfections</strong> — 
-                    the room for improvement that others overlook — while respecting what already works.
-                  </p>
+                <p className="text-sm md:text-lg text-white/70 mb-6 md:mb-8 max-w-3xl">
+                  Turn scattered feedback + specs into shippable tickets and crisp decisions—directly in Slack.
+                </p>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+                  <div className="text-center">
+                    <p className="text-2xl md:text-3xl font-bold text-cyan-400">-40%</p>
+                    <p className="text-xs md:text-sm text-white/50 mt-1">Decision Latency</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-2xl md:text-3xl font-bold text-purple-400">+20%</p>
+                    <p className="text-xs md:text-sm text-white/50 mt-1">Ship Cadence</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-2xl md:text-3xl font-bold text-pink-400">-50%</p>
+                    <p className="text-xs md:text-sm text-white/50 mt-1">PM/Eng Chatter</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-2xl md:text-3xl font-bold text-orange-400">+25%</p>
+                    <p className="text-xs md:text-sm text-white/50 mt-1">Spec Completeness</p>
+                  </div>
                 </div>
               </div>
-              
-              {/* What We Do */}
-              <div className="glass-dark rounded-3xl p-8 md:p-12 lg:p-16 border border-white/10">
-                <h3 className="text-2xl md:text-3xl lg:text-4xl font-semibold mb-8 md:mb-12 text-center">
-                  <span className="text-gradient">What We Do</span>
+
+              {/* Adaptive UX Engine */}
+              <div className="glass-dark rounded-2xl md:rounded-3xl p-6 md:p-10 lg:p-14 border border-white/10">
+                <div className="flex items-center gap-3 mb-4 md:mb-6">
+                  <Layers className="w-6 h-6 md:w-8 md:h-8 text-cyan-400" />
+                  <span className="text-xs md:text-sm uppercase tracking-wider font-medium text-cyan-400">Adaptive Engine</span>
+                </div>
+                <h3 className="text-xl md:text-3xl lg:text-4xl font-bold mb-3 md:mb-5 text-white">
+                  Adaptive UX Engine
                 </h3>
-                <div className="prose prose-lg md:prose-xl lg:prose-2xl prose-invert max-w-none text-center">
-                  <p className="text-white/90 leading-relaxed mb-8 md:mb-12">
-                    We don't rest on what's working — we <em>raise our defaults and baselines every day</em>. 
-                    Through technology, research, and integrating what already exists, we refuse to default 
-                    to provider laziness or become marginalized by their practical priorities.
-                  </p>
-                  <p className="text-white/80 leading-relaxed">
-                    <strong>We have agency, but are not an agency.</strong> We build personalized nuance into 
-                    scalable systems that integrate with the status quo, because we experience what's all too common 
-                    and know what's possible with the technology already in our hands.
-                  </p>
+                <p className="text-sm md:text-lg text-white/70 mb-6 md:mb-8 max-w-3xl">
+                  Your front-end adapts in real time per user segment to maximize conversion, retention, and LTV.
+                </p>
+                <div className="grid grid-cols-3 gap-4 md:gap-6">
+                  <div className="text-center">
+                    <p className="text-2xl md:text-3xl font-bold text-cyan-400">+10%</p>
+                    <p className="text-xs md:text-sm text-white/50 mt-1">Conversion</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-2xl md:text-3xl font-bold text-purple-400">-20%</p>
+                    <p className="text-xs md:text-sm text-white/50 mt-1">Churn</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-2xl md:text-3xl font-bold text-pink-400">+12%</p>
+                    <p className="text-xs md:text-sm text-white/50 mt-1">ARPU</p>
+                  </div>
                 </div>
               </div>
-              
-              {/* Context Engineering Philosophy */}
-              <div className="glass-dark rounded-3xl p-8 md:p-12 lg:p-16 border border-white/10">
-                <h3 className="text-2xl md:text-3xl lg:text-4xl font-semibold mb-8 md:mb-12 text-center">
-                  <span className="text-gradient">Context as Product</span>
+
+              {/* Ad Engagement Widgets */}
+              <div className="glass-dark rounded-2xl md:rounded-3xl p-6 md:p-10 lg:p-14 border border-white/10">
+                <div className="flex items-center gap-3 mb-4 md:mb-6">
+                  <BarChart3 className="w-6 h-6 md:w-8 md:h-8 text-orange-400" />
+                  <span className="text-xs md:text-sm uppercase tracking-wider font-medium text-orange-400">Publisher Tools</span>
+                </div>
+                <h3 className="text-xl md:text-3xl lg:text-4xl font-bold mb-3 md:mb-5 text-white">
+                  Ad Engagement Widgets
                 </h3>
-                <div className="prose prose-lg md:prose-xl lg:prose-2xl prose-invert max-w-none text-center">
-                  <p className="text-white/90 leading-relaxed mb-8 md:mb-12">
-                    Most software still treats context as a static backdrop. <em>We treat it as the product.</em>
-                  </p>
-                  <p className="text-white/80 leading-relaxed">
-                    Our context-engineering continuously fuses implicit and explicit signals — text tone, 
-                    scroll patterns, referrer data, metadata, behavioral traces — to generate real-time 
-                    personalized experiences that understand <strong>who's there, why they're there, 
-                    and what moves the needle next.</strong>
-                  </p>
+                <p className="text-sm md:text-lg text-white/70 mb-6 md:mb-8 max-w-3xl">
+                  Plug-in widgets that lift session depth and RPM without slowing pages.
+                </p>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+                  <div className="text-center">
+                    <p className="text-2xl md:text-3xl font-bold text-cyan-400">+20%</p>
+                    <p className="text-xs md:text-sm text-white/50 mt-1">Pages/Session</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-2xl md:text-3xl font-bold text-purple-400">+15%</p>
+                    <p className="text-xs md:text-sm text-white/50 mt-1">Session Time</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-2xl md:text-3xl font-bold text-pink-400">+12%</p>
+                    <p className="text-xs md:text-sm text-white/50 mt-1">RPM Lift</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-2xl md:text-3xl font-bold text-orange-400">&lt;50ms</p>
+                    <p className="text-xs md:text-sm text-white/50 mt-1">Overhead</p>
+                  </div>
                 </div>
               </div>
-              
+
             </div>
           </div>
         </section>
 
-        {/* Technical Deep Dive Section */}
-        <section id="video-section" className="py-40 md:py-48 lg:py-56 px-6 sm:px-8 lg:px-12 xl:px-16 bg-black relative mystical-bg">
+        {/* How It Works Section */}
+        <section id="video-section" className="py-20 md:py-40 lg:py-56 px-4 sm:px-8 lg:px-12 xl:px-16 bg-black relative mystical-bg">
           <div className="absolute inset-0 bg-gradient-to-b from-purple-900/20 to-black" />
-          
-          <div className="max-w-7xl mx-auto relative z-10">
-            <div className="text-center mb-24 md:mb-32">
-              <h2 className="text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold mb-12 md:mb-16">
+
+          <div className="max-w-6xl mx-auto relative z-10">
+            <div className="text-center mb-12 md:mb-20">
+              <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-4 md:mb-6">
                 <span className="mystical-gradient-text">How It Works</span>
               </h2>
-              <p className="text-xl md:text-2xl lg:text-3xl text-white/80 max-w-5xl mx-auto leading-relaxed">
-                Context-engineering that doesn't just react — it understands, learns, and evolves.
+              <p className="text-sm md:text-lg text-white/60 max-w-2xl mx-auto">
+                Context-engineering that understands, learns, and evolves.
               </p>
             </div>
-            
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 md:gap-16 lg:gap-20 mb-20 md:mb-32">
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-10 mb-12 md:mb-20">
               {/* Front-end Applications */}
-              <div className="glass-dark rounded-3xl p-8 md:p-12 border border-white/10">
-                <h3 className="text-2xl md:text-3xl lg:text-4xl font-semibold mb-8 text-cyan-300">
+              <div className="glass-dark rounded-2xl p-6 md:p-10 border border-white/10">
+                <h3 className="text-lg md:text-2xl font-semibold mb-4 md:mb-6 text-cyan-300">
                   Front-End Intelligence
                 </h3>
-                <ul className="space-y-4 md:space-y-6 text-white/80 text-lg md:text-xl">
-                  <li className="flex items-start gap-4">
-                    <span className="text-cyan-400 text-2xl">•</span>
-                    <span>Ad-supported publishers with adaptive widgets</span>
+                <ul className="space-y-3 text-white/70 text-sm md:text-base">
+                  <li className="flex items-start gap-3">
+                    <span className="text-cyan-400">•</span>
+                    <span>Adaptive widgets for publishers</span>
                   </li>
-                  <li className="flex items-start gap-4">
-                    <span className="text-cyan-400 text-2xl">•</span>
-                    <span>E-commerce sites with intelligent chat layers</span>
+                  <li className="flex items-start gap-3">
+                    <span className="text-cyan-400">•</span>
+                    <span>Intelligent chat layers</span>
                   </li>
-                  <li className="flex items-start gap-4">
-                    <span className="text-cyan-400 text-2xl">•</span>
-                    <span>In-page concierges that raise engagement</span>
-                  </li>
-                  <li className="flex items-start gap-4">
-                    <span className="text-cyan-400 text-2xl">•</span>
+                  <li className="flex items-start gap-3">
+                    <span className="text-cyan-400">•</span>
                     <span>Real-time conversion optimization</span>
                   </li>
                 </ul>
               </div>
-              
+
               {/* Back-end Systems */}
-              <div className="glass-dark rounded-3xl p-8 md:p-12 border border-white/10">
-                <h3 className="text-2xl md:text-3xl lg:text-4xl font-semibold mb-8 text-purple-300">
+              <div className="glass-dark rounded-2xl p-6 md:p-10 border border-white/10">
+                <h3 className="text-lg md:text-2xl font-semibold mb-4 md:mb-6 text-purple-300">
                   Enterprise Integration
                 </h3>
-                <ul className="space-y-4 md:space-y-6 text-white/80 text-lg md:text-xl">
-                  <li className="flex items-start gap-4">
-                    <span className="text-purple-400 text-2xl">•</span>
+                <ul className="space-y-3 text-white/70 text-sm md:text-base">
+                  <li className="flex items-start gap-3">
+                    <span className="text-purple-400">•</span>
                     <span>Slack threads that understand intent</span>
                   </li>
-                  <li className="flex items-start gap-4">
-                    <span className="text-purple-400 text-2xl">•</span>
-                    <span>Notion docs with responsive surfaces</span>
+                  <li className="flex items-start gap-3">
+                    <span className="text-purple-400">•</span>
+                    <span>Responsive doc surfaces</span>
                   </li>
-                  <li className="flex items-start gap-4">
-                    <span className="text-purple-400 text-2xl">•</span>
-                    <span>Dashboards that translate human needs</span>
-                  </li>
-                  <li className="flex items-start gap-4">
-                    <span className="text-purple-400 text-2xl">•</span>
-                    <span>Local learning with secure context storage</span>
+                  <li className="flex items-start gap-3">
+                    <span className="text-purple-400">•</span>
+                    <span>Secure local learning</span>
                   </li>
                 </ul>
               </div>
             </div>
-            
+
             {/* Video Placeholder */}
-            <div className="video-border max-w-5xl mx-auto">
+            <div className="video-border max-w-4xl mx-auto">
               <div className="bg-black/80 rounded-xl aspect-video flex items-center justify-center border border-purple-500/30 backdrop-blur-sm">
                 <div className="text-white text-center">
-                  <div className="mb-6">
-                    <div className="w-24 h-24 mx-auto bg-gradient-to-br from-purple-500 to-cyan-500 rounded-full flex items-center justify-center backdrop-blur-sm shadow-lg shadow-purple-500/50 mystical-glow">
-                      <div className="w-0 h-0 border-l-[24px] border-l-white border-t-[15px] border-t-transparent border-b-[15px] border-b-transparent ml-2" />
+                  <div className="mb-4">
+                    <div className="w-16 h-16 md:w-20 md:h-20 mx-auto bg-gradient-to-br from-purple-500 to-cyan-500 rounded-full flex items-center justify-center backdrop-blur-sm shadow-lg shadow-purple-500/50 mystical-glow">
+                      <div className="w-0 h-0 border-l-[16px] md:border-l-[20px] border-l-white border-t-[10px] md:border-t-[12px] border-t-transparent border-b-[10px] md:border-b-[12px] border-b-transparent ml-1" />
                     </div>
                   </div>
-                  <p className="text-lg font-medium text-cyan-300 mystical-glow">Demo Video Placeholder</p>
-                  <p className="text-sm text-purple-300 mt-2">Context-engineering in action</p>
+                  <p className="text-sm md:text-base font-medium text-cyan-300 mystical-glow">Demo Coming Soon</p>
                 </div>
               </div>
             </div>
@@ -272,15 +401,15 @@ export default function HomePage() {
         </section>
 
         {/* Bridging Section - New Interactive Ecosystem */}
-        <section className="py-48 md:py-56 lg:py-64 px-6 sm:px-8 lg:px-12 xl:px-16 relative bg-black mystical-bg">
-          <div className="max-w-7xl mx-auto">
+        <section className="py-20 md:py-40 lg:py-56 px-4 sm:px-8 lg:px-12 xl:px-16 relative bg-black mystical-bg">
+          <div className="max-w-6xl mx-auto">
             {/* Section Header */}
-            <div className="text-center mb-32 md:mb-40">
-              <h2 className="text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-bold mb-12 md:mb-16">
-                <span className="mystical-gradient-text">Bridging to post-scarcity.</span>
+            <div className="text-center mb-12 md:mb-24">
+              <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-4">
+                <span className="mystical-gradient-text">Bridging to Post-Scarcity</span>
               </h2>
-              <p className="text-xl md:text-2xl lg:text-3xl text-white/70 max-w-5xl mx-auto leading-relaxed">
-                From fragmented digital chaos to unified, intelligent harmony.
+              <p className="text-sm md:text-lg text-white/60 max-w-2xl mx-auto">
+                From fragmented chaos to unified harmony.
               </p>
             </div>
 
@@ -288,7 +417,7 @@ export default function HomePage() {
             <div className="relative">
               {/* Large Background Salience Logo - Positioned Behind Everything */}
               <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                <div className="relative w-[400px] h-[400px] md:w-[600px] md:h-[600px] lg:w-[800px] lg:h-[800px] opacity-10">
+                <div className="relative w-[250px] h-[250px] md:w-[400px] md:h-[400px] lg:w-[600px] lg:h-[600px] opacity-10">
                   <Image 
                     src="/assets/Salience_Logo_Cover_Art-removebg-preview (1).png" 
                     alt="Salience Bridge Background" 
@@ -301,8 +430,8 @@ export default function HomePage() {
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-16 items-center relative z-10">
                 
                 {/* Left Ecosystem - Fragmented */}
-                <div 
-                  className="relative h-[400px] md:h-[500px] flex items-center justify-center"
+                <div
+                  className="relative h-[280px] md:h-[400px] flex items-center justify-center"
                   onMouseEnter={() => setActiveEcosystem('left')}
                   onMouseLeave={() => setActiveEcosystem(null)}
                 >
@@ -374,8 +503,8 @@ export default function HomePage() {
                 </div>
 
                 {/* Right Ecosystem - Connected */}
-                <div 
-                  className="relative h-[400px] md:h-[500px] flex items-center justify-center"
+                <div
+                  className="relative h-[280px] md:h-[400px] flex items-center justify-center"
                   onMouseEnter={() => setActiveEcosystem('right')}
                   onMouseLeave={() => setActiveEcosystem(null)}
                 >
@@ -460,55 +589,52 @@ export default function HomePage() {
             </div>
 
             {/* Bottom description */}
-            <div className="mt-24 md:mt-32 text-center max-w-5xl mx-auto">
-              <p className="text-xl md:text-2xl lg:text-3xl text-cyan-300 font-medium leading-relaxed mystical-glow mb-8">
-                From scattered focus to unified consciousness.
-              </p>
-              <p className="text-lg md:text-xl lg:text-2xl text-white/70 leading-relaxed">
-                Salience bridges your fragmented digital life into harmonious flow.
+            <div className="mt-12 md:mt-20 text-center max-w-3xl mx-auto">
+              <p className="text-sm md:text-lg text-cyan-300 font-medium mystical-glow">
+                Scattered focus becomes unified consciousness.
               </p>
             </div>
 
             {/* Call to Action */}
-            <div className="mt-32 md:mt-40 lg:mt-48 text-center space-y-12 md:space-y-16">
-              <h3 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-8">
-                Ready to explore deeper?
+            <div className="mt-16 md:mt-28 lg:mt-40 text-center space-y-8 md:space-y-12">
+              <h3 className="text-2xl md:text-3xl lg:text-4xl font-bold text-white">
+                Explore Deeper
               </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 md:gap-12 max-w-7xl mx-auto">
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 max-w-4xl mx-auto">
                 <a href="/cross-the-bridge" className="group">
-                  <Button 
+                  <Button
                     size="lg"
-                    className="rounded-2xl px-8 py-8 md:px-10 md:py-10 text-lg md:text-xl bg-white/15 hover:bg-white/25 text-white border border-white/20 backdrop-blur-md shadow-xl hover:shadow-2xl transition-all duration-500 hover:scale-[1.05] active:scale-[0.95] w-full h-full min-h-[120px] flex flex-col items-center justify-center gap-4 mystical-glow"
+                    className="rounded-xl px-4 py-6 md:px-6 md:py-8 text-sm md:text-base bg-white/15 hover:bg-white/25 text-white border border-white/20 backdrop-blur-md shadow-lg hover:shadow-xl transition-all duration-500 hover:scale-[1.02] active:scale-[0.98] w-full h-full min-h-[90px] md:min-h-[100px] flex flex-col items-center justify-center gap-2 md:gap-3 mystical-glow"
                   >
-                    <span className="text-3xl">🌉</span>
-                    <span className="font-semibold">Cross the Bridge</span>
+                    <span className="text-2xl">🌉</span>
+                    <span className="font-medium text-xs md:text-sm">Cross the Bridge</span>
                   </Button>
                 </a>
                 <a href="/heavens-gate" className="group">
-                  <Button 
+                  <Button
                     size="lg"
-                    className="rounded-2xl px-8 py-8 md:px-10 md:py-10 text-lg md:text-xl bg-white/15 hover:bg-white/25 text-white border border-white/20 backdrop-blur-md shadow-xl hover:shadow-2xl transition-all duration-500 hover:scale-[1.05] active:scale-[0.95] w-full h-full min-h-[120px] flex flex-col items-center justify-center gap-4 mystical-glow"
+                    className="rounded-xl px-4 py-6 md:px-6 md:py-8 text-sm md:text-base bg-white/15 hover:bg-white/25 text-white border border-white/20 backdrop-blur-md shadow-lg hover:shadow-xl transition-all duration-500 hover:scale-[1.02] active:scale-[0.98] w-full h-full min-h-[90px] md:min-h-[100px] flex flex-col items-center justify-center gap-2 md:gap-3 mystical-glow"
                   >
-                    <span className="text-3xl">🌌</span>
-                    <span className="font-semibold">Heaven's Gate?</span>
+                    <span className="text-2xl">🌌</span>
+                    <span className="font-medium text-xs md:text-sm">Heaven's Gate?</span>
                   </Button>
                 </a>
                 <a href="/chat-analysis" className="group">
-                  <Button 
+                  <Button
                     size="lg"
-                    className="rounded-2xl px-8 py-8 md:px-10 md:py-10 text-lg md:text-xl bg-white/15 hover:bg-white/25 text-white border border-white/20 backdrop-blur-md shadow-xl hover:shadow-2xl transition-all duration-500 hover:scale-[1.05] active:scale-[0.95] w-full h-full min-h-[120px] flex flex-col items-center justify-center gap-4 mystical-glow"
+                    className="rounded-xl px-4 py-6 md:px-6 md:py-8 text-sm md:text-base bg-white/15 hover:bg-white/25 text-white border border-white/20 backdrop-blur-md shadow-lg hover:shadow-xl transition-all duration-500 hover:scale-[1.02] active:scale-[0.98] w-full h-full min-h-[90px] md:min-h-[100px] flex flex-col items-center justify-center gap-2 md:gap-3 mystical-glow"
                   >
-                    <span className="text-3xl">🔍</span>
-                    <span className="font-semibold">try anal?</span>
+                    <span className="text-2xl">🔍</span>
+                    <span className="font-medium text-xs md:text-sm">try anal?</span>
                   </Button>
                 </a>
                 <a href="/cognition-covenance" className="group">
-                  <Button 
+                  <Button
                     size="lg"
-                    className="rounded-2xl px-8 py-8 md:px-10 md:py-10 text-lg md:text-xl bg-white/15 hover:bg-white/25 text-white border border-white/20 backdrop-blur-md shadow-xl hover:shadow-2xl transition-all duration-500 hover:scale-[1.05] active:scale-[0.95] w-full h-full min-h-[120px] flex flex-col items-center justify-center gap-4 mystical-glow"
+                    className="rounded-xl px-4 py-6 md:px-6 md:py-8 text-sm md:text-base bg-white/15 hover:bg-white/25 text-white border border-white/20 backdrop-blur-md shadow-lg hover:shadow-xl transition-all duration-500 hover:scale-[1.02] active:scale-[0.98] w-full h-full min-h-[90px] md:min-h-[100px] flex flex-col items-center justify-center gap-2 md:gap-3 mystical-glow"
                   >
-                    <span className="text-3xl">🧠</span>
-                    <span className="font-semibold">Cognition Coven</span>
+                    <span className="text-2xl">🧠</span>
+                    <span className="font-medium text-xs md:text-sm">Cognition Coven</span>
                   </Button>
                 </a>
               </div>
