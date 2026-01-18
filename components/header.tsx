@@ -3,102 +3,93 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Menu, X, ChevronDown } from 'lucide-react';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+import { Menu, X, Zap, Phone, Mail } from 'lucide-react';
 
 const Header = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  const navItems = [
-    { label: 'home', href: '/' },
-  ];
-
-  const thesesItems = [
-    { label: 'cross the bridge', href: '/cross-the-bridge' },
-    { label: 'heaven\'s gate?', href: '/heavens-gate' },
-    { label: 'scaling negligience', href: '/scaling-negligience' },
-  ];
-
-  const researchItems = [
-    { label: 'chat analysis', href: '/chat-analysis' },
-    { label: 'cognition covenant', href: '/cognition-covenance' },
-    { label: 'cognition conductor', href: '/cognition-conductor' },
-  ];
-
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 bg-black/80 backdrop-blur-lg">
+    <header className="fixed top-0 left-0 right-0 z-50 header-nav">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-20">
+        <div className="flex items-center justify-between h-16 md:h-20">
           {/* Logo */}
           <Link href="/" className="flex items-center space-x-3 group">
-            <div className="w-10 h-10 relative transform transition-transform duration-300 group-hover:scale-110">
-              {/* Abstract sun logo */}
-              <div className="absolute inset-0 bg-gradient-to-br from-primary to-accent rounded-lg transform rotate-45"></div>
-              <div className="absolute inset-0 bg-gradient-to-tr from-accent to-primary rounded-lg transform rotate-45 scale-75"></div>
+            <div className="w-8 h-8 md:w-10 md:h-10 relative transform transition-transform duration-300 group-hover:scale-110">
+              <div className="absolute inset-0 bg-gradient-to-br from-amber-500 to-amber-600 rounded-lg transform rotate-45"></div>
+              <div className="absolute inset-0 flex items-center justify-center">
+                <Zap className="w-4 h-4 md:w-5 md:h-5 text-black transform -rotate-45" />
+              </div>
             </div>
-            <span className="text-2xl font-bold text-white">Salience</span>
+            <span className="text-xl md:text-2xl font-bold text-white">Salience</span>
           </Link>
 
-          {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center space-x-10">
-            {navItems.map((item) => (
-              <Link
-                key={item.label}
-                href={item.href}
-                className="text-white/70 hover:text-white transition-colors font-medium lowercase text-lg relative group"
-              >
-                {item.label}
-                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-primary transition-all duration-300 group-hover:w-full"></span>
-              </Link>
-            ))}
-            
-            {/* Theses Dropdown */}
-            <DropdownMenu>
-              <DropdownMenuTrigger className="text-white/70 hover:text-white transition-colors font-medium lowercase text-lg relative group flex items-center gap-1 bg-transparent border-none outline-none">
-                theses
-                <ChevronDown className="h-4 w-4 transition-transform group-data-[state=open]:rotate-180" />
-                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-primary transition-all duration-300 group-hover:w-full"></span>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className="bg-black/90 backdrop-blur-lg border border-white/20 text-white">
-                {thesesItems.map((item) => (
-                  <DropdownMenuItem key={item.label} className="hover:bg-white/10 focus:bg-white/10">
-                    <Link href={item.href} className="w-full lowercase">
-                      {item.label}
-                    </Link>
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-            
-            {/* Research Dropdown */}
-            <DropdownMenu>
-              <DropdownMenuTrigger className="text-white/70 hover:text-white transition-colors font-medium lowercase text-lg relative group flex items-center gap-1 bg-transparent border-none outline-none">
-                research
-                <ChevronDown className="h-4 w-4 transition-transform group-data-[state=open]:rotate-180" />
-                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-primary transition-all duration-300 group-hover:w-full"></span>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className="bg-black/90 backdrop-blur-lg border border-white/20 text-white">
-                {researchItems.map((item) => (
-                  <DropdownMenuItem key={item.label} className="hover:bg-white/10 focus:bg-white/10">
-                    <Link href={item.href} className="w-full lowercase">
-                      {item.label}
-                    </Link>
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </nav>
+          {/* Desktop CTA */}
+          <div className="hidden md:flex items-center gap-6">
+            <a
+              href="mailto:aqeel@aqeelali.com"
+              className="flex items-center gap-2 text-white/60 hover:text-amber-400 transition-colors"
+            >
+              <Mail className="w-4 h-4" />
+              <span className="text-sm">aqeel@aqeelali.com</span>
+            </a>
+            <a
+              href="tel:+14087180712"
+              className="flex items-center gap-2 text-white/60 hover:text-amber-400 transition-colors"
+            >
+              <Phone className="w-4 h-4" />
+              <span className="text-sm">+1 (408) 718-0712</span>
+            </a>
+            <a href="mailto:aqeel@aqeelali.com?subject=I'm ready to make more money and get my time back">
+              <Button className="cta-button text-sm px-4 py-2 rounded-lg font-medium">
+                Get Started
+              </Button>
+            </a>
+          </div>
 
+          {/* Mobile Menu Button */}
+          <button
+            className="md:hidden p-2 text-white/70 hover:text-white transition-colors"
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            aria-label="Toggle menu"
+          >
+            {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+          </button>
         </div>
       </div>
 
+      {/* Mobile Menu */}
+      {isMobileMenuOpen && (
+        <div className="md:hidden bg-[#0a0a0a] border-t border-white/10">
+          <div className="px-4 py-6 space-y-4">
+            <a
+              href="mailto:aqeel@aqeelali.com"
+              className="flex items-center gap-3 text-white/70 hover:text-amber-400 transition-colors py-2"
+            >
+              <Mail className="w-5 h-5" />
+              <span>aqeel@aqeelali.com</span>
+            </a>
+            <a
+              href="tel:+14087180712"
+              className="flex items-center gap-3 text-white/70 hover:text-amber-400 transition-colors py-2"
+            >
+              <Phone className="w-5 h-5" />
+              <span>+1 (408) 718-0712</span>
+            </a>
+            <div className="pt-4 border-t border-white/10">
+              <a
+                href="mailto:aqeel@aqeelali.com?subject=I'm ready to make more money and get my time back"
+                className="block w-full"
+              >
+                <Button className="w-full cta-button py-3 rounded-lg font-medium">
+                  Get Started
+                </Button>
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
     </header>
   );
 };
 
-export default Header; 
+export default Header;

@@ -3,8 +3,15 @@ import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
 
 export const metadata: Metadata = {
-  title: 'Salience Event - Transform consciousness into creation',
-  description: 'New AI Tools, reimagined Vector Editing, and Analytics updates with A/B testing, funnels, and click tracking. Available right now.'
+  title: 'Salience - AI Automation for Private Practices',
+  description: 'Run your practice like you have 10 versions of yourself. AI that handles client intake, follow-ups, scheduling, and admin work for insurance agencies, healthcare practices, and professional services.',
+  keywords: ['AI automation', 'private practice', 'insurance agency', 'healthcare automation', 'client intake', 'scheduling automation', 'business automation'],
+  authors: [{ name: 'Aqeel Ali' }],
+  openGraph: {
+    title: 'Salience - AI Automation for Private Practices',
+    description: 'Run your practice like you have 10 versions of yourself. AI-powered automation for client intake, scheduling, and administrative tasks.',
+    type: 'website',
+  },
 };
 
 export const viewport: Viewport = {
