@@ -652,3 +652,70 @@ html {
   backface-visibility: hidden;
   transform: translateZ(0);
 }
+
+/* Light theme overrides for specific pages */
+.bg-white .scroll-reveal,
+.bg-white .scroll-reveal-left,
+.bg-white .scroll-reveal-right,
+.bg-white .scroll-reveal-scale {
+  opacity: 0;
+}
+
+.bg-white .scroll-reveal.revealed,
+.bg-white .scroll-reveal-left.revealed,
+.bg-white .scroll-reveal-right.revealed,
+.bg-white .scroll-reveal-scale.revealed {
+  opacity: 1;
+}
+
+/* Light theme header */
+.bg-white .header-nav,
+.min-h-screen.bg-white ~ .header-nav {
+  background: rgba(255, 255, 255, 0.9);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+/* Ensure animations work on white backgrounds */
+main.bg-white .scroll-reveal {
+  opacity: 0;
+  transform: translateY(40px);
+  transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+main.bg-white .scroll-reveal.revealed {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+main.bg-white .scroll-reveal-left {
+  opacity: 0;
+  transform: translateX(-60px);
+  transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+main.bg-white .scroll-reveal-left.revealed {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+main.bg-white .scroll-reveal-right {
+  opacity: 0;
+  transform: translateX(60px);
+  transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+main.bg-white .scroll-reveal-right.revealed {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+main.bg-white .scroll-reveal-scale {
+  opacity: 0;
+  transform: scale(0.9);
+  transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+main.bg-white .scroll-reveal-scale.revealed {
+  opacity: 1;
+  transform: scale(1);
+}

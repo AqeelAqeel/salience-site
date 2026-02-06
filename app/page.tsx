@@ -24,7 +24,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { useEffect, useState, useRef } from 'react';
-import Header from '@/components/header';
+import Navbar from '@/components/navbar';
 import Image from 'next/image';
 
 // Hook for scroll reveal animations
@@ -364,7 +364,7 @@ export default function HomePage() {
 
   return (
     <>
-      <Header />
+      <Navbar />
       <main className="relative overflow-hidden bg-[#0a0a0a] min-h-screen">
         {/* Background Pattern */}
         <div className="absolute inset-0 bg-grid-pattern opacity-5" />

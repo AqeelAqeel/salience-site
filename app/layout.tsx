@@ -7,6 +7,11 @@ export const metadata: Metadata = {
   description: 'Run your practice like you have 10 versions of yourself. AI that handles client intake, follow-ups, scheduling, and admin work for insurance agencies, healthcare practices, and professional services.',
   keywords: ['AI automation', 'private practice', 'insurance agency', 'healthcare automation', 'client intake', 'scheduling automation', 'business automation'],
   authors: [{ name: 'Aqeel Ali' }],
+  icons: {
+    icon: '/favicon.svg',
+    shortcut: '/favicon.svg',
+    apple: '/favicon.svg',
+  },
   openGraph: {
     title: 'Salience - AI Automation for Private Practices',
     description: 'Run your practice like you have 10 versions of yourself. AI-powered automation for client intake, scheduling, and administrative tasks.',
@@ -28,9 +33,9 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`bg-[#0a0a0a] ${inter.className}`}
+      className={inter.className}
     >
-      <body className="min-h-[100dvh] bg-[#0a0a0a] text-white">
+      <body className="min-h-[100dvh]">
         {children}
       </body>
     </html>
