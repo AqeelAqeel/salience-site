@@ -325,6 +325,29 @@ h1, h2, h3, h4, h5, h6 {
     0 0 30px rgba(251, 191, 36, 0.1);
 }
 
+/* Value Proposition Cards */
+.value-card {
+  background: linear-gradient(135deg, rgba(20, 20, 20, 0.9) 0%, rgba(15, 15, 15, 0.95) 100%);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 1.5rem;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.value-card:hover {
+  border-color: rgba(251, 191, 36, 0.3);
+  transform: translateY(-4px);
+  box-shadow:
+    0 20px 40px rgba(0, 0, 0, 0.3),
+    0 0 30px rgba(251, 191, 36, 0.08);
+}
+
+/* Comparison Strip */
+.comparison-strip {
+  background: rgba(15, 15, 15, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
 /* Industry Cards */
 .industry-card {
   background: rgba(20, 20, 20, 0.6);
