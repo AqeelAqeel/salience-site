@@ -268,7 +268,7 @@ export default function ProcessSection() {
                 }}>{label}</button>
             ))}
             <span style={{ fontSize: 11, color: s.muted }}>{phase + 1} / {T}</span>
-            <span style={{ fontSize: 10, color: s.muted, opacity: 0.5, marginLeft: 8 }}>scroll or \u2190 \u2192 keys</span>
+            <span style={{ fontSize: 10, color: s.muted, opacity: 0.5, marginLeft: 8 }}>{"scroll or \u2190 \u2192 keys"}</span>
           </div>
         </div>
 

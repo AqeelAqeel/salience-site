@@ -275,7 +275,7 @@ export default function HomePage() {
   return (
     <>
       <Navbar />
-      <main className="relative overflow-hidden bg-[#0a0a0a] min-h-screen">
+      <main className="relative overflow-x-clip bg-[#0a0a0a] min-h-screen">
         <div className="absolute inset-0 bg-grid-pattern opacity-5" />
         <div className="absolute inset-0 bg-gradient-radial from-amber-900/20 via-transparent to-transparent" />
 

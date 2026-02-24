@@ -25,9 +25,55 @@ export default function FooterSpotlight({
   };
 
   return (
-    <footer className="pt-16 border-t border-white/[0.06]">
-      {/* Top bar */}
-      <div className="max-w-[1100px] mx-auto px-7 flex justify-between items-start pb-8">
+    <footer className="border-t border-white/[0.06]">
+      {/* Giant wordmark with spotlight — full width, above everything */}
+      <div
+        ref={containerRef}
+        onMouseMove={handleMouseMove}
+        onMouseEnter={() => setHovering(true)}
+        onMouseLeave={() => setHovering(false)}
+        className="relative h-[300px] flex items-center justify-center overflow-hidden cursor-default"
+      >
+        {/* Base layer: very dim wordmark — full width */}
+        <div className="relative w-full h-[240px]">
+          <Image
+            src={wordmarkSrc}
+            alt="Salience"
+            fill
+            className="object-contain opacity-[0.04]"
+            style={{ filter: "brightness(0.8)" }}
+            priority={false}
+          />
+
+          {/* Spotlight layer: follows cursor */}
+          <div
+            className="absolute inset-0 transition-opacity duration-300"
+            style={{
+              opacity: hovering ? 1 : 0,
+              WebkitMaskImage: `radial-gradient(circle 200px at ${mouse.x}% ${mouse.y}%, black 0%, transparent 100%)`,
+              maskImage: `radial-gradient(circle 200px at ${mouse.x}% ${mouse.y}%, black 0%, transparent 100%)`,
+            }}
+          >
+            <Image
+              src={wordmarkSrc}
+              alt=""
+              fill
+              className="object-contain"
+              style={{
+                opacity: 0.6,
+                filter: "brightness(1.4) saturate(1.2)",
+              }}
+              priority={false}
+            />
+          </div>
+        </div>
+
+        {/* Bottom gradient fade */}
+        <div className="absolute bottom-0 left-0 right-0 h-[60%] bg-gradient-to-t from-[#0a0a0a] to-transparent pointer-events-none" />
+      </div>
+
+      {/* Text content below the wordmark */}
+      <div className="max-w-[1100px] mx-auto px-7 flex justify-between items-start py-8">
         <div>
           <div className="text-base font-bold text-white/80 flex items-center gap-2">
             <span className="w-6 h-6 rounded-md bg-gradient-to-br from-amber-500 to-amber-700 flex items-center justify-center text-xs text-black">
@@ -48,52 +94,6 @@ export default function FooterSpotlight({
           <br />
           All rights reserved.
         </div>
-      </div>
-
-      {/* Giant wordmark with spotlight */}
-      <div
-        ref={containerRef}
-        onMouseMove={handleMouseMove}
-        onMouseEnter={() => setHovering(true)}
-        onMouseLeave={() => setHovering(false)}
-        className="relative h-[200px] flex items-end justify-center overflow-hidden cursor-default"
-      >
-        {/* Base layer: very dim wordmark */}
-        <div className="relative w-full max-w-[800px] h-[160px]">
-          <Image
-            src={wordmarkSrc}
-            alt="Salience"
-            fill
-            className="object-contain opacity-[0.04]"
-            style={{ filter: "brightness(0.8)" }}
-            priority={false}
-          />
-
-          {/* Spotlight layer: follows cursor */}
-          <div
-            className="absolute inset-0 transition-opacity duration-300"
-            style={{
-              opacity: hovering ? 1 : 0,
-              WebkitMaskImage: `radial-gradient(circle 150px at ${mouse.x}% ${mouse.y}%, black 0%, transparent 100%)`,
-              maskImage: `radial-gradient(circle 150px at ${mouse.x}% ${mouse.y}%, black 0%, transparent 100%)`,
-            }}
-          >
-            <Image
-              src={wordmarkSrc}
-              alt=""
-              fill
-              className="object-contain"
-              style={{
-                opacity: 0.6,
-                filter: "brightness(1.4) saturate(1.2)",
-              }}
-              priority={false}
-            />
-          </div>
-        </div>
-
-        {/* Bottom gradient fade */}
-        <div className="absolute bottom-0 left-0 right-0 h-[60%] bg-gradient-to-t from-[#0a0a0a] to-transparent pointer-events-none" />
       </div>
 
       <div className="text-center pb-6 text-[0.65rem] text-white/20">
