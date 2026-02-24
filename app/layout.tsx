@@ -1,6 +1,5 @@
 import './globals.css';
 import type { Metadata, Viewport } from 'next';
-import { Inter } from 'next/font/google';
 
 export const metadata: Metadata = {
   title: 'Salience - AI Automation for Private Practices',
@@ -8,9 +7,9 @@ export const metadata: Metadata = {
   keywords: ['AI automation', 'private practice', 'insurance agency', 'healthcare automation', 'client intake', 'scheduling automation', 'business automation'],
   authors: [{ name: 'Aqeel Ali' }],
   icons: {
-    icon: '/favicon.svg',
-    shortcut: '/favicon.svg',
-    apple: '/favicon.svg',
+    icon: '/assets/eyes-favicon.svg',
+    shortcut: '/assets/eyes-favicon.svg',
+    apple: '/assets/eyes-favicon.svg',
   },
   openGraph: {
     title: 'Salience - AI Automation for Private Practices',
@@ -23,18 +22,13 @@ export const viewport: Viewport = {
   maximumScale: 1
 };
 
-const inter = Inter({ subsets: ['latin'] });
-
 export default function RootLayout({
   children
 }: {
   children: React.ReactNode;
 }) {
   return (
-    <html
-      lang="en"
-      className={inter.className}
-    >
+    <html lang="en">
       <body className="min-h-[100dvh]">
         {children}
       </body>

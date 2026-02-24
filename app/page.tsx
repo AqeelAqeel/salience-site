@@ -30,6 +30,8 @@ import {
 import { useEffect, useState, useRef } from 'react';
 import Navbar from '@/components/navbar';
 import Image from 'next/image';
+import ProcessSection from '@/components/process-section';
+import FooterSpotlight from '@/components/footer-spotlight';
 
 function useScrollReveal() {
   useEffect(() => {
@@ -438,6 +440,11 @@ export default function HomePage() {
         </section>
 
         {/* ============================================ */}
+        {/* OUR PROCESS — Scroll-driven phases */}
+        {/* ============================================ */}
+        <ProcessSection />
+
+        {/* ============================================ */}
         {/* DASHBOARD SHOWCASE */}
         {/* ============================================ */}
         <section className="py-20 md:py-32 px-4 sm:px-8 lg:px-16 relative bg-gradient-to-b from-transparent via-amber-900/5 to-transparent overflow-hidden">
@@ -730,32 +737,7 @@ export default function HomePage() {
         {/* ============================================ */}
         {/* FOOTER */}
         {/* ============================================ */}
-        <footer className="py-12 px-4 sm:px-8 lg:px-16 border-t border-white/10">
-          <div className="max-w-6xl mx-auto">
-            <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-              <div className="text-center md:text-left">
-                <p className="text-white font-bold text-xl mb-2">Salience</p>
-                <p className="text-white/50 text-sm">AI Automation for Private Practices</p>
-              </div>
-              <div className="text-center">
-                <p className="text-white/40 text-sm italic">
-                  &quot;Soon the person you&apos;ll spend the most time with is your tax advisor&quot;
-                </p>
-              </div>
-              <div className="flex items-center gap-4">
-                <a href="mailto:aqeel@aqeelali.com" className="text-white/50 hover:text-amber-400 transition-colors">
-                  <Mail className="w-5 h-5" />
-                </a>
-                <a href="tel:+14087180712" className="text-white/50 hover:text-amber-400 transition-colors">
-                  <Phone className="w-5 h-5" />
-                </a>
-              </div>
-            </div>
-            <div className="mt-8 pt-8 border-t border-white/5 text-center">
-              <p className="text-white/30 text-sm">&copy; 2026 Salience. All rights reserved.</p>
-            </div>
-          </div>
-        </footer>
+        <FooterSpotlight />
       </main>
     </>
   );
