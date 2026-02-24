@@ -1,6 +1,5 @@
 import './globals.css';
 import type { Metadata, Viewport } from 'next';
-import { Inter } from 'next/font/google';
 
 export const metadata: Metadata = {
   title: 'Salience - AI Automation for Private Practices',
@@ -23,18 +22,13 @@ export const viewport: Viewport = {
   maximumScale: 1
 };
 
-const inter = Inter({ subsets: ['latin'] });
-
 export default function RootLayout({
   children
 }: {
   children: React.ReactNode;
 }) {
   return (
-    <html
-      lang="en"
-      className={inter.className}
-    >
+    <html lang="en">
       <body className="min-h-[100dvh]">
         {children}
       </body>
