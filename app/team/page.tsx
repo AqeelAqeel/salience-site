@@ -29,7 +29,7 @@ const teamMembers: TeamMember[] = [
     expertise: ['AI Systems Architecture', 'Enterprise Automation', 'Strategic Advisory'],
     bio: 'Architect of large-scale AI automation systems deployed across insurance, healthcare, financial services, and professional practices. Deep technical background in machine learning infrastructure with hands-on experience building and shipping AI products used by thousands. Connects cutting-edge research to real business outcomes.',
     image: '/assets/team/aqeel-ali.jpeg',
-    linkedin: 'https://linkedin.com/in/aqeelali',
+    linkedin: 'https://www.linkedin.com/in/aliaqeel/',
   },
   {
     name: 'Danara Buvaeva',
