@@ -279,7 +279,7 @@ export default function HomePage() {
         {/* ============================================ */}
         {/* HERO — "Solutions Without Sacrifice"         */}
         {/* ============================================ */}
-        <section className="min-h-screen flex flex-col items-center justify-center px-4 sm:px-8 lg:px-16 relative pt-20 md:pt-8">
+        <section className="min-h-[100dvh] flex flex-col items-center justify-center px-4 sm:px-8 lg:px-16 relative pt-16 md:pt-0">
           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-4xl h-[400px] pointer-events-none">
             <div className="absolute inset-0 bg-gradient-to-b from-amber-500/10 via-amber-500/5 to-transparent blur-3xl" />
           </div>
@@ -287,7 +287,7 @@ export default function HomePage() {
           <div className="absolute bottom-20 right-10 w-96 h-96 bg-purple-500/6 rounded-full blur-3xl animate-pulse-slow" style={{ animationDelay: '2s' }} />
 
           <div className="relative z-10 max-w-5xl mx-auto w-full text-center top-light-effect">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-amber-500/10 border border-amber-500/30 mb-8 scroll-reveal">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-amber-500/10 border border-amber-500/30 mb-5 scroll-reveal">
               <Zap className="w-4 h-4 text-amber-400" />
               <span className="text-amber-400 text-sm font-medium">Consulting &middot; AI Automation &middot; Project Development</span>
             </div>
