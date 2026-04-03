@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { PanelLeftOpen, Mic, MessageSquare } from "lucide-react";
+import { PanelLeftOpen, Mic, MessageSquare, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Navbar from "@/components/navbar";
 import FooterSpotlight from "@/components/footer-spotlight";
@@ -19,7 +19,7 @@ type Mode = "intake" | "chat";
 export default function ChartonFinancialPage() {
   const [mode, setMode] = useState<Mode>("intake");
   const userId = useLocalUserId();
-  const charton = useChartonSession(userId);
+  const charton = useChartonSession(userId, mode === "chat");
 
   if (!userId) {
     return (
@@ -33,31 +33,31 @@ export default function ChartonFinancialPage() {
     <div className="min-h-[100dvh] bg-[#0a0a0a] flex flex-col">
       <Navbar />
 
-      {/* Mode toggle */}
-      <div className="fixed top-20 right-4 z-30 flex items-center gap-1 bg-[#141414] border border-white/[0.08] rounded-xl p-1">
+      {/* Admin mode toggle — small, subtle, top-right */}
+      <div className="fixed top-20 right-4 z-30 flex items-center gap-1 bg-[#141414]/80 backdrop-blur-sm border border-white/[0.06] rounded-lg p-0.5">
         <button
           onClick={() => setMode("intake")}
           className={cn(
-            "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200",
+            "p-2 rounded-md transition-all duration-200",
             mode === "intake"
-              ? "bg-amber-500/15 text-amber-400 border border-amber-500/20"
-              : "text-white/40 hover:text-white/60"
+              ? "bg-amber-500/15 text-amber-400"
+              : "text-white/30 hover:text-white/50"
           )}
+          title="Interview mode"
         >
-          <Mic className="w-3 h-3" />
-          Interview
+          <Mic className="w-3.5 h-3.5" />
         </button>
         <button
           onClick={() => setMode("chat")}
           className={cn(
-            "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200",
+            "p-2 rounded-md transition-all duration-200",
             mode === "chat"
-              ? "bg-amber-500/15 text-amber-400 border border-amber-500/20"
-              : "text-white/40 hover:text-white/60"
+              ? "bg-amber-500/15 text-amber-400"
+              : "text-white/30 hover:text-white/50"
           )}
+          title="Admin chat mode"
         >
-          <MessageSquare className="w-3 h-3" />
-          Chat
+          <Settings className="w-3.5 h-3.5" />
         </button>
       </div>
 

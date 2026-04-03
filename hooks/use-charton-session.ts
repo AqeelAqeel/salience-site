@@ -14,7 +14,7 @@ interface ChartonState {
   sidebarOpen: boolean;
 }
 
-export function useChartonSession(userId: string | null) {
+export function useChartonSession(userId: string | null, enabled = true) {
   const [state, setState] = useState<ChartonState>({
     sessions: [],
     activeSessionId: null,
@@ -27,9 +27,12 @@ export function useChartonSession(userId: string | null) {
 
   const debounceTimers = useRef<Record<number, NodeJS.Timeout>>({});
 
-  // Fetch sessions on mount
+  // Fetch sessions on mount (only when enabled)
   useEffect(() => {
-    if (!userId) return;
+    if (!userId || !enabled) {
+      setState((s) => ({ ...s, isLoading: false }));
+      return;
+    }
 
     async function loadSessions() {
       try {

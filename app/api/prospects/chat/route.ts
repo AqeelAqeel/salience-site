@@ -10,10 +10,10 @@ const getOpenAI = () =>
 export async function POST(request: Request) {
   try {
     if (!process.env.OPENAI_API_KEY) {
-      return NextResponse.json(
-        { error: "OpenAI API key not configured" },
-        { status: 500 }
-      );
+      return NextResponse.json({
+        content: "I'm having trouble connecting right now. Please try again in a moment.",
+        error: "OpenAI API key not configured",
+      });
     }
 
     const { message, history, prospectId, sessionId } = (await request.json()) as {
@@ -30,17 +30,22 @@ export async function POST(request: Request) {
       );
     }
 
-    const supabase = getSupabase();
+    let supabase;
+    try { supabase = getSupabase(); } catch { supabase = null; }
     let prospect: Partial<Prospect> | null = null;
 
     // Load prospect context if available
-    if (prospectId) {
-      const { data } = await supabase
-        .from("prospects")
-        .select("*")
-        .eq("id", prospectId)
-        .single();
-      prospect = data;
+    if (prospectId && supabase) {
+      try {
+        const { data } = await supabase
+          .from("prospects")
+          .select("*")
+          .eq("id", prospectId)
+          .single();
+        prospect = data;
+      } catch {
+        // Supabase not available, continue without context
+      }
     }
 
     // Build system prompt with prospect context
@@ -68,33 +73,31 @@ export async function POST(request: Request) {
       response.choices[0]?.message?.content ||
       "Could you repeat that?";
 
-    // Persist turns to Supabase if session exists
-    if (sessionId) {
-      // Save user turn
-      await supabase.from("prospect_turns").insert({
-        session_id: sessionId,
-        role: "user",
-        content: message,
-        was_voice: true,
-      });
-
-      // Save assistant turn
-      await supabase.from("prospect_turns").insert({
-        session_id: sessionId,
-        role: "assistant",
-        content,
-      });
-
-      // Update session turn count
-      const { count } = await supabase
-        .from("prospect_turns")
-        .select("*", { count: "exact", head: true })
-        .eq("session_id", sessionId);
-
-      await supabase
-        .from("prospect_sessions")
-        .update({ turn_count: count || 0 })
-        .eq("id", sessionId);
+    // Persist turns to Supabase if session exists (non-blocking)
+    if (sessionId && supabase) {
+      try {
+        await supabase.from("prospect_turns").insert({
+          session_id: sessionId,
+          role: "user",
+          content: message,
+          was_voice: true,
+        });
+        await supabase.from("prospect_turns").insert({
+          session_id: sessionId,
+          role: "assistant",
+          content,
+        });
+        const { count } = await supabase
+          .from("prospect_turns")
+          .select("*", { count: "exact", head: true })
+          .eq("session_id", sessionId);
+        await supabase
+          .from("prospect_sessions")
+          .update({ turn_count: count || 0 })
+          .eq("id", sessionId);
+      } catch (dbErr) {
+        console.error("Non-critical: failed to persist turns:", dbErr);
+      }
     }
 
     return NextResponse.json({

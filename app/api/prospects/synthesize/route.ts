@@ -6,7 +6,8 @@ const getOpenAI = () =>
 export async function POST(request: Request) {
   try {
     if (!process.env.OPENAI_API_KEY) {
-      return new Response("OpenAI API key not configured", { status: 500 });
+      // Return 204 No Content — TTS is optional, frontend handles gracefully
+      return new Response(null, { status: 204 });
     }
 
     const { text, voice } = (await request.json()) as {
@@ -36,6 +37,7 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     console.error("TTS synthesis error:", error);
-    return new Response("Failed to synthesize speech", { status: 500 });
+    // TTS is optional — don't break the flow
+    return new Response(null, { status: 204 });
   }
 }

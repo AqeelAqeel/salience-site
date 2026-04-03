@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import OpenAI from "openai";
+import OpenAI, { toFile } from "openai";
 
 const getOpenAI = () =>
   new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
@@ -8,35 +8,34 @@ export async function POST(request: Request) {
   try {
     if (!process.env.OPENAI_API_KEY) {
       return NextResponse.json(
-        { error: "OpenAI API key not configured" },
-        { status: 500 }
+        { error: "OpenAI API key not configured", text: "" },
+        { status: 200 } // Return 200 so frontend doesn't crash
       );
     }
 
     const formData = await request.formData();
-    const audioFile = formData.get("audio") as File | null;
+    const audioBlob = formData.get("audio") as File | null;
 
-    if (!audioFile) {
-      return NextResponse.json(
-        { error: "No audio file provided" },
-        { status: 400 }
-      );
+    if (!audioBlob) {
+      return NextResponse.json({ error: "No audio file", text: "" });
     }
+
+    // Convert the incoming File/Blob to a proper format for the SDK
+    const arrayBuffer = await audioBlob.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+    const file = await toFile(buffer, "audio.webm", { type: "audio/webm" });
 
     const openai = getOpenAI();
 
     const transcription = await openai.audio.transcriptions.create({
       model: "whisper-1",
-      file: audioFile,
-      response_format: "text",
+      file,
     });
 
-    return NextResponse.json({ text: transcription });
+    return NextResponse.json({ text: transcription.text || "" });
   } catch (error) {
     console.error("Transcription error:", error);
-    return NextResponse.json(
-      { error: "Failed to transcribe audio" },
-      { status: 500 }
-    );
+    // Return 200 with empty text so the frontend doesn't break
+    return NextResponse.json({ text: "", error: "Transcription failed" });
   }
 }
