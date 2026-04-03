@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { useIntakeSession } from "@/hooks/use-intake-session";
 import { ProspectIntakeOrb } from "./prospect-intake-orb";
 import { IntakeSummary } from "./intake-summary";
+import { SessionCTA } from "./session-cta";
 
 export function IntakeConversation() {
   const {
@@ -26,8 +27,9 @@ export function IntakeConversation() {
 
   const [showSummary, setShowSummary] = useState(true);
 
+  const interviewEnded = phase === "idle" && turns.length > 0;
   const canShowSummaryButton =
-    phase === "idle" && turns.length >= 2 && !summary && !isGeneratingSummary;
+    interviewEnded && !summary && !isGeneratingSummary;
 
   // Determine display text
   let displayText = "";
@@ -35,7 +37,8 @@ export function IntakeConversation() {
 
   if (phase === "idle" && turns.length === 0) {
     displayText = "Ready when you are.";
-    displaySubtext = "Start a conversation to explore how AI can work for your business.";
+    displaySubtext =
+      "Start a conversation to explore how AI can work for your business.";
   } else if (phase === "listening") {
     displayText = currentTranscript || "";
     displaySubtext = currentTranscript ? "" : "Listening...";
@@ -44,22 +47,32 @@ export function IntakeConversation() {
     displaySubtext = "";
   } else if (phase === "speaking") {
     displayText = currentResponse;
-  } else if (phase === "idle" && turns.length > 0) {
-    displayText = "Interview complete.";
-    displaySubtext = "You can generate a summary of what we discussed.";
   }
 
   return (
-    <div className="relative flex flex-col items-center justify-center min-h-[calc(100dvh-5rem)] px-6 overflow-hidden">
-      {/* Full-screen orb — centered, large */}
-      <div className="relative w-[300px] h-[300px] md:w-[420px] md:h-[420px] lg:w-[500px] lg:h-[500px] shrink-0">
+    <div
+      className={cn(
+        "relative flex flex-col items-center px-6 overflow-y-auto",
+        interviewEnded
+          ? "justify-start pt-12 pb-20 min-h-[calc(100dvh-5rem)]"
+          : "justify-center min-h-[calc(100dvh-5rem)]"
+      )}
+    >
+      {/* Orb — smaller when interview is done */}
+      <div
+        className={cn(
+          "relative shrink-0 transition-all duration-700",
+          interviewEnded
+            ? "w-[160px] h-[160px] md:w-[200px] md:h-[200px]"
+            : "w-[300px] h-[300px] md:w-[420px] md:h-[420px] lg:w-[500px] lg:h-[500px]"
+        )}
+      >
         <ProspectIntakeOrb
           phase={phase}
           analyzerData={analyzerData}
           className="absolute inset-0"
         />
 
-        {/* Thinking indicator — centered in orb */}
         {phase === "thinking" && (
           <div className="absolute inset-0 flex items-center justify-center">
             <div className="flex items-center gap-2">
@@ -80,42 +93,44 @@ export function IntakeConversation() {
         )}
       </div>
 
-      {/* Main text — LARGE, prominent */}
-      <div className="w-full max-w-2xl mx-auto text-center mt-8 min-h-[120px] px-4">
-        {displayText && (
-          <p
-            className={cn(
-              "text-xl md:text-2xl lg:text-3xl leading-relaxed font-light tracking-wide",
-              phase === "speaking"
-                ? "text-white/90"
-                : phase === "listening"
-                  ? "text-white/70"
-                  : "text-white/60"
-            )}
-          >
-            {displayText}
-            {(phase === "listening" && currentTranscript) || phase === "speaking" ? (
-              <span className="inline-block w-0.5 h-6 md:h-7 bg-amber-500/70 ml-1.5 animate-pulse align-text-bottom" />
-            ) : null}
-          </p>
-        )}
+      {/* Main text — LARGE */}
+      {!interviewEnded && (
+        <div className="w-full max-w-2xl mx-auto text-center mt-8 min-h-[120px] px-4">
+          {displayText && (
+            <p
+              className={cn(
+                "text-xl md:text-2xl lg:text-3xl leading-relaxed font-light tracking-wide",
+                phase === "speaking"
+                  ? "text-white/90"
+                  : phase === "listening"
+                    ? "text-white/70"
+                    : "text-white/60"
+              )}
+            >
+              {displayText}
+              {(phase === "listening" && currentTranscript) ||
+              phase === "speaking" ? (
+                <span className="inline-block w-0.5 h-6 md:h-7 bg-amber-500/70 ml-1.5 animate-pulse align-text-bottom" />
+              ) : null}
+            </p>
+          )}
 
-        {displaySubtext && (
-          <p className="text-base md:text-lg text-white/30 mt-3">
-            {displaySubtext}
-          </p>
-        )}
+          {displaySubtext && (
+            <p className="text-base md:text-lg text-white/30 mt-3">
+              {displaySubtext}
+            </p>
+          )}
 
-        {/* Listening indicator — subtle dot */}
-        {phase === "listening" && !currentTranscript && (
-          <div className="flex items-center justify-center gap-2 mt-4">
-            <span className="relative flex h-3 w-3">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-500/40" />
-              <span className="relative inline-flex rounded-full h-3 w-3 bg-amber-500/70" />
-            </span>
-          </div>
-        )}
-      </div>
+          {phase === "listening" && !currentTranscript && (
+            <div className="flex items-center justify-center gap-2 mt-4">
+              <span className="relative flex h-3 w-3">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-500/40" />
+                <span className="relative inline-flex rounded-full h-3 w-3 bg-amber-500/70" />
+              </span>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Error */}
       {recorderError && (
@@ -124,7 +139,7 @@ export function IntakeConversation() {
         </div>
       )}
 
-      {/* Controls — minimal, at the bottom */}
+      {/* Controls */}
       <div className="mt-10 flex flex-col items-center gap-4">
         {phase === "idle" && turns.length === 0 && (
           <button
@@ -166,16 +181,15 @@ export function IntakeConversation() {
             onClick={generateSummary}
             className={cn(
               "px-8 py-4 rounded-full",
-              "bg-gradient-to-r from-amber-500 to-amber-600",
-              "text-black font-semibold text-base",
-              "hover:from-amber-400 hover:to-amber-500",
+              "bg-white/[0.06] border border-white/[0.1]",
+              "text-white/60 text-sm font-medium",
+              "hover:bg-white/[0.1] hover:text-white/80",
               "active:scale-[0.97] transition-all duration-200",
-              "shadow-lg shadow-amber-500/25",
               "flex items-center gap-2"
             )}
           >
-            <FileText className="w-5 h-5" />
-            Generate Summary
+            <FileText className="w-4 h-4" />
+            View Summary
           </button>
         )}
 
@@ -189,7 +203,7 @@ export function IntakeConversation() {
 
       {/* Summary */}
       {summary && showSummary && (
-        <div className="mt-10 w-full max-w-lg">
+        <div className="mt-8 w-full max-w-lg">
           <IntakeSummary
             summary={summary}
             prospectId={prospect?.id}
@@ -198,6 +212,9 @@ export function IntakeConversation() {
           />
         </div>
       )}
+
+      {/* End-of-session CTA — always shows when interview is done */}
+      {interviewEnded && <SessionCTA className="mt-10" />}
     </div>
   );
 }
