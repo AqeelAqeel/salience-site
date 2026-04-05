@@ -10,6 +10,8 @@ import type {
   ProspectSummary,
 } from "@/lib/types/prospects";
 
+type AvatarPublishFn = ((audioBlob: Blob) => Promise<void>) | null;
+
 export function useIntakeSession() {
   const [phase, setPhase] = useState<IntakePhase>("idle");
   const [turns, setTurns] = useState<IntakeTurn[]>([]);
@@ -26,6 +28,7 @@ export function useIntakeSession() {
   const ttsAudioRef = useRef<HTMLAudioElement | null>(null);
   const prospectRef = useRef<Prospect | null>(null);
   const sessionIdRef = useRef<string | null>(null);
+  const avatarPublishRef = useRef<AvatarPublishFn>(null);
 
   useEffect(() => {
     phaseRef.current = phase;
@@ -39,6 +42,18 @@ export function useIntakeSession() {
   useEffect(() => {
     sessionIdRef.current = sessionId;
   }, [sessionId]);
+
+  const setAvatarPublishAudio = useCallback(
+    (fn: AvatarPublishFn | (() => AvatarPublishFn)) => {
+      if (typeof fn === "function" && fn.length === 0) {
+        // It's a state updater function
+        avatarPublishRef.current = (fn as () => AvatarPublishFn)();
+      } else {
+        avatarPublishRef.current = fn as AvatarPublishFn;
+      }
+    },
+    []
+  );
 
   const typewriterReveal = useCallback(
     async (text: string): Promise<void> => {
@@ -70,6 +85,17 @@ export function useIntakeSession() {
       if (!res.ok) return;
 
       const blob = await res.blob();
+
+      // If avatar is connected, publish audio to it for lip-sync
+      if (avatarPublishRef.current) {
+        try {
+          await avatarPublishRef.current(blob);
+        } catch (err) {
+          console.error("Avatar audio publish error:", err);
+        }
+      }
+
+      // Also play locally so the user hears it
       const url = URL.createObjectURL(blob);
       const audio = new Audio(url);
       ttsAudioRef.current = audio;
@@ -351,5 +377,6 @@ export function useIntakeSession() {
     startInterview,
     stopInterview,
     generateSummary,
+    setAvatarPublishAudio,
   };
 }
