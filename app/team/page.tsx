@@ -25,11 +25,19 @@ interface Vertical {
 const teamMembers: TeamMember[] = [
   {
     name: 'Aqeel Ali',
-    role: 'Managing Partner',
+    role: 'Founding Partner',
     expertise: ['AI Systems Architecture', 'Enterprise Automation', 'Strategic Advisory'],
     bio: 'Architect of large-scale AI automation systems deployed across insurance, healthcare, financial services, and professional practices. Deep technical background in machine learning infrastructure with hands-on experience building and shipping AI products used by thousands. Connects cutting-edge research to real business outcomes.',
     image: '/assets/team/aqeel-ali.jpeg',
     linkedin: 'https://www.linkedin.com/in/aliaqeel/',
+  },
+  {
+    name: 'Jackson Harris',
+    role: 'Managing Partner',
+    expertise: ['Engineering Leadership', 'Platform Infrastructure', 'M&A Technical Strategy'],
+    bio: 'Battle-tested engineering leader who has architected and scaled core operating infrastructure at multi-billion dollar companies. Former CTO through an acquisition by Niantic, Inc. — bringing firsthand experience navigating technical due diligence, integration, and post-acquisition engineering alignment. Drove engineering performance metrics and operational excellence across high-growth organizations, building the kind of resilient, scalable systems that acquirers pay a premium for. Turns complex technical debt into clean, compounding infrastructure.',
+    image: '/assets/team/jackson-harris.jpeg',
+    linkedin: 'https://www.linkedin.com/in/jacksonharris3/',
   },
   {
     name: 'Danara Buvaeva',
