@@ -136,13 +136,15 @@ export async function POST(request: Request) {
 
     while (rounds < MAX_TOOL_ROUNDS) {
       rounds += 1;
+      // Reasoning-era models (gpt-5.4, o1, o3 families) require
+      // max_completion_tokens instead of max_tokens and don't accept
+      // a custom temperature. Stick to the minimal supported params.
       const response = await openai.chat.completions.create({
         model: MODEL,
         messages,
         tools: WIN_HERE_TOOLS,
         tool_choice: "auto",
-        temperature: 0.85,
-        max_tokens: 600,
+        max_completion_tokens: 1200,
       });
 
       const choice = response.choices[0]?.message;
@@ -277,8 +279,7 @@ export async function POST(request: Request) {
       const response = await openai.chat.completions.create({
         model: MODEL,
         messages,
-        temperature: 0.85,
-        max_tokens: 400,
+        max_completion_tokens: 800,
       });
       finalContent = response.choices[0]?.message?.content || "";
     }
@@ -386,12 +387,17 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     console.error("win-here chat error:", error);
+    // TEMPORARY: surface the real error message so we can diagnose in the UI.
+    // Remove this detail once the model config is confirmed working.
+    const errMsg = error instanceof Error ? error.message : String(error);
     return NextResponse.json(
       {
         content:
-          "ok — something just glitched on my end. try that again?",
+          "ok — something just glitched on my end. try that again?\n\n[debug: " +
+          errMsg +
+          "]",
         delta: {},
-        error: "Failed to process chat",
+        error: errMsg,
       },
       { status: 200 }
     );
