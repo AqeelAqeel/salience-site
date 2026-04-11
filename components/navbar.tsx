@@ -58,6 +58,10 @@ const navItems: NavItem[] = [
     label: 'Team',
     href: '/team',
   },
+  {
+    label: 'Referrals',
+    href: '/referrals',
+  },
 ];
 
 function DropdownMenu({

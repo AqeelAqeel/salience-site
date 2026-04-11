@@ -279,7 +279,7 @@ export default function HomePage() {
         {/* ============================================ */}
         {/* HERO — "Solutions Without Sacrifice"         */}
         {/* ============================================ */}
-        <section className="min-h-[100dvh] flex flex-col items-center justify-center px-4 sm:px-8 lg:px-16 relative pt-16 md:pt-0">
+        <section className="min-h-[100dvh] flex flex-col items-center px-4 sm:px-8 lg:px-16 relative pt-28 md:pt-32">
           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-4xl h-[400px] pointer-events-none">
             <div className="absolute inset-0 bg-gradient-to-b from-amber-500/10 via-amber-500/5 to-transparent blur-3xl" />
           </div>

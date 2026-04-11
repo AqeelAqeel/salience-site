@@ -44,6 +44,7 @@ postgres_data/
 scripts/google-credentials.json
 scripts/.google-token.json
 scripts/.crm-sheet-id
+.claude/commands/g-user-auth-client-secret.json
 
 # Python venv
 .venv/
