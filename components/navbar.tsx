@@ -62,6 +62,10 @@ const navItems: NavItem[] = [
     label: 'Referrals',
     href: '/referrals',
   },
+  {
+    label: 'Chat with Salience Now',
+    href: '/i-want-my-time-and-energy-back',
+  },
 ];
 
 function DropdownMenu({
