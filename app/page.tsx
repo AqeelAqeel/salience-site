@@ -29,9 +29,13 @@ import {
   Home,
   Scale,
   Heart,
+  ChevronLeft,
+  ChevronRight,
+  SmilePlus,
 } from 'lucide-react';
 import { useEffect, useState, useRef, useCallback } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import Navbar from '@/components/navbar';
 import ProcessSection from '@/components/process-section';
 import FooterSpotlight from '@/components/footer-spotlight';
@@ -171,6 +175,189 @@ function CTABlock({ openCalendly }: { openCalendly: () => void }) {
   );
 }
 
+/* ─── Industry Carousel ─── */
+interface IndustryItem {
+  icon: React.ElementType;
+  title: string;
+  shortLabel: string;
+  description: string;
+  benefit: string;
+  href: string;
+  image: string;
+}
+
+function IndustryCarousel({ items }: { items: IndustryItem[] }) {
+  const [active, setActive] = useState(0);
+  const [isPaused, setIsPaused] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const total = items.length;
+
+  const goto = useCallback((i: number) => {
+    setActive(((i % total) + total) % total);
+  }, [total]);
+
+  // Auto-rotate every 6s
+  useEffect(() => {
+    if (isPaused) return;
+    timerRef.current = setInterval(() => {
+      setActive((prev) => (prev + 1) % total);
+    }, 6000);
+    return () => { if (timerRef.current) clearInterval(timerRef.current); };
+  }, [isPaused, total]);
+
+  const handleNav = (dir: number) => {
+    goto(active + dir);
+    // Pause then resume auto-rotate
+    setIsPaused(true);
+    setTimeout(() => setIsPaused(false), 10000);
+  };
+
+  const handleStepClick = (i: number) => {
+    goto(i);
+    setIsPaused(true);
+    setTimeout(() => setIsPaused(false), 10000);
+  };
+
+  const item = items[active];
+  const Icon = item.icon;
+
+  return (
+    <section className="py-24 md:py-32 px-4 sm:px-8 lg:px-16 bg-slate-50/50">
+      <div className="max-w-6xl mx-auto">
+        <div className="text-center mb-14 scroll-reveal">
+          <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight mb-5">
+            <span className="text-slate-900">Who We Help</span>
+          </h2>
+          <p className="text-slate-500 text-lg max-w-2xl mx-auto">
+            If your team spends hours every week on calls, forms, and follow-ups, we can automate a significant portion within a month.
+          </p>
+        </div>
+
+        {/* Carousel card */}
+        <div
+          className="relative rounded-2xl bg-white border border-slate-200 shadow-sm overflow-hidden"
+          onMouseEnter={() => setIsPaused(true)}
+          onMouseLeave={() => setIsPaused(false)}
+        >
+          <div className="grid grid-cols-1 lg:grid-cols-2 min-h-[420px]">
+            {/* Image half */}
+            <div className="relative h-[260px] lg:h-auto bg-gradient-to-br from-blue-50 to-slate-100 overflow-hidden">
+              <Image
+                key={item.image}
+                src={item.image}
+                alt={item.title}
+                fill
+                className="object-cover transition-opacity duration-500"
+                sizes="(max-width: 1024px) 100vw, 50vw"
+              />
+              {/* Gradient overlay for text legibility on mobile */}
+              <div className="absolute inset-0 bg-gradient-to-t from-white/20 to-transparent lg:hidden" />
+            </div>
+
+            {/* Content half */}
+            <div className="flex flex-col justify-center p-8 md:p-12 lg:p-14">
+              <div className="flex items-center gap-3 mb-5">
+                <div className="w-12 h-12 rounded-2xl bg-blue-50 flex items-center justify-center">
+                  <Icon className="w-6 h-6 text-blue-600" />
+                </div>
+                <span className="text-xs font-semibold uppercase tracking-wider text-blue-600">
+                  {active + 1} / {total}
+                </span>
+              </div>
+
+              <h3 className="text-2xl md:text-3xl font-bold text-slate-900 mb-4">
+                {item.title}
+              </h3>
+              <p className="text-slate-500 text-base leading-relaxed mb-6">
+                {item.description}
+              </p>
+              <Link
+                href={item.href}
+                className="inline-flex items-center gap-2 text-blue-600 font-semibold text-sm hover:gap-3 transition-all"
+              >
+                {item.benefit}
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+            </div>
+          </div>
+
+          {/* Nav arrows */}
+          <button
+            onClick={() => handleNav(-1)}
+            className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/90 border border-slate-200 shadow-md flex items-center justify-center text-slate-600 hover:text-blue-600 hover:border-blue-300 transition-all z-10"
+            aria-label="Previous"
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </button>
+          <button
+            onClick={() => handleNav(1)}
+            className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/90 border border-slate-200 shadow-md flex items-center justify-center text-slate-600 hover:text-blue-600 hover:border-blue-300 transition-all z-10"
+            aria-label="Next"
+          >
+            <ChevronRight className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Step indicators — 6 dashed segments with labels */}
+        <div className="mt-8 max-w-4xl mx-auto">
+          <div className="flex gap-2">
+            {items.map((it, i) => (
+              <button
+                key={it.title}
+                onClick={() => handleStepClick(i)}
+                className="flex-1 group flex flex-col items-center gap-2"
+              >
+                {/* Dashed/solid line */}
+                <div className="w-full h-1 rounded-full relative overflow-hidden">
+                  <div
+                    className={`absolute inset-0 rounded-full transition-all duration-500 ${
+                      i === active
+                        ? 'bg-blue-600'
+                        : i < active
+                          ? 'bg-blue-300'
+                          : 'bg-slate-200'
+                    }`}
+                    style={i !== active ? {
+                      backgroundImage: i < active ? 'none' : 'repeating-linear-gradient(90deg, #cbd5e1 0px, #cbd5e1 6px, transparent 6px, transparent 12px)',
+                      backgroundColor: i < active ? undefined : 'transparent',
+                    } : undefined}
+                  />
+                  {/* Active fill animation */}
+                  {i === active && !isPaused && (
+                    <div
+                      className="absolute inset-y-0 left-0 bg-blue-400 rounded-full"
+                      style={{
+                        animation: 'carouselProgress 6s linear forwards',
+                      }}
+                    />
+                  )}
+                </div>
+                {/* Label */}
+                <span
+                  className={`text-[11px] font-medium transition-colors whitespace-nowrap ${
+                    i === active
+                      ? 'text-blue-700'
+                      : 'text-slate-400 group-hover:text-slate-600'
+                  }`}
+                >
+                  {it.shortLabel}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <style>{`
+        @keyframes carouselProgress {
+          from { width: 0%; }
+          to { width: 100%; }
+        }
+      `}</style>
+    </section>
+  );
+}
+
 /* ═══════════════════════════════════════════════ */
 /*  MAIN PAGE                                     */
 /* ═══════════════════════════════════════════════ */
@@ -182,44 +369,56 @@ export default function HomePage() {
     {
       icon: Shield,
       title: 'Insurance Brokers',
+      shortLabel: 'Insurance',
       description: 'High-volume quote calls, multiple carrier forms, strict documentation requirements.',
       benefit: 'Automate intake forms and policy processing',
       href: '/services#insurance',
+      image: '/industries/insurance-brokers.jpg',
     },
     {
       icon: Stethoscope,
-      title: 'Healthcare & Telehealth',
-      description: 'Patient intake, pharmacy coordination, consent forms, and follow-up scheduling.',
+      title: 'Telehealth & Clinics',
+      shortLabel: 'Telehealth',
+      description: 'Patient intake, pharmacy coordination, consent forms, and follow-up scheduling across remote and in-person visits.',
       benefit: 'Capture and structure every patient interaction',
       href: '/services#healthcare',
+      image: '/industries/telehealth-clinics.jpg',
     },
     {
-      icon: Heart,
-      title: 'Veterinary Clinics',
-      description: 'New client and pet intake, treatment notes, prescription workflows, and reminders.',
-      benefit: 'Streamline intake and treatment documentation',
+      icon: SmilePlus,
+      title: 'Dentists',
+      shortLabel: 'Dental',
+      description: 'New patient intake, insurance verification, treatment plan documentation, and recall reminders.',
+      benefit: 'Streamline patient onboarding and insurance',
       href: '/services#healthcare',
+      image: '/industries/dentists.jpg',
     },
     {
       icon: Home,
       title: 'Real Estate',
+      shortLabel: 'Real Estate',
       description: 'Property inquiries, showing coordination, document management across listings.',
       benefit: 'Organize leads and automate follow-ups',
       href: '/services#real-estate',
+      image: '/industries/real-estate.jpg',
     },
     {
       icon: Scale,
       title: 'Law Offices',
+      shortLabel: 'Legal',
       description: 'Complex intake, government forms, documentation of every client touchpoint.',
       benefit: 'Auto-fill legal forms from call transcripts',
       href: '/services#insurance',
+      image: '/industries/law-offices.jpg',
     },
     {
       icon: Building2,
       title: 'Professional Services',
+      shortLabel: 'Professional',
       description: 'Client onboarding, document collection, and routine communications.',
       benefit: 'Reduce admin overhead by 85%',
       href: '/services',
+      image: '/industries/professional-services.jpg',
     },
   ];
 
@@ -454,42 +653,9 @@ export default function HomePage() {
         </section>
 
         {/* ============================================ */}
-        {/* WHO WE HELP — Industry Cards                */}
+        {/* WHO WE HELP — Industry Carousel             */}
         {/* ============================================ */}
-        <section className="py-24 md:py-32 px-4 sm:px-8 lg:px-16 bg-slate-50/50">
-          <div className="max-w-6xl mx-auto">
-            <div className="text-center mb-16 scroll-reveal">
-              <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight mb-5">
-                <span className="text-slate-900">Who We Help</span>
-              </h2>
-              <p className="text-slate-500 text-lg max-w-2xl mx-auto">
-                If your team spends hours every week on calls, forms, and follow-ups, we can automate a significant portion of that within a month.
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {whoWeHelp.map((item, index) => (
-                <Link
-                  key={item.title}
-                  href={item.href}
-                  className={`industry-card group scroll-reveal stagger-${(index % 3) + 1}`}
-                >
-                  <div className="p-7">
-                    <div className="w-14 h-14 rounded-2xl bg-blue-50 flex items-center justify-center mb-5 group-hover:bg-blue-100 transition-colors">
-                      <item.icon className="w-7 h-7 text-blue-600" />
-                    </div>
-                    <h3 className="text-lg font-bold text-slate-900 mb-2">{item.title}</h3>
-                    <p className="text-slate-500 text-sm mb-4 leading-relaxed">{item.description}</p>
-                    <div className="flex items-center gap-2 text-blue-600 text-sm font-medium">
-                      <span>{item.benefit}</span>
-                      <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                    </div>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          </div>
-        </section>
+        <IndustryCarousel items={whoWeHelp} />
 
         {/* ============================================ */}
         {/* CTA — Primary Conversion                    */}
