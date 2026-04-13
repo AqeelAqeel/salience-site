@@ -29,14 +29,14 @@ function Section({
 }) {
   return (
     <div className="space-y-2">
-      <div className="flex items-center gap-2 text-xs uppercase tracking-wider text-white/40">
+      <div className="flex items-center gap-2 text-xs uppercase tracking-wider text-slate-400">
         <Icon className="w-3.5 h-3.5" />
         <span>{label}</span>
       </div>
       <div
         className={cn(
           "text-sm leading-relaxed",
-          empty ? "text-white/25 italic" : "text-white/80"
+          empty ? "text-slate-300 italic" : "text-slate-700"
         )}
       >
         {children}
@@ -47,7 +47,7 @@ function Section({
 
 function AcutenessBar({ value }: { value: "low" | "medium" | "high" | "" }) {
   if (!value) {
-    return <span className="text-white/25 italic">—</span>;
+    return <span className="text-slate-300 italic">—</span>;
   }
   const label = value === "high" ? "High" : value === "medium" ? "Medium" : "Low";
   const color =
@@ -61,7 +61,7 @@ function AcutenessBar({ value }: { value: "low" | "medium" | "high" | "" }) {
   return (
     <div className="space-y-1.5">
       <div className="flex items-center justify-between">
-        <span className="text-white/80">{label}</span>
+        <span className="text-slate-700">{label}</span>
         <Flame
           className={cn(
             "w-4 h-4",
@@ -73,7 +73,7 @@ function AcutenessBar({ value }: { value: "low" | "medium" | "high" | "" }) {
           )}
         />
       </div>
-      <div className="h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
+      <div className="h-1.5 rounded-full bg-slate-100 overflow-hidden">
         <div
           className={cn("h-full rounded-full transition-all duration-700", color)}
           style={{ width }}
@@ -84,11 +84,11 @@ function AcutenessBar({ value }: { value: "low" | "medium" | "high" | "" }) {
 }
 
 function ReadinessBadge({ verdict }: { verdict: WinHereScratchpad["readiness"]["verdict"] }) {
-  if (!verdict) return <span className="text-white/25 italic">—</span>;
+  if (!verdict) return <span className="text-slate-300 italic">—</span>;
   const config = {
-    exploring: { label: "Exploring", color: "text-white/50 border-white/10 bg-white/[0.03]" },
-    warming: { label: "Warming up", color: "text-amber-400 border-amber-500/30 bg-amber-500/10" },
-    ready: { label: "Ready to move", color: "text-emerald-400 border-emerald-500/30 bg-emerald-500/10" },
+    exploring: { label: "Exploring", color: "text-slate-500 border-slate-200 bg-slate-50" },
+    warming: { label: "Warming up", color: "text-amber-600 border-amber-200 bg-amber-50" },
+    ready: { label: "Ready to move", color: "text-emerald-600 border-emerald-200 bg-emerald-50" },
   }[verdict];
 
   return (
@@ -115,24 +115,24 @@ export function Scratchpad({ data, className }: ScratchpadProps) {
     <div
       className={cn(
         "flex flex-col gap-6 p-6 rounded-2xl",
-        "bg-white/[0.02] border border-white/[0.06] backdrop-blur-sm",
+        "bg-white border border-slate-200 shadow-sm",
         className
       )}
     >
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center">
-            <Brain className="w-4 h-4 text-amber-400" />
+          <div className="w-8 h-8 rounded-lg bg-blue-50 border border-blue-200 flex items-center justify-center">
+            <Brain className="w-4 h-4 text-blue-600" />
           </div>
           <div>
-            <h3 className="text-sm font-semibold text-white/90">Live read</h3>
-            <p className="text-xs text-white/40">what i&apos;m hearing so far</p>
+            <h3 className="text-sm font-semibold text-slate-800">Live read</h3>
+            <p className="text-xs text-slate-400">what i&apos;m hearing so far</p>
           </div>
         </div>
       </div>
 
       {isEmpty && (
-        <p className="text-sm text-white/30 italic leading-relaxed">
+        <p className="text-sm text-slate-400 italic leading-relaxed">
           This board fills in as we talk. Your site, what you do, what&apos;s eating
           your week, what you&apos;d rather be doing — all tracked here so nothing
           gets lost.
@@ -152,7 +152,7 @@ export function Scratchpad({ data, className }: ScratchpadProps) {
           <ul className="space-y-1.5 list-none">
             {data.pains.map((p, i) => (
               <li key={i} className="flex gap-2">
-                <span className="text-amber-500/70 shrink-0">•</span>
+                <span className="text-red-400 shrink-0">•</span>
                 <span>{p}</span>
               </li>
             ))}
@@ -167,7 +167,7 @@ export function Scratchpad({ data, className }: ScratchpadProps) {
           <ul className="space-y-1.5 list-none">
             {data.preferredWork.map((p, i) => (
               <li key={i} className="flex gap-2">
-                <span className="text-emerald-500/70 shrink-0">•</span>
+                <span className="text-emerald-500 shrink-0">•</span>
                 <span>{p}</span>
               </li>
             ))}
@@ -177,19 +177,19 @@ export function Scratchpad({ data, className }: ScratchpadProps) {
         )}
       </Section>
 
-      <div className="grid grid-cols-2 gap-4 pt-2 border-t border-white/[0.06]">
+      <div className="grid grid-cols-2 gap-4 pt-2 border-t border-slate-100">
         <div className="space-y-2">
-          <div className="text-xs uppercase tracking-wider text-white/40">Acuteness</div>
+          <div className="text-xs uppercase tracking-wider text-slate-400">Acuteness</div>
           <AcutenessBar value={data.acuteness} />
         </div>
         <div className="space-y-2">
-          <div className="text-xs uppercase tracking-wider text-white/40">Readiness</div>
+          <div className="text-xs uppercase tracking-wider text-slate-400">Readiness</div>
           <ReadinessBadge verdict={data.readiness.verdict} />
         </div>
       </div>
 
       {data.readiness.rationale && (
-        <div className="text-xs text-white/40 italic leading-relaxed border-l-2 border-white/10 pl-3">
+        <div className="text-xs text-slate-400 italic leading-relaxed border-l-2 border-slate-200 pl-3">
           {data.readiness.rationale}
         </div>
       )}

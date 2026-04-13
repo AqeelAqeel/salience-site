@@ -119,7 +119,7 @@ export default function HealthcareProductPage() {
         <section className="pt-32 pb-20 px-4 sm:px-8 lg:px-16 bg-gradient-to-b from-red-50 to-white relative overflow-hidden">
           {/* Background decoration */}
           <div className="absolute top-0 right-0 w-96 h-96 bg-red-200/30 rounded-full blur-3xl" />
-          <div className="absolute bottom-0 left-0 w-64 h-64 bg-amber-200/20 rounded-full blur-3xl" />
+          <div className="absolute bottom-0 left-0 w-64 h-64 bg-blue-200/20 rounded-full blur-3xl" />
 
           <div className="max-w-6xl mx-auto relative z-10">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
@@ -159,7 +159,7 @@ export default function HealthcareProductPage() {
                     <div className="text-neutral-600">Fewer No-Shows</div>
                   </div>
                   <div className="bg-white rounded-2xl p-6 shadow-xl border border-neutral-100">
-                    <div className="text-4xl font-bold text-amber-500 mb-2">90%</div>
+                    <div className="text-4xl font-bold text-blue-600 mb-2">90%</div>
                     <div className="text-neutral-600">Intake Time Saved</div>
                   </div>
                   <div className="bg-white rounded-2xl p-6 shadow-xl border border-neutral-100">
@@ -167,7 +167,7 @@ export default function HealthcareProductPage() {
                     <div className="text-neutral-600">Faster Verification</div>
                   </div>
                   <div className="bg-white rounded-2xl p-6 shadow-xl border border-neutral-100">
-                    <div className="text-4xl font-bold text-amber-500 mb-2">100%</div>
+                    <div className="text-4xl font-bold text-blue-600 mb-2">100%</div>
                     <div className="text-neutral-600">HIPAA Compliant</div>
                   </div>
                 </div>
@@ -270,11 +270,11 @@ export default function HealthcareProductPage() {
                   <div className="grid grid-cols-2 gap-4">
                     <div className="bg-white/10 rounded-lg p-4">
                       <div className="text-2xl font-bold">25+</div>
-                      <div className="text-white/70 text-sm">Appointments/Day Managed</div>
+                      <div className="text-white/80 text-sm">Appointments/Day Managed</div>
                     </div>
                     <div className="bg-white/10 rounded-lg p-4">
                       <div className="text-2xl font-bold">98%</div>
-                      <div className="text-white/70 text-sm">Patient Satisfaction</div>
+                      <div className="text-white/80 text-sm">Patient Satisfaction</div>
                     </div>
                   </div>
                 </div>
@@ -314,13 +314,13 @@ export default function HealthcareProductPage() {
         </section>
 
         {/* CTA Section */}
-        <section className="py-20 px-4 sm:px-8 lg:px-16 bg-neutral-900">
+        <section className="py-20 px-4 sm:px-8 lg:px-16 bg-blue-700">
           <div className="max-w-4xl mx-auto text-center scroll-reveal">
             <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">
               Ready to Transform Your{' '}
               <span className="text-red-400">Healthcare Practice?</span>
             </h2>
-            <p className="text-white/70 text-lg mb-8 max-w-2xl mx-auto">
+            <p className="text-white/80 text-lg mb-8 max-w-2xl mx-auto">
               Get a free practice audit and see exactly how AI can automate your biggest operational bottlenecks.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -341,29 +341,29 @@ export default function HealthcareProductPage() {
         </section>
 
         {/* Footer */}
-        <footer className="py-12 px-4 sm:px-8 lg:px-16 bg-neutral-950">
+        <footer className="py-12 px-4 sm:px-8 lg:px-16 bg-slate-50">
           <div className="max-w-6xl mx-auto">
             <div className="flex flex-col md:flex-row items-center justify-between gap-6">
               <div className="text-center md:text-left">
                 <p className="text-white font-bold text-xl mb-2">Salience</p>
-                <p className="text-white/50 text-sm">AI Automation for Healthcare Practices</p>
+                <p className="text-slate-500 text-sm">AI Automation for Healthcare Practices</p>
               </div>
-              <div className="flex items-center gap-6 text-white/50">
+              <div className="flex items-center gap-6 text-slate-500">
                 <Link href="/" className="hover:text-red-400 transition-colors">Home</Link>
                 <Link href="/products/insurance" className="hover:text-red-400 transition-colors">Insurance</Link>
                 <Link href="/team" className="hover:text-red-400 transition-colors">Team</Link>
               </div>
               <div className="flex items-center gap-4">
-                <a href="mailto:aqeel@aqeelali.com" className="text-white/50 hover:text-red-400 transition-colors">
+                <a href="mailto:aqeel@aqeelali.com" className="text-slate-500 hover:text-red-400 transition-colors">
                   <Mail className="w-5 h-5" />
                 </a>
-                <a href="tel:+14087180712" className="text-white/50 hover:text-red-400 transition-colors">
+                <a href="tel:+14087180712" className="text-slate-500 hover:text-red-400 transition-colors">
                   <Phone className="w-5 h-5" />
                 </a>
               </div>
             </div>
             <div className="mt-8 pt-8 border-t border-white/10 text-center">
-              <p className="text-white/30 text-sm">&copy; 2026 Salience. All rights reserved.</p>
+              <p className="text-slate-400 text-sm">&copy; 2026 Salience. All rights reserved.</p>
             </div>
           </div>
         </footer>

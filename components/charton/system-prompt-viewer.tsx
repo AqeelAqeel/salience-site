@@ -17,8 +17,8 @@ export function SystemPromptViewer({ prompt }: SystemPromptViewerProps) {
         onClick={() => setIsOpen(!isOpen)}
         className={cn(
           "flex items-center gap-2 w-full px-4 py-2.5 rounded-xl text-xs transition-all",
-          "bg-white/[0.03] hover:bg-white/[0.06] border border-white/[0.06]",
-          "text-white/40 hover:text-white/60"
+          "bg-slate-50 hover:bg-slate-100 border border-slate-200",
+          "text-slate-400 hover:text-slate-600"
         )}
       >
         <Eye className="w-3.5 h-3.5" />
@@ -34,12 +34,12 @@ export function SystemPromptViewer({ prompt }: SystemPromptViewerProps) {
       {isOpen && (
         <div
           className={cn(
-            "mt-2 p-4 rounded-xl border border-white/[0.06]",
-            "bg-black/40 backdrop-blur-sm",
+            "mt-2 p-4 rounded-xl border border-slate-200",
+            "bg-slate-50",
             "max-h-[200px] overflow-y-auto"
           )}
         >
-          <pre className="text-xs text-white/50 whitespace-pre-wrap font-mono leading-relaxed">
+          <pre className="text-xs text-slate-500 whitespace-pre-wrap font-mono leading-relaxed">
             {prompt}
           </pre>
         </div>

@@ -2,8 +2,8 @@
 
 import { useEffect } from 'react';
 import Navbar from '@/components/navbar';
+import FooterSpotlight from '@/components/footer-spotlight';
 import { Button } from '@/components/ui/button';
-import Link from 'next/link';
 import {
   MessageSquare,
   Clock,
@@ -246,7 +246,7 @@ function TextMeButton({
 }) {
   return (
     <a href={smsLink(body)} className={className}>
-      <Button className="cta-button bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black font-semibold px-8 py-6 text-base rounded-xl transition-all duration-300">
+      <Button className="cta-button bg-gradient-to-r from-blue-500 to-blue-700 hover:from-blue-400 hover:to-blue-600 text-white font-semibold px-8 py-6 text-base rounded-xl transition-all duration-300">
         <MessageSquare className="mr-2 w-5 h-5" />
         {label}
       </Button>
@@ -260,27 +260,27 @@ export default function ReferralsPage() {
   return (
     <>
       <Navbar />
-      <main className="min-h-screen bg-[#0a0a0a]">
+      <main className="min-h-screen bg-white">
         {/* ------------------------------------------------ Hero */}
         <section className="relative pt-36 pb-24 px-4 sm:px-8 lg:px-16 overflow-hidden">
           <div className="absolute inset-0 bg-grid-pattern opacity-40" />
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[600px] bg-gradient-radial from-amber-500/8 via-transparent to-transparent pointer-events-none" />
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[600px] bg-gradient-radial from-blue-100/40 via-transparent to-transparent pointer-events-none" />
 
           <div className="relative max-w-5xl mx-auto text-center">
             <div className="scroll-reveal">
-              <p className="text-amber-400/80 font-medium tracking-[0.2em] uppercase text-sm mb-6">
+              <p className="text-blue-600 font-medium tracking-[0.2em] uppercase text-sm mb-6">
                 Salience Referral Program
               </p>
-              <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-white mb-8 leading-[1.05]">
+              <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-slate-900 mb-8 leading-[1.05]">
                 Make money from{' '}
-                <span className="hero-gradient-text">a few texts.</span>
+                <span className="blue-gradient-text">a few texts.</span>
               </h1>
-              <p className="text-white/50 text-lg md:text-xl max-w-3xl mx-auto leading-relaxed mb-4">
+              <p className="text-slate-500 text-lg md:text-xl max-w-3xl mx-auto leading-relaxed mb-4">
                 We handle the plumbing — the custom builds, the empathetic
                 discovery, the deployment and support. Your job is just to make
                 the introduction to a business owner you already know.
               </p>
-              <p className="text-white/40 text-base max-w-2xl mx-auto leading-relaxed mb-10">
+              <p className="text-slate-400 text-base max-w-2xl mx-auto leading-relaxed mb-10">
                 Everyone has a family dentist. A friend with a private practice.
                 A neighbor running a brokerage. A cousin managing rentals. Every
                 single one of them is drowning in work we can automate away.
@@ -293,13 +293,13 @@ export default function ReferralsPage() {
                 />
                 <a
                   href="#how-it-works"
-                  className="text-white/50 hover:text-amber-400 transition-colors text-sm font-medium inline-flex items-center gap-2"
+                  className="text-slate-500 hover:text-blue-600 transition-colors text-sm font-medium inline-flex items-center gap-2"
                 >
                   See how it works
                   <span aria-hidden="true">→</span>
                 </a>
               </div>
-              <p className="text-white/30 text-xs mt-4 tracking-wide">
+              <p className="text-slate-300 text-xs mt-4 tracking-wide">
                 Opens your Messages app, pre-addressed to {PHONE}
               </p>
             </div>
@@ -307,30 +307,30 @@ export default function ReferralsPage() {
         </section>
 
         {/* ------------------------------------------------ Opportunity bar */}
-        <section className="border-y border-white/5 bg-white/[0.02]">
+        <section className="border-y border-slate-200 bg-slate-50">
           <div className="max-w-6xl mx-auto px-4 sm:px-8 lg:px-16 py-12">
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 sm:gap-4 text-center">
               <div className="scroll-reveal stagger-1">
-                <p className="text-3xl sm:text-4xl font-bold text-white mb-1">
+                <p className="text-3xl sm:text-4xl font-bold text-slate-900 mb-1">
                   A few minutes
                 </p>
-                <p className="text-white/40 text-sm">
+                <p className="text-slate-400 text-sm">
                   Of your time per referral
                 </p>
               </div>
               <div className="scroll-reveal stagger-2">
-                <p className="text-3xl sm:text-4xl font-bold text-white mb-1">
+                <p className="text-3xl sm:text-4xl font-bold text-slate-900 mb-1">
                   We do the closing
                 </p>
-                <p className="text-white/40 text-sm">
+                <p className="text-slate-400 text-sm">
                   Discovery, scoping, build, delivery
                 </p>
               </div>
               <div className="scroll-reveal stagger-3">
-                <p className="text-3xl sm:text-4xl font-bold text-white mb-1">
+                <p className="text-3xl sm:text-4xl font-bold text-slate-900 mb-1">
                   Recurring cut
                 </p>
-                <p className="text-white/40 text-sm">
+                <p className="text-slate-400 text-sm">
                   Every month the client stays
                 </p>
               </div>
@@ -345,14 +345,14 @@ export default function ReferralsPage() {
         >
           <div className="max-w-6xl mx-auto">
             <div className="text-center mb-16 scroll-reveal">
-              <p className="text-amber-400/80 font-medium tracking-[0.2em] uppercase text-sm mb-4">
+              <p className="text-blue-600 font-medium tracking-[0.2em] uppercase text-sm mb-4">
                 What We Actually Build
               </p>
-              <h2 className="text-3xl md:text-5xl font-bold text-white mb-4">
+              <h2 className="text-3xl md:text-5xl font-bold text-slate-900 mb-4">
                 Custom AI systems{' '}
                 <span className="section-gradient-text">for small teams</span>
               </h2>
-              <p className="text-white/40 text-lg max-w-2xl mx-auto">
+              <p className="text-slate-400 text-lg max-w-2xl mx-auto">
                 Not off-the-shelf software. Not a chatbot. We sit with the
                 business owner, learn their operation inside and out, and build
                 something that fits their workflow like it was always there.
@@ -394,12 +394,12 @@ export default function ReferralsPage() {
               ].map((item, index) => (
                 <div
                   key={item.title}
-                  className={`scroll-reveal stagger-${(index % 5) + 1} rounded-2xl border border-white/5 bg-white/[0.02] p-6 hover:border-amber-500/20 hover:bg-amber-500/[0.03] transition-all duration-500`}
+                  className={`scroll-reveal stagger-${(index % 5) + 1} rounded-2xl border border-slate-200 bg-slate-50 p-6 hover:border-blue-300 hover:bg-blue-50 transition-all duration-500`}
                 >
-                  <h3 className="text-lg font-bold text-white mb-2">
+                  <h3 className="text-lg font-bold text-slate-900 mb-2">
                     {item.title}
                   </h3>
-                  <p className="text-white/40 text-sm leading-relaxed">
+                  <p className="text-slate-400 text-sm leading-relaxed">
                     {item.body}
                   </p>
                 </div>
@@ -409,17 +409,17 @@ export default function ReferralsPage() {
         </section>
 
         {/* ------------------------------------------------ Industries */}
-        <section className="py-24 px-4 sm:px-8 lg:px-16 border-t border-white/5">
+        <section className="py-24 px-4 sm:px-8 lg:px-16 border-t border-slate-200">
           <div className="max-w-6xl mx-auto">
             <div className="text-center mb-16 scroll-reveal">
-              <p className="text-amber-400/80 font-medium tracking-[0.2em] uppercase text-sm mb-4">
+              <p className="text-blue-600 font-medium tracking-[0.2em] uppercase text-sm mb-4">
                 Sweet Spot
               </p>
-              <h2 className="text-3xl md:text-5xl font-bold text-white mb-4">
+              <h2 className="text-3xl md:text-5xl font-bold text-slate-900 mb-4">
                 Small teams,{' '}
                 <span className="section-gradient-text">big manual load</span>
               </h2>
-              <p className="text-white/40 text-lg max-w-2xl mx-auto">
+              <p className="text-slate-400 text-lg max-w-2xl mx-auto">
                 Any small business or professional practice of roughly 1–15
                 people running on manual processes — who know they should
                 modernize but don&apos;t have the technical chops to do it
@@ -433,15 +433,15 @@ export default function ReferralsPage() {
                 return (
                   <div
                     key={industry.name}
-                    className={`scroll-reveal stagger-${(index % 5) + 1} group relative rounded-2xl border border-white/5 bg-white/[0.02] p-6 hover:border-amber-500/20 hover:bg-amber-500/[0.03] transition-all duration-500`}
+                    className={`scroll-reveal stagger-${(index % 5) + 1} group relative rounded-2xl border border-slate-200 bg-slate-50 p-6 hover:border-blue-300 hover:bg-blue-50 transition-all duration-500`}
                   >
-                    <div className="w-10 h-10 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center mb-4 group-hover:bg-amber-500/20 transition-colors">
-                      <Icon className="w-5 h-5 text-amber-400" />
+                    <div className="w-10 h-10 rounded-lg bg-blue-50 border border-blue-200 flex items-center justify-center mb-4 group-hover:bg-blue-100 transition-colors">
+                      <Icon className="w-5 h-5 text-blue-600" />
                     </div>
-                    <h3 className="text-lg font-bold text-white mb-2 group-hover:text-amber-400 transition-colors duration-300">
+                    <h3 className="text-lg font-bold text-slate-900 mb-2 group-hover:text-blue-600 transition-colors duration-300">
                       {industry.name}
                     </h3>
-                    <p className="text-white/40 text-sm leading-relaxed">
+                    <p className="text-slate-400 text-sm leading-relaxed">
                       {industry.pain}
                     </p>
                   </div>
@@ -452,17 +452,17 @@ export default function ReferralsPage() {
         </section>
 
         {/* ------------------------------------------------ How to spot a fit */}
-        <section className="py-24 px-4 sm:px-8 lg:px-16 border-t border-white/5">
+        <section className="py-24 px-4 sm:px-8 lg:px-16 border-t border-slate-200">
           <div className="max-w-6xl mx-auto">
             <div className="text-center mb-16 scroll-reveal">
-              <p className="text-amber-400/80 font-medium tracking-[0.2em] uppercase text-sm mb-4">
+              <p className="text-blue-600 font-medium tracking-[0.2em] uppercase text-sm mb-4">
                 How To Spot A Good Fit
               </p>
-              <h2 className="text-3xl md:text-5xl font-bold text-white mb-4">
+              <h2 className="text-3xl md:text-5xl font-bold text-slate-900 mb-4">
                 You don&apos;t need to be technical.{' '}
                 <span className="section-gradient-text">Just listen.</span>
               </h2>
-              <p className="text-white/40 text-lg max-w-2xl mx-auto">
+              <p className="text-slate-400 text-lg max-w-2xl mx-auto">
                 Here&apos;s what to listen for in a normal conversation with
                 anyone running a small business.
               </p>
@@ -474,13 +474,13 @@ export default function ReferralsPage() {
                 return (
                   <div
                     key={signal.title}
-                    className={`scroll-reveal stagger-${(index % 5) + 1} rounded-2xl border border-white/5 bg-white/[0.02] p-6 hover:border-white/10 transition-all duration-500`}
+                    className={`scroll-reveal stagger-${(index % 5) + 1} rounded-2xl border border-slate-200 bg-slate-50 p-6 hover:border-blue-300 transition-all duration-500`}
                   >
-                    <Icon className="w-5 h-5 text-amber-400 mb-3" />
-                    <h3 className="text-base font-bold text-white mb-2">
+                    <Icon className="w-5 h-5 text-blue-600 mb-3" />
+                    <h3 className="text-base font-bold text-slate-900 mb-2">
                       {signal.title}
                     </h3>
-                    <p className="text-white/40 text-sm leading-relaxed">
+                    <p className="text-slate-400 text-sm leading-relaxed">
                       {signal.body}
                     </p>
                   </div>
@@ -491,19 +491,19 @@ export default function ReferralsPage() {
         </section>
 
         {/* ------------------------------------------------ How to start (3 steps) */}
-        <section className="py-24 px-4 sm:px-8 lg:px-16 border-t border-white/5">
+        <section className="py-24 px-4 sm:px-8 lg:px-16 border-t border-slate-200">
           <div className="max-w-5xl mx-auto">
             <div className="text-center mb-16 scroll-reveal">
-              <p className="text-amber-400/80 font-medium tracking-[0.2em] uppercase text-sm mb-4">
+              <p className="text-blue-600 font-medium tracking-[0.2em] uppercase text-sm mb-4">
                 How To Start
               </p>
-              <h2 className="text-3xl md:text-5xl font-bold text-white mb-4">
+              <h2 className="text-3xl md:text-5xl font-bold text-slate-900 mb-4">
                 No sales strategy.{' '}
                 <span className="section-gradient-text">
                   No pitch deck.
                 </span>
               </h2>
-              <p className="text-white/40 text-lg max-w-2xl mx-auto">
+              <p className="text-slate-400 text-lg max-w-2xl mx-auto">
                 Just two things: think about who you already know, and have
                 normal conversations.
               </p>
@@ -532,18 +532,18 @@ export default function ReferralsPage() {
               ].map((item, index) => (
                 <div
                   key={item.step}
-                  className={`scroll-reveal stagger-${index + 1} relative rounded-2xl border border-white/5 bg-white/[0.02] p-8 hover:border-white/10 transition-all duration-500`}
+                  className={`scroll-reveal stagger-${index + 1} relative rounded-2xl border border-slate-200 bg-slate-50 p-8 hover:border-blue-300 transition-all duration-500`}
                 >
-                  <span className="text-6xl md:text-7xl font-black text-white/[0.04] absolute top-4 right-6 select-none">
+                  <span className="text-6xl md:text-7xl font-black text-slate-100 absolute top-4 right-6 select-none">
                     {item.step}
                   </span>
-                  <p className="text-amber-400 text-sm font-semibold tracking-wide mb-2">
+                  <p className="text-blue-600 text-sm font-semibold tracking-wide mb-2">
                     Step {item.step}
                   </p>
-                  <h3 className="text-xl md:text-2xl font-bold text-white mb-3">
+                  <h3 className="text-xl md:text-2xl font-bold text-slate-900 mb-3">
                     {item.title}
                   </h3>
-                  <p className="text-white/50 text-base leading-relaxed max-w-3xl">
+                  <p className="text-slate-500 text-base leading-relaxed max-w-3xl">
                     {item.body}
                   </p>
                 </div>
@@ -553,17 +553,17 @@ export default function ReferralsPage() {
         </section>
 
         {/* ------------------------------------------------ What you say (scripts) */}
-        <section className="py-24 px-4 sm:px-8 lg:px-16 border-t border-white/5">
+        <section className="py-24 px-4 sm:px-8 lg:px-16 border-t border-slate-200">
           <div className="max-w-5xl mx-auto">
             <div className="text-center mb-16 scroll-reveal">
-              <p className="text-amber-400/80 font-medium tracking-[0.2em] uppercase text-sm mb-4">
+              <p className="text-blue-600 font-medium tracking-[0.2em] uppercase text-sm mb-4">
                 What You Say
               </p>
-              <h2 className="text-3xl md:text-5xl font-bold text-white mb-4">
+              <h2 className="text-3xl md:text-5xl font-bold text-slate-900 mb-4">
                 Scripts you can use{' '}
                 <span className="section-gradient-text">word for word</span>
               </h2>
-              <p className="text-white/40 text-lg max-w-2xl mx-auto">
+              <p className="text-slate-400 text-lg max-w-2xl mx-auto">
                 You&apos;re not selling technology. You&apos;re connecting them
                 with someone who saves them time.
               </p>
@@ -573,12 +573,12 @@ export default function ReferralsPage() {
               {scripts.map((script, index) => (
                 <div
                   key={script.label}
-                  className={`scroll-reveal stagger-${index + 1} relative rounded-2xl border border-white/5 bg-white/[0.02] p-6 hover:border-amber-500/20 transition-all duration-500 flex flex-col`}
+                  className={`scroll-reveal stagger-${index + 1} relative rounded-2xl border border-slate-200 bg-slate-50 p-6 hover:border-blue-300 transition-all duration-500 flex flex-col`}
                 >
-                  <p className="text-amber-400 text-xs font-semibold tracking-[0.15em] uppercase mb-3">
+                  <p className="text-blue-600 text-xs font-semibold tracking-[0.15em] uppercase mb-3">
                     {script.label}
                   </p>
-                  <p className="text-white/70 text-base leading-relaxed italic flex-1">
+                  <p className="text-slate-600 text-base leading-relaxed italic flex-1">
                     {script.body}
                   </p>
                 </div>
@@ -588,18 +588,18 @@ export default function ReferralsPage() {
         </section>
 
         {/* ------------------------------------------------ How you get paid */}
-        <section className="py-24 px-4 sm:px-8 lg:px-16 border-t border-white/5 relative overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-radial from-amber-500/5 via-transparent to-transparent pointer-events-none" />
+        <section className="py-24 px-4 sm:px-8 lg:px-16 border-t border-slate-200 relative overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-radial from-blue-100/40 via-transparent to-transparent pointer-events-none" />
           <div className="relative max-w-6xl mx-auto">
             <div className="text-center mb-16 scroll-reveal">
-              <p className="text-amber-400/80 font-medium tracking-[0.2em] uppercase text-sm mb-4">
+              <p className="text-blue-600 font-medium tracking-[0.2em] uppercase text-sm mb-4">
                 How You Get Paid
               </p>
-              <h2 className="text-3xl md:text-5xl font-bold text-white mb-4">
+              <h2 className="text-3xl md:text-5xl font-bold text-slate-900 mb-4">
                 Upfront, and then{' '}
                 <span className="section-gradient-text">recurring.</span>
               </h2>
-              <p className="text-white/40 text-lg max-w-2xl mx-auto">
+              <p className="text-slate-400 text-lg max-w-2xl mx-auto">
                 The more context you bring, the bigger the deal, and the bigger
                 your cut. Exact numbers are arranged per deal — talk to us
                 directly.
@@ -612,22 +612,22 @@ export default function ReferralsPage() {
                 return (
                   <div
                     key={tier.title}
-                    className={`scroll-reveal stagger-${index + 1} relative rounded-2xl border border-white/10 bg-white/[0.03] p-8 hover:border-amber-500/30 hover:bg-amber-500/[0.04] transition-all duration-500 flex flex-col`}
+                    className={`scroll-reveal stagger-${index + 1} relative rounded-2xl border border-slate-100 bg-slate-50 p-8 hover:border-blue-300 hover:bg-blue-50 transition-all duration-500 flex flex-col`}
                   >
-                    <div className="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center mb-5">
-                      <Icon className="w-6 h-6 text-amber-400" />
+                    <div className="w-12 h-12 rounded-xl bg-blue-50 border border-blue-200 flex items-center justify-center mb-5">
+                      <Icon className="w-6 h-6 text-blue-600" />
                     </div>
-                    <p className="text-amber-400/80 text-xs font-semibold tracking-[0.15em] uppercase mb-2">
+                    <p className="text-blue-600 text-xs font-semibold tracking-[0.15em] uppercase mb-2">
                       {tier.sub}
                     </p>
-                    <h3 className="text-xl font-bold text-white mb-3">
+                    <h3 className="text-xl font-bold text-slate-900 mb-3">
                       {tier.title}
                     </h3>
-                    <p className="text-white/50 text-sm leading-relaxed mb-6 flex-1">
+                    <p className="text-slate-500 text-sm leading-relaxed mb-6 flex-1">
                       {tier.body}
                     </p>
-                    <div className="pt-4 border-t border-white/5">
-                      <p className="text-white text-sm font-semibold">
+                    <div className="pt-4 border-t border-slate-200">
+                      <p className="text-slate-900 text-sm font-semibold">
                         {tier.payout}
                       </p>
                     </div>
@@ -636,13 +636,13 @@ export default function ReferralsPage() {
               })}
             </div>
 
-            <div className="scroll-reveal rounded-2xl border border-amber-500/20 bg-gradient-to-br from-amber-500/[0.04] to-transparent p-8 md:p-10 text-center max-w-3xl mx-auto">
-              <p className="text-white/70 text-lg md:text-xl leading-relaxed mb-2">
+            <div className="scroll-reveal rounded-2xl border border-blue-200 bg-gradient-to-br from-blue-50 to-transparent p-8 md:p-10 text-center max-w-3xl mx-auto">
+              <p className="text-slate-600 text-lg md:text-xl leading-relaxed mb-2">
                 Referrals compound. Every annual contract that closes keeps
                 paying you out — month after month, for as long as the client
                 stays.
               </p>
-              <p className="text-amber-400/90 text-base font-medium">
+              <p className="text-blue-600 text-base font-medium">
                 All you did? Ask for info. Make the intro.
               </p>
             </div>
@@ -650,17 +650,17 @@ export default function ReferralsPage() {
         </section>
 
         {/* ------------------------------------------------ Help us close bigger */}
-        <section className="py-24 px-4 sm:px-8 lg:px-16 border-t border-white/5">
+        <section className="py-24 px-4 sm:px-8 lg:px-16 border-t border-slate-200">
           <div className="max-w-5xl mx-auto">
             <div className="text-center mb-16 scroll-reveal">
-              <p className="text-amber-400/80 font-medium tracking-[0.2em] uppercase text-sm mb-4">
+              <p className="text-blue-600 font-medium tracking-[0.2em] uppercase text-sm mb-4">
                 Bring Us Context
               </p>
-              <h2 className="text-3xl md:text-5xl font-bold text-white mb-4">
+              <h2 className="text-3xl md:text-5xl font-bold text-slate-900 mb-4">
                 How you help us{' '}
                 <span className="section-gradient-text">close bigger</span>
               </h2>
-              <p className="text-white/40 text-lg max-w-2xl mx-auto">
+              <p className="text-slate-400 text-lg max-w-2xl mx-auto">
                 You&apos;re not selling — you&apos;re an inquisitive friend,
                 just asking and listening. What you pick up in a casual chat
                 determines how big the deal can be.
@@ -671,12 +671,12 @@ export default function ReferralsPage() {
               {closingTips.map((tip, index) => (
                 <div
                   key={tip.title}
-                  className={`scroll-reveal stagger-${index + 1} rounded-2xl border border-white/5 bg-white/[0.02] p-8 hover:border-white/10 transition-all duration-500`}
+                  className={`scroll-reveal stagger-${index + 1} rounded-2xl border border-slate-200 bg-slate-50 p-8 hover:border-blue-300 transition-all duration-500`}
                 >
-                  <h3 className="text-xl font-bold text-white mb-3">
+                  <h3 className="text-xl font-bold text-slate-900 mb-3">
                     {tip.title}
                   </h3>
-                  <p className="text-white/50 text-base leading-relaxed">
+                  <p className="text-slate-500 text-base leading-relaxed">
                     {tip.body}
                   </p>
                 </div>
@@ -686,17 +686,17 @@ export default function ReferralsPage() {
         </section>
 
         {/* ------------------------------------------------ Process after referral */}
-        <section className="py-24 px-4 sm:px-8 lg:px-16 border-t border-white/5">
+        <section className="py-24 px-4 sm:px-8 lg:px-16 border-t border-slate-200">
           <div className="max-w-5xl mx-auto">
             <div className="text-center mb-16 scroll-reveal">
-              <p className="text-amber-400/80 font-medium tracking-[0.2em] uppercase text-sm mb-4">
+              <p className="text-blue-600 font-medium tracking-[0.2em] uppercase text-sm mb-4">
                 What Happens After You Refer
               </p>
-              <h2 className="text-3xl md:text-5xl font-bold text-white mb-4">
+              <h2 className="text-3xl md:text-5xl font-bold text-slate-900 mb-4">
                 Your job ends at{' '}
                 <span className="section-gradient-text">the introduction</span>
               </h2>
-              <p className="text-white/40 text-lg max-w-2xl mx-auto">
+              <p className="text-slate-400 text-lg max-w-2xl mx-auto">
                 Total time you spend? A few messages and a casual chat. Here&apos;s
                 what we take it from there.
               </p>
@@ -708,21 +708,21 @@ export default function ReferralsPage() {
                 return (
                   <div
                     key={item.step}
-                    className={`scroll-reveal stagger-${(index % 5) + 1} flex flex-col sm:flex-row gap-6 rounded-2xl border border-white/5 bg-white/[0.02] p-6 md:p-8 hover:border-amber-500/20 hover:bg-amber-500/[0.02] transition-all duration-500`}
+                    className={`scroll-reveal stagger-${(index % 5) + 1} flex flex-col sm:flex-row gap-6 rounded-2xl border border-slate-200 bg-slate-50 p-6 md:p-8 hover:border-blue-300 hover:bg-blue-50 transition-all duration-500`}
                   >
                     <div className="flex sm:flex-col items-center sm:items-start gap-4 sm:gap-3 sm:min-w-[80px]">
-                      <span className="text-3xl md:text-4xl font-black text-amber-400/20 tabular-nums">
+                      <span className="text-3xl md:text-4xl font-black text-blue-600/20 tabular-nums">
                         {item.step}
                       </span>
-                      <div className="w-10 h-10 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center">
-                        <Icon className="w-5 h-5 text-amber-400" />
+                      <div className="w-10 h-10 rounded-lg bg-blue-50 border border-blue-200 flex items-center justify-center">
+                        <Icon className="w-5 h-5 text-blue-600" />
                       </div>
                     </div>
                     <div className="flex-1">
-                      <h3 className="text-lg md:text-xl font-bold text-white mb-2">
+                      <h3 className="text-lg md:text-xl font-bold text-slate-900 mb-2">
                         {item.title}
                       </h3>
-                      <p className="text-white/50 text-base leading-relaxed">
+                      <p className="text-slate-500 text-base leading-relaxed">
                         {item.body}
                       </p>
                     </div>
@@ -734,13 +734,13 @@ export default function ReferralsPage() {
         </section>
 
         {/* ------------------------------------------------ Common questions */}
-        <section className="py-24 px-4 sm:px-8 lg:px-16 border-t border-white/5">
+        <section className="py-24 px-4 sm:px-8 lg:px-16 border-t border-slate-200">
           <div className="max-w-4xl mx-auto">
             <div className="text-center mb-16 scroll-reveal">
-              <p className="text-amber-400/80 font-medium tracking-[0.2em] uppercase text-sm mb-4">
+              <p className="text-blue-600 font-medium tracking-[0.2em] uppercase text-sm mb-4">
                 In Case They Ask
               </p>
-              <h2 className="text-3xl md:text-5xl font-bold text-white mb-4">
+              <h2 className="text-3xl md:text-5xl font-bold text-slate-900 mb-4">
                 Common questions from{' '}
                 <span className="section-gradient-text">prospects</span>
               </h2>
@@ -771,15 +771,15 @@ export default function ReferralsPage() {
               ].map((item, index) => (
                 <div
                   key={item.q}
-                  className={`scroll-reveal stagger-${(index % 5) + 1} rounded-2xl border border-white/5 bg-white/[0.02] p-6 md:p-7 hover:border-white/10 transition-all duration-500`}
+                  className={`scroll-reveal stagger-${(index % 5) + 1} rounded-2xl border border-slate-200 bg-slate-50 p-6 md:p-7 hover:border-blue-300 transition-all duration-500`}
                 >
                   <div className="flex items-start gap-3">
-                    <CheckCircle2 className="w-5 h-5 text-amber-400 flex-shrink-0 mt-1" />
+                    <CheckCircle2 className="w-5 h-5 text-blue-600 flex-shrink-0 mt-1" />
                     <div>
-                      <h3 className="text-base md:text-lg font-bold text-white mb-2">
+                      <h3 className="text-base md:text-lg font-bold text-slate-900 mb-2">
                         {item.q}
                       </h3>
-                      <p className="text-white/50 text-sm md:text-base leading-relaxed">
+                      <p className="text-slate-500 text-sm md:text-base leading-relaxed">
                         {item.a}
                       </p>
                     </div>
@@ -791,17 +791,17 @@ export default function ReferralsPage() {
         </section>
 
         {/* ------------------------------------------------ Final CTA — TEXT ME */}
-        <section className="py-24 px-4 sm:px-8 lg:px-16 border-t border-white/5 relative overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-radial from-amber-500/10 via-transparent to-transparent pointer-events-none" />
+        <section className="py-24 px-4 sm:px-8 lg:px-16 border-t border-slate-200 relative overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-radial from-blue-100/40 via-transparent to-transparent pointer-events-none" />
           <div className="relative max-w-3xl mx-auto text-center scroll-reveal">
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/20 mb-6">
-              <MessageSquare className="w-8 h-8 text-amber-400" />
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-blue-50 border border-blue-200 mb-6">
+              <MessageSquare className="w-8 h-8 text-blue-600" />
             </div>
-            <h2 className="text-3xl md:text-5xl font-bold text-white mb-6">
+            <h2 className="text-3xl md:text-5xl font-bold text-slate-900 mb-6">
               Got someone in mind?{' '}
               <span className="section-gradient-text">Shoot me a text.</span>
             </h2>
-            <p className="text-white/50 text-lg mb-10 max-w-xl mx-auto leading-relaxed">
+            <p className="text-slate-500 text-lg mb-10 max-w-xl mx-auto leading-relaxed">
               Send their name, what they do, and any context you picked up. I&apos;ll
               take it from there — free discovery call, custom proposal, the
               whole flow. You just collect.
@@ -814,58 +814,20 @@ export default function ReferralsPage() {
               />
               <a
                 href={`tel:${PHONE}`}
-                className="text-white/50 hover:text-amber-400 transition-colors text-sm font-medium inline-flex items-center gap-2"
+                className="text-slate-500 hover:text-blue-600 transition-colors text-sm font-medium inline-flex items-center gap-2"
               >
                 <Phone className="w-4 h-4" />
                 Or call {PHONE}
               </a>
             </div>
 
-            <p className="text-white/30 text-xs tracking-wide">
+            <p className="text-slate-300 text-xs tracking-wide">
               Aqeel Ali · Salience · {PHONE}
             </p>
           </div>
         </section>
 
-        {/* ------------------------------------------------ Footer */}
-        <footer className="py-12 px-4 sm:px-8 lg:px-16 border-t border-white/5">
-          <div className="max-w-6xl mx-auto">
-            <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-              <div className="text-center md:text-left">
-                <p className="text-white font-bold text-xl mb-1">Salience</p>
-                <p className="text-white/30 text-sm">AI Automation, Deployed.</p>
-              </div>
-              <div className="flex items-center gap-6 text-white/30 text-sm">
-                <Link href="/" className="hover:text-amber-400 transition-colors">
-                  Home
-                </Link>
-                <Link
-                  href="/team"
-                  className="hover:text-amber-400 transition-colors"
-                >
-                  Team
-                </Link>
-                <Link
-                  href="/services/consulting"
-                  className="hover:text-amber-400 transition-colors"
-                >
-                  Services
-                </Link>
-                <Link
-                  href="/referrals"
-                  className="hover:text-amber-400 transition-colors"
-                >
-                  Referrals
-                </Link>
-              </div>
-            </div>
-            <div className="mt-8 pt-8 border-t border-white/5 text-center">
-              <p className="text-white/20 text-sm">
-                &copy; 2026 Salience. All rights reserved.
-              </p>
-            </div>
-          </div>
-        </footer>
+        <FooterSpotlight />
       </main>
     </>
   );

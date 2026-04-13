@@ -23,25 +23,25 @@ export default function ChartonFinancialPage() {
 
   if (!userId) {
     return (
-      <div className="min-h-[100dvh] bg-[#0a0a0a] flex items-center justify-center">
-        <div className="w-6 h-6 border-2 border-amber-500/30 border-t-amber-500 rounded-full animate-spin" />
+      <div className="min-h-[100dvh] bg-white flex items-center justify-center">
+        <div className="w-6 h-6 border-2 border-blue-200 border-t-blue-600 rounded-full animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-[100dvh] bg-[#0a0a0a] flex flex-col">
+    <div className="min-h-[100dvh] bg-white flex flex-col">
       <Navbar />
 
-      {/* Admin mode toggle — small, subtle, top-right */}
-      <div className="fixed top-20 right-4 z-30 flex items-center gap-1 bg-[#141414]/80 backdrop-blur-sm border border-white/[0.06] rounded-lg p-0.5">
+      {/* Admin mode toggle */}
+      <div className="fixed top-20 right-4 z-30 flex items-center gap-1 bg-white/80 backdrop-blur-sm border border-slate-200 rounded-lg p-0.5 shadow-sm">
         <button
           onClick={() => setMode("intake")}
           className={cn(
             "p-2 rounded-md transition-all duration-200",
             mode === "intake"
-              ? "bg-amber-500/15 text-amber-400"
-              : "text-white/30 hover:text-white/50"
+              ? "bg-blue-50 text-blue-600"
+              : "text-slate-400 hover:text-slate-600"
           )}
           title="Interview mode"
         >
@@ -52,8 +52,8 @@ export default function ChartonFinancialPage() {
           className={cn(
             "p-2 rounded-md transition-all duration-200",
             mode === "chat"
-              ? "bg-amber-500/15 text-amber-400"
-              : "text-white/30 hover:text-white/50"
+              ? "bg-blue-50 text-blue-600"
+              : "text-slate-400 hover:text-slate-600"
           )}
           title="Admin chat mode"
         >
@@ -67,14 +67,13 @@ export default function ChartonFinancialPage() {
         </main>
       ) : (
         <>
-          {/* Mobile sidebar toggle */}
           <button
             onClick={charton.toggleSidebar}
             className={cn(
               "fixed top-20 left-3 z-30 md:hidden",
               "w-10 h-10 rounded-xl flex items-center justify-center",
-              "bg-[#141414] border border-white/[0.08]",
-              "text-white/50 hover:text-white/80 hover:border-amber-500/30",
+              "bg-white border border-slate-200 shadow-sm",
+              "text-slate-500 hover:text-blue-600 hover:border-blue-300",
               "transition-all duration-200"
             )}
           >
@@ -94,7 +93,7 @@ export default function ChartonFinancialPage() {
             <div className="flex-1 flex flex-col min-h-0 h-[calc(100dvh-4rem)] md:h-[calc(100dvh-5rem)]">
               {charton.isLoading ? (
                 <div className="flex-1 flex items-center justify-center">
-                  <div className="w-6 h-6 border-2 border-amber-500/30 border-t-amber-500 rounded-full animate-spin" />
+                  <div className="w-6 h-6 border-2 border-blue-200 border-t-blue-600 rounded-full animate-spin" />
                 </div>
               ) : (
                 <>

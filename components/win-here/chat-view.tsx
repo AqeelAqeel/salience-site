@@ -58,16 +58,16 @@ function ChatBubble({ message }: { message: WinHereMessage }) {
       )}
     >
       {!isUser && (
-        <div className="w-9 h-9 rounded-full bg-amber-500/10 border border-amber-500/20 flex items-center justify-center shrink-0">
-          <Bot className="w-4 h-4 text-amber-400" />
+        <div className="w-9 h-9 rounded-full bg-blue-50 border border-blue-200 flex items-center justify-center shrink-0">
+          <Bot className="w-4 h-4 text-blue-600" />
         </div>
       )}
       <div
         className={cn(
           "px-5 py-3.5 rounded-2xl text-[15px] md:text-base leading-relaxed",
           isUser
-            ? "bg-amber-500/15 text-white border border-amber-500/20 rounded-br-md"
-            : "bg-white/[0.04] text-white/85 border border-white/[0.08] rounded-bl-md"
+            ? "bg-blue-600 text-white rounded-br-md"
+            : "bg-slate-100 text-slate-700 border border-slate-200 rounded-bl-md"
         )}
       >
         <div className="whitespace-pre-wrap break-words">{message.content}</div>
@@ -79,14 +79,14 @@ function ChatBubble({ message }: { message: WinHereMessage }) {
 function TypingIndicator() {
   return (
     <div className="flex gap-3 max-w-[90%] mr-auto">
-      <div className="w-9 h-9 rounded-full bg-amber-500/10 border border-amber-500/20 flex items-center justify-center shrink-0">
-        <Bot className="w-4 h-4 text-amber-400" />
+      <div className="w-9 h-9 rounded-full bg-blue-50 border border-blue-200 flex items-center justify-center shrink-0">
+        <Bot className="w-4 h-4 text-blue-600" />
       </div>
-      <div className="px-5 py-4 rounded-2xl bg-white/[0.04] border border-white/[0.08] rounded-bl-md">
+      <div className="px-5 py-4 rounded-2xl bg-slate-100 border border-slate-200 rounded-bl-md">
         <div className="flex gap-1.5">
-          <span className="w-2 h-2 bg-white/50 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
-          <span className="w-2 h-2 bg-white/50 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
-          <span className="w-2 h-2 bg-white/50 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
+          <span className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
+          <span className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
+          <span className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
         </div>
       </div>
     </div>
@@ -106,7 +106,6 @@ export function WinHereChatView() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // ─── Hydration: restore from sessionStorage, else create a new session ──
   useEffect(() => {
     if (hydratedRef.current) return;
     hydratedRef.current = true;
@@ -128,7 +127,6 @@ export function WinHereChatView() {
       // ignore corrupted state
     }
 
-    // Always ensure we have a session row on the server
     const bootstrap = async () => {
       try {
         const res = await fetch("/api/win-here/session", { method: "POST" });
@@ -136,7 +134,6 @@ export function WinHereChatView() {
         if (data.prospectId) setProspectId(data.prospectId);
         if (data.sessionId) setSessionId(data.sessionId);
 
-        // If we didn't restore a conversation, kick off the opening turn
         if (!restored) {
           await sendMessage("", {
             forceHistory: [],
@@ -147,7 +144,6 @@ export function WinHereChatView() {
       } catch (err) {
         console.error("Failed to bootstrap session:", err);
         if (!restored) {
-          // Fall back to a hardcoded opening if the API is down
           setMessages([
             {
               id: "opening-fallback",
@@ -164,28 +160,20 @@ export function WinHereChatView() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ─── Persist to sessionStorage on every meaningful change ──────────────
   useEffect(() => {
     if (!hydratedRef.current) return;
     try {
-      const state: PersistedState = {
-        prospectId,
-        sessionId,
-        messages,
-        scratchpad,
-      };
+      const state: PersistedState = { prospectId, sessionId, messages, scratchpad };
       sessionStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     } catch {
-      // storage full or disabled — fine
+      // storage full or disabled
     }
   }, [prospectId, sessionId, messages, scratchpad]);
 
-  // ─── Auto-scroll ──────────────────────────────────────────────────────
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isSending]);
 
-  // ─── Core send function ──────────────────────────────────────────────
   const sendMessage = useCallback(
     async (
       text: string,
@@ -199,7 +187,6 @@ export function WinHereChatView() {
       const isOpening = !trimmed && (opts?.forceHistory?.length === 0);
       if (!trimmed && !isOpening) return;
 
-      // Optimistic user turn (skip on opening)
       let nextHistory = opts?.forceHistory ?? messages;
       if (trimmed) {
         const userTurn: WinHereMessage = {
@@ -244,8 +231,7 @@ export function WinHereChatView() {
         const errorTurn: WinHereMessage = {
           id: crypto.randomUUID(),
           role: "assistant",
-          content:
-            "ok — something hiccuped on my end. try that one more time?",
+          content: "ok — something hiccuped on my end. try that one more time?",
           timestamp: new Date().toISOString(),
         };
         setMessages((prev) => [...prev, errorTurn]);
@@ -281,9 +267,6 @@ export function WinHereChatView() {
     }
   };
 
-  // Show starter chips only before the user has sent anything of substance
-  // AND when we have starters to show. Also show them again each time new
-  // adaptive starters come in via the model.
   const userMessageCount = messages.filter((m) => m.role === "user").length;
   const showStarters =
     !isSending &&
@@ -292,7 +275,6 @@ export function WinHereChatView() {
 
   const showCTA = scratchpad.readiness.verdict === "ready";
 
-  // ─── Compact mobile scratchpad summary ───────────────────────────────
   const mobileSummaryBits: string[] = [];
   if (scratchpad.siteName) mobileSummaryBits.push(scratchpad.siteName);
   if (scratchpad.pains.length)
@@ -302,50 +284,49 @@ export function WinHereChatView() {
   const mobileSummary = mobileSummaryBits.join(" · ") || "tap to see what i'm hearing";
 
   return (
-    <div className="w-full min-h-[100dvh] bg-[#0a0a0a] text-white relative overflow-x-clip">
-      {/* Ambient glow */}
-      <div className="pointer-events-none absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-4xl h-[500px]">
-        <div className="absolute inset-0 bg-gradient-to-b from-amber-500/10 via-amber-500/5 to-transparent blur-3xl" />
-      </div>
-      <div className="pointer-events-none absolute top-32 left-10 w-72 h-72 bg-amber-500/6 rounded-full blur-3xl" />
-      <div className="pointer-events-none absolute bottom-20 right-10 w-96 h-96 bg-purple-500/5 rounded-full blur-3xl" />
+    <div className="w-full min-h-[100dvh] bg-white text-slate-800 relative overflow-x-clip">
+      {/* Soft ambient gradient */}
+      <div className="pointer-events-none absolute top-0 left-0 right-0 h-[500px] bg-gradient-to-b from-blue-50/60 to-transparent" />
+      <div className="pointer-events-none absolute top-32 left-10 w-72 h-72 bg-blue-100/30 rounded-full blur-3xl" />
+      <div className="pointer-events-none absolute bottom-20 right-10 w-96 h-96 bg-purple-100/20 rounded-full blur-3xl" />
 
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 md:pt-28 pb-8">
         {/* Header */}
         <div className="text-center mb-10 md:mb-14">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/30 mb-5">
-            <Bot className="w-4 h-4 text-amber-400" />
-            <span className="text-amber-400 text-xs font-medium uppercase tracking-wider">
-              Live with Salience
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-50 border border-blue-200 mb-5">
+            <Bot className="w-4 h-4 text-blue-600" />
+            <span className="text-blue-700 text-xs font-medium uppercase tracking-wider">
+              Live with <span className="gold-accent font-bold">Salience</span>
             </span>
           </div>
           <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight leading-[1.1] mb-4">
-            <span className="hero-gradient-text">How do i get my time</span>
+            <span className="text-slate-900">How do i get my </span>
+            <span className="gold-accent">time</span>
             <br />
-            <span className="text-white">and energy back?</span>
+            <span className="text-slate-900">and energy back?</span>
           </h1>
-          <p className="text-base md:text-lg text-white/50 max-w-xl mx-auto leading-relaxed">
+          <p className="text-base md:text-lg text-slate-500 max-w-xl mx-auto leading-relaxed">
             Tell me about your week. I&apos;ll canvass your business, find what&apos;s
             eating your day, and show you what we can actually take off your plate.
           </p>
         </div>
 
-        {/* Mobile scratchpad summary bar (sticky under the header) */}
+        {/* Mobile scratchpad summary bar */}
         <button
           type="button"
           onClick={() => setMobileScratchpadOpen(true)}
-          className="lg:hidden w-full flex items-center justify-between gap-3 px-4 py-3 mb-4 rounded-xl bg-white/[0.03] border border-white/[0.06] text-left"
+          className="lg:hidden w-full flex items-center justify-between gap-3 px-4 py-3 mb-4 rounded-xl bg-slate-50 border border-slate-200 text-left"
         >
           <div className="flex items-center gap-2 min-w-0">
-            <div className="w-7 h-7 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center shrink-0">
-              <Bot className="w-3.5 h-3.5 text-amber-400" />
+            <div className="w-7 h-7 rounded-lg bg-blue-50 border border-blue-200 flex items-center justify-center shrink-0">
+              <Bot className="w-3.5 h-3.5 text-blue-600" />
             </div>
             <div className="min-w-0">
-              <div className="text-[11px] uppercase tracking-wider text-white/40">Live read</div>
-              <div className="text-sm text-white/80 truncate">{mobileSummary}</div>
+              <div className="text-[11px] uppercase tracking-wider text-slate-400">Live read</div>
+              <div className="text-sm text-slate-700 truncate">{mobileSummary}</div>
             </div>
           </div>
-          <ChevronUp className="w-4 h-4 text-white/40 shrink-0" />
+          <ChevronUp className="w-4 h-4 text-slate-400 shrink-0" />
         </button>
 
         {/* Main two-column layout */}
@@ -359,11 +340,11 @@ export function WinHereChatView() {
 
           {/* Chat column */}
           <main className="flex-1 min-w-0">
-            <div className="flex flex-col rounded-2xl bg-white/[0.02] border border-white/[0.06] backdrop-blur-sm overflow-hidden min-h-[70vh] lg:min-h-[75vh]">
+            <div className="flex flex-col rounded-2xl bg-white border border-slate-200 shadow-sm overflow-hidden min-h-[70vh] lg:min-h-[75vh]">
               {/* Messages */}
               <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4">
                 {messages.length === 0 && !isSending && (
-                  <div className="flex items-center justify-center h-full text-center text-white/40 text-sm italic">
+                  <div className="flex items-center justify-center h-full text-center text-slate-400 text-sm italic">
                     starting up...
                   </div>
                 )}
@@ -377,7 +358,7 @@ export function WinHereChatView() {
               {/* Starter chips */}
               {showStarters && (
                 <div className="px-4 md:px-6 pb-3 pt-1">
-                  <div className="text-xs uppercase tracking-wider text-white/30 mb-2">
+                  <div className="text-xs uppercase tracking-wider text-slate-400 mb-2">
                     or start with
                   </div>
                   <StarterChips
@@ -389,7 +370,7 @@ export function WinHereChatView() {
               )}
 
               {/* Input */}
-              <div className="border-t border-white/[0.06] p-3 md:p-4 bg-[#0a0a0a]/40 backdrop-blur-sm">
+              <div className="border-t border-slate-200 p-3 md:p-4 bg-slate-50/50">
                 <div className="flex items-end gap-3">
                   <textarea
                     ref={textareaRef}
@@ -401,9 +382,9 @@ export function WinHereChatView() {
                     rows={1}
                     className={cn(
                       "flex-1 resize-none outline-none rounded-2xl px-4 py-3",
-                      "bg-white/[0.04] border border-white/[0.08]",
-                      "placeholder:text-white/25 text-[15px] text-white/90",
-                      "focus:border-amber-500/40 focus:bg-white/[0.06] transition-all duration-200",
+                      "bg-white border border-slate-200",
+                      "placeholder:text-slate-400 text-[15px] text-slate-800",
+                      "focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition-all duration-200",
                       "min-h-[52px] max-h-[140px]"
                     )}
                   />
@@ -413,10 +394,10 @@ export function WinHereChatView() {
                     disabled={isSending || !input.trim()}
                     className={cn(
                       "shrink-0 w-[52px] h-[52px] rounded-2xl flex items-center justify-center transition-all duration-200",
-                      "bg-gradient-to-br from-amber-400 to-amber-600 text-black",
-                      "hover:from-amber-300 hover:to-amber-500",
+                      "bg-gradient-to-br from-blue-500 to-blue-700 text-white",
+                      "hover:from-blue-400 hover:to-blue-600",
                       "active:scale-95",
-                      "disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:from-amber-400"
+                      "disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:from-blue-500"
                     )}
                     aria-label="Send"
                   >
@@ -429,7 +410,6 @@ export function WinHereChatView() {
               </div>
             </div>
 
-            {/* CTA block — revealed once readiness hits 'ready' */}
             {showCTA && (
               <div className="mt-8">
                 <SessionCTA />
@@ -443,16 +423,16 @@ export function WinHereChatView() {
       {mobileScratchpadOpen && (
         <div className="lg:hidden fixed inset-0 z-50 flex items-end">
           <div
-            className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+            className="absolute inset-0 bg-black/30 backdrop-blur-sm"
             onClick={() => setMobileScratchpadOpen(false)}
           />
-          <div className="relative w-full max-h-[85vh] overflow-y-auto rounded-t-3xl border-t border-white/10 bg-[#0a0a0a] animate-in slide-in-from-bottom duration-300">
-            <div className="sticky top-0 flex items-center justify-between p-4 border-b border-white/[0.06] bg-[#0a0a0a]/95 backdrop-blur-sm z-10">
-              <div className="text-sm font-semibold text-white/90">Live read</div>
+          <div className="relative w-full max-h-[85vh] overflow-y-auto rounded-t-3xl border-t border-slate-200 bg-white animate-in slide-in-from-bottom duration-300">
+            <div className="sticky top-0 flex items-center justify-between p-4 border-b border-slate-100 bg-white/95 backdrop-blur-sm z-10">
+              <div className="text-sm font-semibold text-slate-800">Live read</div>
               <button
                 type="button"
                 onClick={() => setMobileScratchpadOpen(false)}
-                className="w-8 h-8 rounded-full flex items-center justify-center text-white/60 hover:text-white hover:bg-white/10"
+                className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-100"
                 aria-label="Close"
               >
                 <X className="w-5 h-5" />

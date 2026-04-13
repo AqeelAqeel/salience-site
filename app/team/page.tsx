@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import Navbar from '@/components/navbar';
+import FooterSpotlight from '@/components/footer-spotlight';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, ExternalLink } from 'lucide-react';
 import Image from 'next/image';
@@ -135,7 +136,7 @@ function TeamMemberCard({ member, index }: { member: TeamMember; index: number }
       >
         {/* Photo */}
         <div className="relative w-full max-w-[320px] lg:max-w-[380px] flex-shrink-0">
-          <div className="relative aspect-[4/5] rounded-2xl overflow-hidden border border-white/10 group">
+          <div className="relative aspect-[4/5] rounded-2xl overflow-hidden border border-slate-200 group">
             {member.image ? (
               <Image
                 src={member.image}
@@ -145,8 +146,8 @@ function TeamMemberCard({ member, index }: { member: TeamMember; index: number }
                 sizes="(max-width: 768px) 320px, 380px"
               />
             ) : (
-              <div className="absolute inset-0 bg-gradient-to-br from-amber-500/20 to-amber-600/10 flex items-center justify-center">
-                <span className="text-6xl font-bold text-white/30">
+              <div className="absolute inset-0 bg-gradient-to-br from-blue-100 to-blue-50 flex items-center justify-center">
+                <span className="text-6xl font-bold text-slate-300">
                   {member.name
                     .split(' ')
                     .map((n) => n[0])
@@ -158,27 +159,27 @@ function TeamMemberCard({ member, index }: { member: TeamMember; index: number }
           </div>
           {/* Decorative accent */}
           <div
-            className={`absolute -z-10 top-4 ${isEven ? '-right-4' : '-left-4'} w-full h-full rounded-2xl border border-amber-500/20`}
+            className={`absolute -z-10 top-4 ${isEven ? '-right-4' : '-left-4'} w-full h-full rounded-2xl border border-blue-200`}
           />
         </div>
 
         {/* Content */}
         <div className="flex-1 text-center lg:text-left">
           <div className="flex items-center justify-center lg:justify-start gap-3 mb-2">
-            <h3 className="text-3xl sm:text-4xl font-bold text-white">{member.name}</h3>
+            <h3 className="text-3xl sm:text-4xl font-bold text-slate-900">{member.name}</h3>
             {member.linkedin && (
               <a
                 href={member.linkedin}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-white/50 hover:text-amber-400 hover:border-amber-400/30 hover:bg-amber-400/5 transition-all duration-300"
+                className="w-8 h-8 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-center text-slate-500 hover:text-blue-600 hover:border-blue-300 hover:bg-blue-50 transition-all duration-300"
                 aria-label={`${member.name} on LinkedIn`}
               >
                 <LinkedInIcon className="w-4 h-4" />
               </a>
             )}
           </div>
-          <p className="text-amber-400 font-semibold text-lg mb-4 tracking-wide uppercase">
+          <p className="text-blue-600 font-semibold text-lg mb-4 tracking-wide uppercase">
             {member.role}
           </p>
 
@@ -186,14 +187,14 @@ function TeamMemberCard({ member, index }: { member: TeamMember; index: number }
             {member.expertise.map((skill) => (
               <span
                 key={skill}
-                className="px-3 py-1 rounded-full text-xs font-medium bg-white/5 border border-white/10 text-white/70"
+                className="px-3 py-1 rounded-full text-xs font-medium bg-slate-50 border border-slate-200 text-slate-600"
               >
                 {skill}
               </span>
             ))}
           </div>
 
-          <p className="text-white/60 leading-relaxed text-base max-w-xl mx-auto lg:mx-0">
+          <p className="text-slate-500 leading-relaxed text-base max-w-xl mx-auto lg:mx-0">
             {member.bio}
           </p>
         </div>
@@ -208,26 +209,26 @@ export default function TeamPage() {
   return (
     <>
       <Navbar />
-      <main className="min-h-screen bg-[#0a0a0a]">
+      <main className="min-h-screen bg-white">
         {/* Hero Section */}
         <section className="relative pt-36 pb-24 px-4 sm:px-8 lg:px-16 overflow-hidden">
           {/* Ambient background */}
           <div className="absolute inset-0 bg-grid-pattern opacity-40" />
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[600px] bg-gradient-radial from-amber-500/8 via-transparent to-transparent pointer-events-none" />
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[600px] bg-gradient-radial from-blue-100/40 via-transparent to-transparent pointer-events-none" />
 
           <div className="relative max-w-5xl mx-auto text-center">
             <div className="scroll-reveal">
-              <p className="text-amber-400/80 font-medium tracking-[0.2em] uppercase text-sm mb-6">
+              <p className="text-blue-600 font-medium tracking-[0.2em] uppercase text-sm mb-6">
                 World-Class AI Expertise, Applied
               </p>
-              <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-white mb-8 leading-[1.05]">
+              <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-slate-900 mb-8 leading-[1.05]">
                 We don&apos;t just build AI.{' '}
-                <span className="hero-gradient-text">We ship it into your workflows.</span>
+                <span className="blue-gradient-text">We ship it into your workflows.</span>
               </h1>
-              <p className="text-white/50 text-lg md:text-xl max-w-3xl mx-auto leading-relaxed mb-4">
+              <p className="text-slate-500 text-lg md:text-xl max-w-3xl mx-auto leading-relaxed mb-4">
                 Our team includes globally recognized AI practitioners who have contributed to the field&apos;s most important advances. We bring that same rigor to your operations — not as a science project, but as working infrastructure that compounds value from day one.
               </p>
-              <p className="text-white/40 text-base max-w-2xl mx-auto leading-relaxed">
+              <p className="text-slate-400 text-base max-w-2xl mx-auto leading-relaxed">
                 We&apos;re not here to sell you a platform and walk away. We embed into your team, understand your workflows inside-out, and deploy AI that your people actually use.
               </p>
             </div>
@@ -235,20 +236,20 @@ export default function TeamPage() {
         </section>
 
         {/* Value Proposition Bar */}
-        <section className="border-y border-white/5 bg-white/[0.02]">
+        <section className="border-y border-slate-200 bg-slate-50">
           <div className="max-w-6xl mx-auto px-4 sm:px-8 lg:px-16 py-12">
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 sm:gap-4 text-center">
               <div className="scroll-reveal stagger-1">
-                <p className="text-3xl sm:text-4xl font-bold text-white mb-1">40+</p>
-                <p className="text-white/40 text-sm">Combined Years of Domain Expertise</p>
+                <p className="text-3xl sm:text-4xl font-bold text-slate-900 mb-1">40+</p>
+                <p className="text-slate-400 text-sm">Combined Years of Domain Expertise</p>
               </div>
               <div className="scroll-reveal stagger-2">
-                <p className="text-3xl sm:text-4xl font-bold text-white mb-1">6</p>
-                <p className="text-white/40 text-sm">Industry Verticals Covered</p>
+                <p className="text-3xl sm:text-4xl font-bold text-slate-900 mb-1">6</p>
+                <p className="text-slate-400 text-sm">Industry Verticals Covered</p>
               </div>
               <div className="scroll-reveal stagger-3">
-                <p className="text-3xl sm:text-4xl font-bold text-white mb-1">100%</p>
-                <p className="text-white/40 text-sm">Hands-On, Embedded Delivery</p>
+                <p className="text-3xl sm:text-4xl font-bold text-slate-900 mb-1">100%</p>
+                <p className="text-slate-400 text-sm">Hands-On, Embedded Delivery</p>
               </div>
             </div>
           </div>
@@ -258,13 +259,13 @@ export default function TeamPage() {
         <section className="py-24 px-4 sm:px-8 lg:px-16">
           <div className="max-w-6xl mx-auto">
             <div className="text-center mb-20 scroll-reveal">
-              <p className="text-amber-400/80 font-medium tracking-[0.2em] uppercase text-sm mb-4">
+              <p className="text-blue-600 font-medium tracking-[0.2em] uppercase text-sm mb-4">
                 Leadership
               </p>
-              <h2 className="text-3xl md:text-5xl font-bold text-white mb-4">
+              <h2 className="text-3xl md:text-5xl font-bold text-slate-900 mb-4">
                 The people behind <span className="section-gradient-text">the work</span>
               </h2>
-              <p className="text-white/40 text-lg max-w-2xl mx-auto">
+              <p className="text-slate-400 text-lg max-w-2xl mx-auto">
                 Senior practitioners who&apos;ve built, deployed, and scaled AI in production — not theorists, operators.
               </p>
             </div>
@@ -278,16 +279,16 @@ export default function TeamPage() {
         </section>
 
         {/* Industry Verticals */}
-        <section className="py-24 px-4 sm:px-8 lg:px-16 border-t border-white/5">
+        <section className="py-24 px-4 sm:px-8 lg:px-16 border-t border-slate-200">
           <div className="max-w-6xl mx-auto">
             <div className="text-center mb-16 scroll-reveal">
-              <p className="text-amber-400/80 font-medium tracking-[0.2em] uppercase text-sm mb-4">
+              <p className="text-blue-600 font-medium tracking-[0.2em] uppercase text-sm mb-4">
                 Domain Depth
               </p>
-              <h2 className="text-3xl md:text-5xl font-bold text-white mb-4">
+              <h2 className="text-3xl md:text-5xl font-bold text-slate-900 mb-4">
                 Industries we <span className="section-gradient-text">know cold</span>
               </h2>
-              <p className="text-white/40 text-lg max-w-2xl mx-auto">
+              <p className="text-slate-400 text-lg max-w-2xl mx-auto">
                 We don&apos;t parachute in and learn your industry on your dime. We bring years of vertical expertise, existing relationships, and pattern recognition from dozens of similar deployments.
               </p>
             </div>
@@ -296,17 +297,17 @@ export default function TeamPage() {
               {verticals.map((vertical, index) => (
                 <div
                   key={vertical.name}
-                  className={`scroll-reveal stagger-${(index % 5) + 1} group relative rounded-2xl border border-white/5 bg-white/[0.02] p-6 hover:border-amber-500/20 hover:bg-amber-500/[0.03] transition-all duration-500`}
+                  className={`scroll-reveal stagger-${(index % 5) + 1} group relative rounded-2xl border border-slate-200 bg-slate-50 p-6 hover:border-blue-300 hover:bg-blue-50 transition-all duration-500`}
                 >
                   <div className="flex items-baseline justify-between mb-3">
-                    <h3 className="text-lg font-bold text-white group-hover:text-amber-400 transition-colors duration-300">
+                    <h3 className="text-lg font-bold text-slate-900 group-hover:text-blue-600 transition-colors duration-300">
                       {vertical.name}
                     </h3>
-                    <span className="text-amber-400/70 text-sm font-semibold tabular-nums">
+                    <span className="text-blue-600 text-sm font-semibold tabular-nums">
                       {vertical.years} yrs
                     </span>
                   </div>
-                  <p className="text-white/40 text-sm leading-relaxed">{vertical.description}</p>
+                  <p className="text-slate-400 text-sm leading-relaxed">{vertical.description}</p>
                 </div>
               ))}
             </div>
@@ -314,17 +315,17 @@ export default function TeamPage() {
         </section>
 
         {/* How We Work */}
-        <section className="py-24 px-4 sm:px-8 lg:px-16 border-t border-white/5">
+        <section className="py-24 px-4 sm:px-8 lg:px-16 border-t border-slate-200">
           <div className="max-w-5xl mx-auto">
             <div className="text-center mb-16 scroll-reveal">
-              <p className="text-amber-400/80 font-medium tracking-[0.2em] uppercase text-sm mb-4">
+              <p className="text-blue-600 font-medium tracking-[0.2em] uppercase text-sm mb-4">
                 Our Approach
               </p>
-              <h2 className="text-3xl md:text-5xl font-bold text-white mb-4">
+              <h2 className="text-3xl md:text-5xl font-bold text-slate-900 mb-4">
                 We add to your team,{' '}
                 <span className="section-gradient-text">not replace it</span>
               </h2>
-              <p className="text-white/40 text-lg max-w-2xl mx-auto">
+              <p className="text-slate-400 text-lg max-w-2xl mx-auto">
                 No rip-and-replace. No six-month discovery phases. We plug into your existing workflows, find the highest-leverage automation opportunities, and get you running.
               </p>
             </div>
@@ -354,16 +355,16 @@ export default function TeamPage() {
               ].map((item, index) => (
                 <div
                   key={item.step}
-                  className={`scroll-reveal stagger-${index + 1} relative rounded-2xl border border-white/5 bg-white/[0.02] p-8 hover:border-white/10 transition-all duration-500`}
+                  className={`scroll-reveal stagger-${index + 1} relative rounded-2xl border border-slate-200 bg-slate-50 p-8 hover:border-blue-200 transition-all duration-500`}
                 >
-                  <span className="text-5xl font-black text-white/[0.04] absolute top-4 right-6 select-none">
+                  <span className="text-5xl font-black text-blue-50 absolute top-4 right-6 select-none">
                     {item.step}
                   </span>
-                  <p className="text-amber-400 text-sm font-semibold tracking-wide mb-2">
+                  <p className="text-blue-600 text-sm font-semibold tracking-wide mb-2">
                     Step {item.step}
                   </p>
-                  <h3 className="text-xl font-bold text-white mb-3">{item.title}</h3>
-                  <p className="text-white/40 text-sm leading-relaxed">{item.desc}</p>
+                  <h3 className="text-xl font-bold text-slate-900 mb-3">{item.title}</h3>
+                  <p className="text-slate-400 text-sm leading-relaxed">{item.desc}</p>
                 </div>
               ))}
             </div>
@@ -371,18 +372,18 @@ export default function TeamPage() {
         </section>
 
         {/* CTA */}
-        <section className="py-24 px-4 sm:px-8 lg:px-16 border-t border-white/5 relative overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-radial from-amber-500/5 via-transparent to-transparent pointer-events-none" />
+        <section className="py-24 px-4 sm:px-8 lg:px-16 border-t border-slate-200 relative overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-radial from-blue-100/40 via-transparent to-transparent pointer-events-none" />
           <div className="relative max-w-3xl mx-auto text-center scroll-reveal">
-            <h2 className="text-3xl md:text-5xl font-bold text-white mb-6">
+            <h2 className="text-3xl md:text-5xl font-bold text-slate-900 mb-6">
               Ready to put AI to work?
             </h2>
-            <p className="text-white/40 text-lg mb-10 max-w-xl mx-auto">
+            <p className="text-slate-400 text-lg mb-10 max-w-xl mx-auto">
               Tell us about your operations and we&apos;ll show you exactly where AI creates the most leverage — no pitch deck, just a real conversation.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <a href="mailto:aqeel@aqeelali.com?subject=I want to learn more about Salience">
-                <Button className="cta-button bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black font-semibold px-8 py-6 text-base rounded-xl transition-all duration-300">
+                <Button className="cta-button bg-gradient-to-r from-blue-500 to-blue-700 hover:from-blue-400 hover:to-blue-600 text-white font-semibold px-8 py-6 text-base rounded-xl transition-all duration-300">
                   Start a Conversation
                   <ArrowRight className="ml-2 w-5 h-5" />
                 </Button>
@@ -390,7 +391,7 @@ export default function TeamPage() {
               <Link href="/">
                 <Button
                   variant="outline"
-                  className="border-white/10 text-white/60 hover:text-white hover:bg-white/5 hover:border-white/20 px-8 py-6 text-base rounded-xl transition-all duration-300"
+                  className="border-slate-200 text-slate-500 hover:text-slate-900 hover:bg-blue-50 hover:border-blue-300 px-8 py-6 text-base rounded-xl transition-all duration-300"
                 >
                   Explore Our Work
                   <ExternalLink className="ml-2 w-4 h-4" />
@@ -400,34 +401,7 @@ export default function TeamPage() {
           </div>
         </section>
 
-        {/* Footer */}
-        <footer className="py-12 px-4 sm:px-8 lg:px-16 border-t border-white/5">
-          <div className="max-w-6xl mx-auto">
-            <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-              <div className="text-center md:text-left">
-                <p className="text-white font-bold text-xl mb-1">Salience</p>
-                <p className="text-white/30 text-sm">AI Automation, Deployed.</p>
-              </div>
-              <div className="flex items-center gap-6 text-white/30 text-sm">
-                <Link href="/" className="hover:text-amber-400 transition-colors">
-                  Home
-                </Link>
-                <Link href="/services/consulting" className="hover:text-amber-400 transition-colors">
-                  Services
-                </Link>
-                <Link href="/products/insurance" className="hover:text-amber-400 transition-colors">
-                  Insurance
-                </Link>
-                <Link href="/products/healthcare" className="hover:text-amber-400 transition-colors">
-                  Healthcare
-                </Link>
-              </div>
-            </div>
-            <div className="mt-8 pt-8 border-t border-white/5 text-center">
-              <p className="text-white/20 text-sm">&copy; 2026 Salience. All rights reserved.</p>
-            </div>
-          </div>
-        </footer>
+        <FooterSpotlight />
       </main>
     </>
   );

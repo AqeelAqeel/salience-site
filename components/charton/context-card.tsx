@@ -48,16 +48,16 @@ export function ContextCard({
     <div
       className={cn(
         "relative flex flex-col gap-3 rounded-2xl p-5 transition-all duration-300",
-        "bg-[#141414] border border-white/[0.08]",
-        "hover:border-amber-500/30",
-        isFocused && "border-amber-500/40 shadow-[0_0_30px_rgba(251,191,36,0.08)]"
+        "bg-white border border-slate-200",
+        "hover:border-blue-300",
+        isFocused && "border-blue-400 shadow-[0_0_20px_rgba(37,99,235,0.08)]"
       )}
     >
       <div className="flex items-center gap-2">
         <Pencil
           className={cn(
             "w-3.5 h-3.5 shrink-0 transition-colors",
-            isFocused ? "text-amber-500" : "text-white/20"
+            isFocused ? "text-blue-600" : "text-slate-300"
           )}
         />
         <input
@@ -67,9 +67,9 @@ export function ContextCard({
           onFocus={() => setIsFocused(true)}
           onBlur={() => setIsFocused(false)}
           className={cn(
-            "w-full bg-transparent text-sm font-semibold text-white/90 outline-none",
-            "placeholder:text-white/30",
-            "border-b border-transparent focus:border-amber-500/30 transition-colors pb-0.5"
+            "w-full bg-transparent text-sm font-semibold text-slate-800 outline-none",
+            "placeholder:text-slate-300",
+            "border-b border-transparent focus:border-blue-300 transition-colors pb-0.5"
           )}
           placeholder="Card title..."
         />
@@ -82,8 +82,8 @@ export function ContextCard({
         onBlur={() => setIsFocused(false)}
         rows={2}
         className={cn(
-          "w-full bg-transparent text-sm text-white/60 outline-none resize-none",
-          "placeholder:text-white/25 leading-relaxed",
+          "w-full bg-transparent text-sm text-slate-500 outline-none resize-none",
+          "placeholder:text-slate-300 leading-relaxed",
           "min-h-[3rem]"
         )}
         placeholder="Add context here..."

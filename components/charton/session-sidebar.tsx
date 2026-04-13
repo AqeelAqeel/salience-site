@@ -34,48 +34,42 @@ export function SessionSidebar({
 }: SessionSidebarProps) {
   return (
     <>
-      {/* Mobile backdrop */}
       {isOpen && (
         <div
-          className="fixed inset-0 bg-black/60 z-40 md:hidden"
+          className="fixed inset-0 bg-black/20 z-40 md:hidden"
           onClick={onToggle}
         />
       )}
 
-      {/* Sidebar */}
       <aside
         className={cn(
           "fixed md:relative z-50 md:z-auto",
           "top-0 left-0 h-full md:h-auto",
           "w-[280px] shrink-0",
-          "bg-[#0d0d0d] border-r border-white/[0.06]",
+          "bg-white border-r border-slate-200",
           "flex flex-col",
           "transition-transform duration-300 ease-out",
-          // Mobile: slide in/out
           isOpen ? "translate-x-0" : "-translate-x-full",
-          // Desktop: always visible
           "md:translate-x-0"
         )}
       >
-        {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-white/[0.06]">
-          <span className="text-sm font-semibold text-white/70">Sessions</span>
+        <div className="flex items-center justify-between p-4 border-b border-slate-100">
+          <span className="text-sm font-semibold text-slate-600">Sessions</span>
           <button
             onClick={onToggle}
-            className="md:hidden p-1.5 rounded-lg hover:bg-white/[0.06] text-white/40"
+            className="md:hidden p-1.5 rounded-lg hover:bg-slate-100 text-slate-400"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
-        {/* New chat button */}
         <div className="p-3">
           <button
             onClick={onCreateSession}
             className={cn(
               "w-full flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-medium",
-              "bg-gradient-to-r from-amber-500 to-amber-600 text-black",
-              "hover:from-amber-400 hover:to-amber-500 transition-all",
+              "bg-gradient-to-r from-blue-500 to-blue-700 text-white",
+              "hover:from-blue-400 hover:to-blue-600 transition-all",
               "active:scale-[0.98]"
             )}
           >
@@ -84,7 +78,6 @@ export function SessionSidebar({
           </button>
         </div>
 
-        {/* Session list */}
         <div className="flex-1 overflow-y-auto px-3 pb-3 space-y-1">
           {sessions.map((session) => (
             <button
@@ -92,18 +85,18 @@ export function SessionSidebar({
               onClick={() => onSwitchSession(session.id)}
               className={cn(
                 "w-full flex items-start gap-3 px-3 py-2.5 rounded-xl text-left transition-all",
-                "hover:bg-white/[0.04]",
+                "hover:bg-slate-50",
                 session.id === activeSessionId
-                  ? "bg-white/[0.06] border-l-2 border-amber-500"
+                  ? "bg-blue-50 border-l-2 border-blue-500"
                   : "border-l-2 border-transparent"
               )}
             >
-              <MessageSquare className="w-4 h-4 mt-0.5 shrink-0 text-white/30" />
+              <MessageSquare className="w-4 h-4 mt-0.5 shrink-0 text-slate-400" />
               <div className="min-w-0 flex-1">
-                <p className="text-sm text-white/70 truncate">
+                <p className="text-sm text-slate-700 truncate">
                   {session.title}
                 </p>
-                <p className="text-xs text-white/25 mt-0.5">
+                <p className="text-xs text-slate-400 mt-0.5">
                   {timeAgo(session.updated_at)}
                 </p>
               </div>

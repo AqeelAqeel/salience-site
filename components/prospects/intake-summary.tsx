@@ -42,13 +42,13 @@ function SummarySection({
     <div className="space-y-2">
       <div className="flex items-center gap-2">
         <Icon className={cn("w-4 h-4", accentColor)} />
-        <h4 className="text-sm font-medium text-white/70">{title}</h4>
+        <h4 className="text-sm font-medium text-slate-600">{title}</h4>
       </div>
       <ul className="space-y-1.5 pl-6">
         {items.map((item, i) => (
           <li
             key={i}
-            className="text-sm text-white/60 leading-relaxed list-disc"
+            className="text-sm text-slate-500 leading-relaxed list-disc"
           >
             {item}
           </li>
@@ -120,15 +120,14 @@ export function IntakeSummary({
     <div
       className={cn(
         "w-full max-w-lg mx-auto",
-        "bg-[#141414] border border-white/[0.08] rounded-2xl",
+        "bg-white border border-slate-200 rounded-2xl shadow-sm",
         "p-6 space-y-5",
         "animate-in fade-in slide-in-from-bottom-4 duration-500",
         className
       )}
     >
-      {/* Header */}
       <div className="flex items-center justify-between">
-        <h3 className="text-base font-semibold text-white/90">
+        <h3 className="text-base font-semibold text-slate-800">
           Interview Summary
         </h3>
         <div className="flex items-center gap-1">
@@ -136,12 +135,12 @@ export function IntakeSummary({
             onClick={copyToClipboard}
             className={cn(
               "p-2 rounded-lg transition-all duration-200",
-              "hover:bg-white/[0.06] text-white/40 hover:text-white/70"
+              "hover:bg-slate-100 text-slate-400 hover:text-slate-600"
             )}
             title="Copy summary"
           >
             {copied ? (
-              <Check className="w-4 h-4 text-green-400" />
+              <Check className="w-4 h-4 text-green-500" />
             ) : (
               <Copy className="w-4 h-4" />
             )}
@@ -153,7 +152,7 @@ export function IntakeSummary({
               disabled={generating}
               className={cn(
                 "p-2 rounded-lg transition-all duration-200",
-                "hover:bg-white/[0.06] text-white/40 hover:text-white/70",
+                "hover:bg-slate-100 text-slate-400 hover:text-slate-600",
                 "disabled:opacity-40"
               )}
               title="Generate shareable document"
@@ -173,7 +172,7 @@ export function IntakeSummary({
               rel="noopener noreferrer"
               className={cn(
                 "p-2 rounded-lg transition-all duration-200",
-                "hover:bg-amber-500/10 text-amber-400"
+                "hover:bg-blue-50 text-blue-600"
               )}
               title="View shareable document"
             >
@@ -185,7 +184,7 @@ export function IntakeSummary({
             onClick={onClose}
             className={cn(
               "p-2 rounded-lg transition-all duration-200",
-              "hover:bg-white/[0.06] text-white/40 hover:text-white/70"
+              "hover:bg-slate-100 text-slate-400 hover:text-slate-600"
             )}
           >
             <X className="w-4 h-4" />
@@ -194,9 +193,9 @@ export function IntakeSummary({
       </div>
 
       {shareUrl && (
-        <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/20">
-          <Download className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-          <span className="text-xs text-amber-300/80 truncate">
+        <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-blue-50 border border-blue-200">
+          <Download className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+          <span className="text-xs text-blue-700 truncate">
             Shareable doc ready
           </span>
           <button
@@ -205,45 +204,23 @@ export function IntakeSummary({
               setCopied(true);
               setTimeout(() => setCopied(false), 2000);
             }}
-            className="ml-auto text-xs text-amber-400 hover:text-amber-300 shrink-0"
+            className="ml-auto text-xs text-blue-600 hover:text-blue-800 shrink-0"
           >
             {copied ? "Copied!" : "Copy Link"}
           </button>
         </div>
       )}
 
-      {/* Business Context */}
       {summary.businessContext && (
-        <div className="text-sm text-white/60 leading-relaxed border-l-2 border-amber-500/30 pl-3">
+        <div className="text-sm text-slate-500 leading-relaxed border-l-2 border-blue-300 pl-3">
           {summary.businessContext}
         </div>
       )}
 
-      {/* Sections */}
-      <SummarySection
-        icon={Sparkles}
-        title="What They Want AI For"
-        items={summary.wantsAiFor}
-        accentColor="text-amber-400"
-      />
-      <SummarySection
-        icon={Cog}
-        title="Manual Processes Identified"
-        items={summary.manualProcesses}
-        accentColor="text-blue-400"
-      />
-      <SummarySection
-        icon={Users}
-        title="VA-Worthy Tasks"
-        items={summary.vaWorthyTasks}
-        accentColor="text-green-400"
-      />
-      <SummarySection
-        icon={Lightbulb}
-        title="Key Insights"
-        items={summary.keyInsights}
-        accentColor="text-purple-400"
-      />
+      <SummarySection icon={Sparkles} title="What They Want AI For" items={summary.wantsAiFor} accentColor="text-amber-500" />
+      <SummarySection icon={Cog} title="Manual Processes Identified" items={summary.manualProcesses} accentColor="text-blue-500" />
+      <SummarySection icon={Users} title="VA-Worthy Tasks" items={summary.vaWorthyTasks} accentColor="text-green-500" />
+      <SummarySection icon={Lightbulb} title="Key Insights" items={summary.keyInsights} accentColor="text-purple-500" />
     </div>
   );
 }

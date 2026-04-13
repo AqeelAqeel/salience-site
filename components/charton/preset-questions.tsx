@@ -15,8 +15,8 @@ export function PresetQuestions({ onSelect, visible }: PresetQuestionsProps) {
   return (
     <div className="px-4 pb-2 shrink-0">
       <div className="flex items-center gap-2 mb-2">
-        <Sparkles className="w-3.5 h-3.5 text-amber-500/60" />
-        <span className="text-xs text-white/30 font-medium">
+        <Sparkles className="w-3.5 h-3.5 text-blue-400" />
+        <span className="text-xs text-slate-400 font-medium">
           Suggested questions
         </span>
       </div>
@@ -27,9 +27,9 @@ export function PresetQuestions({ onSelect, visible }: PresetQuestionsProps) {
             onClick={() => onSelect(question)}
             className={cn(
               "text-left text-xs px-3 py-2 rounded-xl transition-all duration-200",
-              "bg-white/[0.04] border border-white/[0.08]",
-              "text-white/50 hover:text-white/80",
-              "hover:border-amber-500/30 hover:bg-amber-500/[0.06]",
+              "bg-slate-50 border border-slate-200",
+              "text-slate-500 hover:text-blue-700",
+              "hover:border-blue-300 hover:bg-blue-50",
               "active:scale-[0.98]"
             )}
           >
