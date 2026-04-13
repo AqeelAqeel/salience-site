@@ -373,7 +373,7 @@ export default function HomePage() {
       description: 'High-volume quote calls, multiple carrier forms, strict documentation requirements.',
       benefit: 'Automate intake forms and policy processing',
       href: '/services#insurance',
-      image: '/industries/insurance-brokers.jpg',
+      image: '/industries/industries-insurance-brokers.jpg',
     },
     {
       icon: Stethoscope,
@@ -382,7 +382,7 @@ export default function HomePage() {
       description: 'Patient intake, pharmacy coordination, consent forms, and follow-up scheduling across remote and in-person visits.',
       benefit: 'Capture and structure every patient interaction',
       href: '/services#healthcare',
-      image: '/industries/telehealth-clinics.jpg',
+      image: '/industries/industries-telehealth-clinics.jpg',
     },
     {
       icon: SmilePlus,
@@ -391,7 +391,7 @@ export default function HomePage() {
       description: 'New patient intake, insurance verification, treatment plan documentation, and recall reminders.',
       benefit: 'Streamline patient onboarding and insurance',
       href: '/services#healthcare',
-      image: '/industries/dentists.jpg',
+      image: '/industries/industries-dentists.jpg',
     },
     {
       icon: Home,
@@ -400,7 +400,7 @@ export default function HomePage() {
       description: 'Property inquiries, showing coordination, document management across listings.',
       benefit: 'Organize leads and automate follow-ups',
       href: '/services#real-estate',
-      image: '/industries/real-estate.jpg',
+      image: '/industries/industries-real-estate.jpg',
     },
     {
       icon: Scale,
@@ -409,7 +409,7 @@ export default function HomePage() {
       description: 'Complex intake, government forms, documentation of every client touchpoint.',
       benefit: 'Auto-fill legal forms from call transcripts',
       href: '/services#insurance',
-      image: '/industries/law-offices.jpg',
+      image: '/industries/industries-law-offices.jpg',
     },
     {
       icon: Building2,
@@ -418,7 +418,7 @@ export default function HomePage() {
       description: 'Client onboarding, document collection, and routine communications.',
       benefit: 'Reduce admin overhead by 85%',
       href: '/services',
-      image: '/industries/professional-services.jpg',
+      image: '/industries/industries-professional-services.jpg',
     },
   ];
 
