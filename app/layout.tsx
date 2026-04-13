@@ -8,9 +8,9 @@ export const metadata: Metadata = {
   keywords: ['AI automation', 'private practice', 'insurance agency', 'healthcare automation', 'client intake', 'scheduling automation', 'business automation'],
   authors: [{ name: 'Aqeel Ali' }],
   icons: {
-    icon: '/assets/eyes-favicon.svg',
-    shortcut: '/assets/eyes-favicon.svg',
-    apple: '/assets/eyes-favicon.svg',
+    icon: '/assets/eyes-favicon.png',
+    shortcut: '/assets/eyes-favicon.png',
+    apple: '/assets/eyes-favicon.png',
   },
   openGraph: {
     title: 'Salience - AI Automation for Private Practices',

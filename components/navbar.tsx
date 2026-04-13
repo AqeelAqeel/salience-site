@@ -125,7 +125,7 @@ const Navbar = () => {
           <Link href="/" className="flex items-center space-x-3 group">
             <div className="relative w-8 h-8 md:w-10 md:h-10">
               <Image
-                src="/assets/assets-eye-logo.svg"
+                src="/assets/eyes-favicon.png"
                 alt="Salience Logo"
                 fill
                 className="object-contain"
