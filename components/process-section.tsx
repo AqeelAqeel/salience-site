@@ -1,7 +1,6 @@
 "use client";
 import { useState, useEffect, useRef, useCallback } from "react";
 
-/* ── Data ── */
 interface Phase {
   tag: string;
   name: string;
@@ -12,36 +11,27 @@ interface Phase {
 }
 
 const PHASES: Phase[] = [
-  { tag: "Phase 01", name: "Manual & Full Process Audit", time: "Week 1\u20132", desc: "We sit in your workflows. Watch the bottlenecks. Map every input, handoff, and time sink. No assumptions \u2014 we audit the real operations before touching anything.", deliverable: "\ud83d\udccb Process map + bottleneck report delivered", solid: true },
-  { tag: "Phase 02", name: "Something in Your Hands", time: "Week 2\u20133", desc: "Fast turnaround. You get a working solution \u2014 not a deck, not a proposal. A real tool you can start using immediately.", deliverable: "\u26a1 Working prototype / first automation live" },
-  { tag: "Phase 03", name: "Use It. Break It. Improve It.", time: "Week 3\u20136", desc: "You\u2019re actively using the system on the job. We iterate in real-time based on what works and what doesn\u2019t. Changes ship same week.", deliverable: "\ud83d\udd04 Weekly iterations + refinement cycles" },
-  { tag: "Phase 04", name: "Maintenance & Support", time: "Month 2+", desc: "System is stable. We shift to a monthly cadence \u2014 monitoring, maintenance, and incremental improvements. You\u2019re covered.", deliverable: "\ud83d\udcca Monthly report + support retainer" },
-  { tag: "Phase 05", name: "Platform Subscription + SLA", time: "Ongoing", desc: "The automation becomes your platform. Software subscription with SLAs. Uptime guarantees, priority support, continuous improvement.", deliverable: "\ud83d\udd12 SLA-backed platform with guaranteed uptime" },
+  { tag: "Phase 01", name: "Free Workflow Consultation", time: "Week 1", desc: "We spend 30\u201345 minutes understanding how you take calls, what forms and PDFs you fill, how you schedule and follow up, and where time is wasted or things fall through the cracks.", deliverable: "Workflow map + opportunity summary delivered", solid: true },
+  { tag: "Phase 02", name: "Design-Partner Pilot", time: "Week 1\u20133", desc: "We map your workflows in detail, connect to your existing tools (phone, text, email, forms), and build a working prototype that captures, transcribes, and pre-fills your critical PDFs.", deliverable: "Working prototype + first automation live" },
+  { tag: "Phase 03", name: "Test, Iterate, Refine", time: "Week 3\u20136", desc: "Your staff use the system on real clients. We track time saved, forms automated, and errors reduced. Changes ship same week based on real feedback.", deliverable: "Weekly iterations + measured results" },
+  { tag: "Phase 04", name: "Deploy Your Custom System", time: "Month 2", desc: "System is stable and delivering value. We move to a 12-month subscription that includes hosting, maintenance, staff support, and updates as your business evolves.", deliverable: "SLA-backed platform with guaranteed uptime" },
+  { tag: "Phase 05", name: "Expand & Refine", time: "Ongoing", desc: "Once your first workflow runs smoothly, we add new forms, extend to other departments, and integrate with more systems. We become your AI admin partner.", deliverable: "Continuous improvement + new integrations" },
 ];
 
-const LABELS = ["Audit", "Deliver", "Iterate", "Monthly", "Platform"];
+const LABELS = ["Consult", "Pilot", "Iterate", "Deploy", "Expand"];
 const T = PHASES.length;
 
-const GLOWS = [
-  "radial-gradient(ellipse at 20% 50%, rgba(251,191,36,0.07) 0%, transparent 50%)",
-  "radial-gradient(ellipse at 35% 40%, rgba(251,191,36,0.06) 0%, transparent 50%)",
-  "radial-gradient(ellipse at 50% 50%, rgba(251,191,36,0.07) 0%, transparent 50%)",
-  "radial-gradient(ellipse at 60% 40%, rgba(139,92,246,0.05) 0%, transparent 50%)",
-  "radial-gradient(ellipse at 50% 50%, rgba(251,191,36,0.04) 0%, transparent 50%)",
-];
-
-/* ── Styles (inline so it works everywhere) ── */
 const s = {
-  amber: "#f59e0b",
-  amberLight: "#fbbf24",
-  amberDark: "#d97706",
-  bg: "#0a0a0a",
-  surface: "rgba(20,20,20,0.9)",
-  text: "#ffffff",
-  dim: "rgba(255,255,255,0.6)",
-  muted: "rgba(255,255,255,0.3)",
-  border: "rgba(255,255,255,0.06)",
-  font: '"Manrope", "Inter", -apple-system, BlinkMacSystemFont, sans-serif',
+  blue: "#2563eb",
+  blueLight: "#3b82f6",
+  blueDark: "#1d4ed8",
+  bg: "#ffffff",
+  surface: "#f8fafc",
+  text: "#0f172a",
+  dim: "#475569",
+  muted: "#94a3b8",
+  border: "#e2e8f0",
+  font: '"Manrope", -apple-system, BlinkMacSystemFont, sans-serif',
 };
 
 export default function ProcessSection() {
@@ -51,7 +41,6 @@ export default function ProcessSection() {
   const mt = useRef<ReturnType<typeof setTimeout> | null>(null);
   const barPct = (phase / (T - 1)) * 100;
 
-  /* scroll-driven */
   useEffect(() => {
     const fn = () => {
       if (!ref.current || manual) return;
@@ -65,7 +54,6 @@ export default function ProcessSection() {
     return () => window.removeEventListener("scroll", fn);
   }, [manual]);
 
-  /* re-engage scroll after manual */
   useEffect(() => {
     if (!manual) return;
     const fn = () => {
@@ -84,7 +72,6 @@ export default function ProcessSection() {
     setPhase(Math.max(0, Math.min(T - 1, i)));
   }, []);
 
-  /* keyboard */
   useEffect(() => {
     const fn = (e: KeyboardEvent) => {
       if (!ref.current) return;
@@ -108,65 +95,65 @@ export default function ProcessSection() {
         display: "flex", flexDirection: "column", justifyContent: "center",
         overflow: "hidden", background: s.bg,
       }}>
-        {/* Ambient glow */}
+        {/* Subtle blue ambient glow */}
         <div style={{
           position: "absolute", inset: 0, pointerEvents: "none",
-          transition: "all 1s ease", background: GLOWS[phase],
+          transition: "all 1s ease",
+          background: `radial-gradient(ellipse at 30% 50%, rgba(37,99,235,0.04) 0%, transparent 50%)`,
         }} />
 
         <div style={{ maxWidth: 1100, margin: "0 auto", padding: "0 28px", width: "100%", position: "relative", zIndex: 1 }}>
-          {/* ── Label ── */}
+          {/* Label */}
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
             <span style={{
               width: 28, height: 28, borderRadius: 8,
-              background: "linear-gradient(135deg, #f59e0b, #d97706)",
+              background: "linear-gradient(135deg, #2563eb, #1d4ed8)",
               display: "flex", alignItems: "center", justifyContent: "center",
-              fontSize: 14, color: "#000", fontWeight: 700,
-            }}>{"\u26a1"}</span>
+              fontSize: 12, color: "#fff", fontWeight: 700,
+            }}>{"S"}</span>
             <span style={{
               fontSize: 13, fontWeight: 600, letterSpacing: "0.12em",
-              textTransform: "uppercase" as const, color: s.amber,
-            }}>Our Process</span>
+              textTransform: "uppercase" as const, color: s.blue,
+            }}>How We Work</span>
           </div>
 
-          {/* ── Title ── */}
+          {/* Title */}
           <h2 style={{
             fontSize: "clamp(2rem, 4vw, 3rem)", fontWeight: 800,
             letterSpacing: "-0.03em", lineHeight: 1.1, marginBottom: 8, color: s.text,
           }}>
-            Huge wins.{" "}
+            From consult to running{" "}
             <span style={{
-              background: "linear-gradient(135deg, #fbbf24, #f59e0b, #d97706, #fbbf24)",
+              background: "linear-gradient(135deg, #1e40af, #2563eb, #3b82f6)",
               WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
-              backgroundClip: "text", backgroundSize: "200% 200%",
-            }}>Minimal friction.</span>
+              backgroundClip: "text",
+            }}>system</span>
+            {" "}in weeks.
           </h2>
           <p style={{
             fontSize: 16, fontWeight: 400, color: s.dim,
-            maxWidth: 460, lineHeight: 1.6, marginBottom: 40,
+            maxWidth: 500, lineHeight: 1.6, marginBottom: 40,
           }}>
-            We move fast, prove value early, and build toward a system you own.
+            We move fast, prove value early, and build a system tailored to your business.
           </p>
 
-          {/* ── Progress Bar ── */}
+          {/* Progress Bar */}
           <div style={{ position: "relative", marginBottom: 36 }}>
-            <div style={{ width: "100%", height: 3, background: "rgba(255,255,255,0.08)", borderRadius: 3, position: "relative" }}>
-              {/* Fill */}
+            <div style={{ width: "100%", height: 3, background: s.border, borderRadius: 3, position: "relative" }}>
               <div style={{
                 height: "100%", borderRadius: 3, position: "relative",
                 width: `${barPct}%`,
-                background: `linear-gradient(90deg, ${s.amber}, ${s.amberLight})`,
-                boxShadow: "0 0 12px rgba(251,191,36,0.15)",
+                background: `linear-gradient(90deg, ${s.blue}, ${s.blueLight})`,
+                boxShadow: "0 0 12px rgba(37,99,235,0.15)",
                 transition: "width 0.5s cubic-bezier(0.4,0,0.2,1)",
               }}>
                 <div style={{
                   position: "absolute", right: -6, top: "50%", transform: "translateY(-50%)",
-                  width: 12, height: 12, borderRadius: "50%", background: s.amberLight,
-                  boxShadow: "0 0 16px rgba(251,191,36,0.6), 0 0 4px rgba(251,191,36,0.8)",
+                  width: 12, height: 12, borderRadius: "50%", background: s.blueLight,
+                  boxShadow: "0 0 16px rgba(37,99,235,0.4), 0 0 4px rgba(37,99,235,0.6)",
                 }} />
               </div>
 
-              {/* Dots */}
               {LABELS.map((_, i) => {
                 const left = (i / (T - 1)) * 100;
                 const reached = i < phase;
@@ -177,16 +164,15 @@ export default function ProcessSection() {
                     transform: "translate(-50%,-50%)",
                     width: active ? 12 : 10, height: active ? 12 : 10,
                     borderRadius: "50%", border: "2px solid",
-                    borderColor: active ? s.amberLight : reached ? s.amber : "rgba(255,255,255,0.15)",
-                    background: active ? s.amberLight : reached ? s.amber : s.bg,
-                    boxShadow: active ? "0 0 12px rgba(251,191,36,0.5)" : reached ? "0 0 8px rgba(251,191,36,0.15)" : "none",
+                    borderColor: active ? s.blueLight : reached ? s.blue : "#cbd5e1",
+                    background: active ? s.blueLight : reached ? s.blue : s.bg,
+                    boxShadow: active ? "0 0 12px rgba(37,99,235,0.4)" : reached ? "0 0 8px rgba(37,99,235,0.1)" : "none",
                     cursor: "pointer", zIndex: 2, transition: "all 0.3s ease", padding: 0,
                   }} />
                 );
               })}
             </div>
 
-            {/* Labels */}
             <div style={{ display: "flex", justifyContent: "space-between", marginTop: 12 }}>
               {LABELS.map((lbl, i) => (
                 <button key={i} onClick={() => go(i)} style={{
@@ -194,13 +180,13 @@ export default function ProcessSection() {
                   textAlign: "center" as const, width: "20%", transition: "color 0.3s",
                   fontSize: 11, fontWeight: 600, letterSpacing: "0.08em",
                   textTransform: "uppercase" as const, fontFamily: s.font,
-                  color: i === phase ? s.amber : i < phase ? s.dim : s.muted,
+                  color: i === phase ? s.blue : i < phase ? s.dim : s.muted,
                 }}>{lbl}</button>
               ))}
             </div>
           </div>
 
-          {/* ── Phase Card ── */}
+          {/* Phase Card */}
           <div style={{ position: "relative", minHeight: 280 }}>
             {PHASES.map((p, i) => {
               const active = i === phase;
@@ -215,32 +201,29 @@ export default function ProcessSection() {
                   transition: "all 0.5s cubic-bezier(0.4, 0, 0.2, 1)",
                 }}>
                   <div style={{ display: "flex", gap: 24, alignItems: "flex-start" }}>
-                    {/* Ghost number */}
                     <div style={{
                       fontSize: 64, fontWeight: 800, lineHeight: 1,
-                      color: "rgba(251,191,36,0.06)", flexShrink: 0,
+                      color: "rgba(37,99,235,0.08)", flexShrink: 0,
                       userSelect: "none" as const, minWidth: 72,
                     }}>{String(i + 1).padStart(2, "0")}</div>
                     <div>
-                      {/* Tag */}
                       <span style={{
                         display: "inline-block", marginBottom: 10,
                         padding: "5px 12px", borderRadius: 6,
                         fontSize: 11, fontWeight: 700, letterSpacing: "0.12em",
                         textTransform: "uppercase" as const,
                         ...(p.solid
-                          ? { color: "#000", background: `linear-gradient(135deg, ${s.amber}, ${s.amberDark})` }
-                          : { color: s.amber, background: "rgba(251,191,36,0.08)", border: "1px solid rgba(251,191,36,0.2)" }
+                          ? { color: "#fff", background: `linear-gradient(135deg, ${s.blue}, ${s.blueDark})` }
+                          : { color: s.blue, background: "rgba(37,99,235,0.06)", border: "1px solid rgba(37,99,235,0.15)" }
                         ),
                       }}>{p.tag}</span>
                       <h3 style={{ fontSize: 22, fontWeight: 700, letterSpacing: "-0.02em", marginBottom: 4, color: s.text }}>{p.name}</h3>
                       <div style={{ fontSize: 12, color: s.muted, marginBottom: 14 }}>{p.time}</div>
                       <p style={{ fontSize: 15, fontWeight: 400, color: s.dim, lineHeight: 1.7, maxWidth: 500 }}>{p.desc}</p>
-                      {/* Deliverable */}
                       <div style={{
                         marginTop: 16, padding: "10px 16px",
-                        background: "rgba(251,191,36,0.04)",
-                        border: "1px solid rgba(251,191,36,0.1)",
+                        background: "rgba(37,99,235,0.04)",
+                        border: "1px solid rgba(37,99,235,0.1)",
                         borderRadius: 10, display: "inline-flex", alignItems: "center", gap: 8,
                       }}>
                         <span style={{ fontSize: 13, fontWeight: 500, color: s.dim }}>{p.deliverable}</span>
@@ -252,7 +235,7 @@ export default function ProcessSection() {
             })}
           </div>
 
-          {/* ── Arrows ── */}
+          {/* Arrows */}
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 28 }}>
             {[{ dir: -1, label: "\u2190" }, { dir: 1, label: "\u2192" }].map(({ dir, label }) => (
               <button key={dir} onClick={() => go(phase + dir)}
@@ -263,7 +246,7 @@ export default function ProcessSection() {
                   color: s.dim, display: "flex", alignItems: "center", justifyContent: "center",
                   cursor: "pointer", transition: "all 0.3s", fontSize: 16,
                   fontFamily: s.font,
-                  opacity: (dir === -1 && phase === 0) || (dir === 1 && phase === T - 1) ? 0.2 : 1,
+                  opacity: (dir === -1 && phase === 0) || (dir === 1 && phase === T - 1) ? 0.3 : 1,
                   pointerEvents: (dir === -1 && phase === 0) || (dir === 1 && phase === T - 1) ? "none" : "auto",
                 }}>{label}</button>
             ))}
@@ -272,7 +255,6 @@ export default function ProcessSection() {
           </div>
         </div>
 
-        {/* Scroll hint */}
         {phase < T - 1 && (
           <div style={{
             position: "absolute", bottom: 28, left: "50%", transform: "translateX(-50%)",

@@ -23,47 +23,32 @@ const navItems: NavItem[] = [
     label: 'Services',
     dropdown: [
       {
-        label: 'AI Automation Consulting',
-        href: '/services/consulting',
-        description: 'Workflow audits and strategy planning',
+        label: 'Healthcare',
+        href: '/services#healthcare',
+        description: 'AI admin for clinics, telehealth, and practices',
       },
       {
-        label: 'Custom AI Deployment',
-        href: '/services/deployment',
-        description: 'Tailored AI solutions for your practice',
+        label: 'Real Estate',
+        href: '/services#real-estate',
+        description: 'Automation for brokers and property management',
       },
       {
-        label: 'Managed AI Operations',
-        href: '/services/managed',
-        description: 'Ongoing support and optimization',
+        label: 'Insurance',
+        href: '/services#insurance',
+        description: 'Intake, forms, and policy processing',
       },
     ],
   },
   {
-    label: 'Products',
-    dropdown: [
-      {
-        label: 'Insurance Automation',
-        href: '/products/insurance',
-        description: 'Full AI automation for insurance brokerages',
-      },
-      {
-        label: 'Healthcare Automation',
-        href: '/products/healthcare',
-        description: 'AI solutions for healthcare practices',
-      },
-    ],
+    label: 'Case Studies',
+    href: '/case-studies',
   },
   {
     label: 'Team',
     href: '/team',
   },
   {
-    label: 'Referrals',
-    href: '/referrals',
-  },
-  {
-    label: 'Chat with Salience Now',
+    label: 'Talk to Us',
     href: '/i-want-my-time-and-energy-back',
   },
 ];
@@ -71,7 +56,7 @@ const navItems: NavItem[] = [
 function DropdownMenu({
   items,
   isOpen,
-  onClose
+  onClose,
 }: {
   items: DropdownItem[];
   isOpen: boolean;
@@ -85,14 +70,8 @@ function DropdownMenu({
         onClose();
       }
     };
-
-    if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
+    if (isOpen) document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isOpen, onClose]);
 
   if (!isOpen) return null;
@@ -100,7 +79,7 @@ function DropdownMenu({
   return (
     <div
       ref={dropdownRef}
-      className="absolute top-full left-0 mt-2 w-72 bg-[#141414] border border-white/10 rounded-xl shadow-2xl overflow-hidden z-50"
+      className="absolute top-full left-0 mt-2 w-72 bg-white border border-slate-200 rounded-xl shadow-lg shadow-slate-200/50 overflow-hidden z-50"
     >
       <div className="py-2">
         {items.map((item) => (
@@ -108,13 +87,13 @@ function DropdownMenu({
             key={item.href}
             href={item.href}
             onClick={onClose}
-            className="block px-4 py-3 hover:bg-white/5 transition-colors group"
+            className="block px-4 py-3 hover:bg-blue-50 transition-colors group"
           >
-            <span className="text-white font-medium group-hover:text-amber-400 transition-colors">
+            <span className="text-slate-800 font-medium group-hover:text-blue-700 transition-colors">
               {item.label}
             </span>
             {item.description && (
-              <span className="block text-sm text-white/50 mt-0.5">
+              <span className="block text-sm text-slate-500 mt-0.5">
                 {item.description}
               </span>
             )}
@@ -153,7 +132,7 @@ const Navbar = () => {
                 priority
               />
             </div>
-            <span className="text-xl md:text-2xl font-bold text-white">Salience</span>
+            <span className="text-xl md:text-2xl font-bold gold-accent">Salience</span>
           </Link>
 
           {/* Desktop Navigation */}
@@ -163,7 +142,7 @@ const Navbar = () => {
                 {item.dropdown ? (
                   <button
                     onClick={() => toggleDropdown(item.label)}
-                    className="flex items-center gap-1 px-4 py-2 text-white/70 hover:text-white transition-colors rounded-lg hover:bg-white/5"
+                    className="flex items-center gap-1 px-4 py-2 text-slate-600 hover:text-blue-700 transition-colors rounded-lg hover:bg-blue-50/60"
                   >
                     <span>{item.label}</span>
                     <ChevronDown
@@ -175,7 +154,7 @@ const Navbar = () => {
                 ) : (
                   <Link
                     href={item.href || '/'}
-                    className="px-4 py-2 text-white/70 hover:text-white transition-colors rounded-lg hover:bg-white/5"
+                    className="px-4 py-2 text-slate-600 hover:text-blue-700 transition-colors rounded-lg hover:bg-blue-50/60"
                   >
                     {item.label}
                   </Link>
@@ -194,29 +173,22 @@ const Navbar = () => {
           {/* Desktop CTA */}
           <div className="hidden md:flex items-center gap-4">
             <a
-              href="mailto:aqeel@aqeelali.com"
-              className="flex items-center gap-2 text-white/60 hover:text-amber-400 transition-colors"
-            >
-              <Mail className="w-4 h-4" />
-              <span className="text-sm hidden xl:inline">aqeel@aqeelali.com</span>
-            </a>
-            <a
               href="tel:+14087180712"
-              className="flex items-center gap-2 text-white/60 hover:text-amber-400 transition-colors"
+              className="flex items-center gap-2 text-slate-500 hover:text-blue-700 transition-colors"
             >
               <Phone className="w-4 h-4" />
               <span className="text-sm hidden xl:inline">+1 (408) 718-0712</span>
             </a>
-            <a href="mailto:aqeel@aqeelali.com?subject=I'm ready to make more money and get my time back">
-              <Button className="cta-button text-sm px-4 py-2 rounded-lg font-medium">
-                Get Started
+            <a href="mailto:aqeel@aqeelali.com?subject=I'd like to learn more about Salience">
+              <Button className="cta-button text-sm px-5 py-2 rounded-lg font-medium">
+                Book a Free Consult
               </Button>
             </a>
           </div>
 
           {/* Mobile Menu Button */}
           <button
-            className="lg:hidden p-2 text-white/70 hover:text-white transition-colors"
+            className="lg:hidden p-2 text-slate-600 hover:text-blue-700 transition-colors"
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
             aria-label="Toggle menu"
           >
@@ -227,7 +199,7 @@ const Navbar = () => {
 
       {/* Mobile Menu */}
       {isMobileMenuOpen && (
-        <div className="lg:hidden bg-[#0a0a0a] border-t border-white/10">
+        <div className="lg:hidden bg-white border-t border-slate-100">
           <div className="px-4 py-4 space-y-2">
             {navItems.map((item) => (
               <div key={item.label}>
@@ -235,7 +207,7 @@ const Navbar = () => {
                   <div>
                     <button
                       onClick={() => toggleMobileDropdown(item.label)}
-                      className="flex items-center justify-between w-full px-3 py-3 text-white/80 hover:text-white transition-colors rounded-lg hover:bg-white/5"
+                      className="flex items-center justify-between w-full px-3 py-3 text-slate-700 hover:text-blue-700 transition-colors rounded-lg hover:bg-blue-50/60"
                     >
                       <span className="font-medium">{item.label}</span>
                       <ChevronDown
@@ -245,17 +217,17 @@ const Navbar = () => {
                       />
                     </button>
                     {mobileOpenDropdown === item.label && (
-                      <div className="ml-4 mt-1 space-y-1 border-l-2 border-amber-500/30 pl-4">
+                      <div className="ml-4 mt-1 space-y-1 border-l-2 border-blue-200 pl-4">
                         {item.dropdown.map((subItem) => (
                           <Link
                             key={subItem.href}
                             href={subItem.href}
                             onClick={() => setIsMobileMenuOpen(false)}
-                            className="block py-2 text-white/60 hover:text-amber-400 transition-colors"
+                            className="block py-2 text-slate-500 hover:text-blue-700 transition-colors"
                           >
                             <span className="font-medium">{subItem.label}</span>
                             {subItem.description && (
-                              <span className="block text-xs text-white/40 mt-0.5">
+                              <span className="block text-xs text-slate-400 mt-0.5">
                                 {subItem.description}
                               </span>
                             )}
@@ -268,7 +240,7 @@ const Navbar = () => {
                   <Link
                     href={item.href || '/'}
                     onClick={() => setIsMobileMenuOpen(false)}
-                    className="block px-3 py-3 text-white/80 hover:text-white font-medium transition-colors rounded-lg hover:bg-white/5"
+                    className="block px-3 py-3 text-slate-700 hover:text-blue-700 font-medium transition-colors rounded-lg hover:bg-blue-50/60"
                   >
                     {item.label}
                   </Link>
@@ -276,28 +248,28 @@ const Navbar = () => {
               </div>
             ))}
 
-            {/* Mobile Contact Links */}
-            <div className="pt-4 mt-4 border-t border-white/10 space-y-3">
+            {/* Mobile Contact */}
+            <div className="pt-4 mt-4 border-t border-slate-100 space-y-3">
               <a
                 href="mailto:aqeel@aqeelali.com"
-                className="flex items-center gap-3 text-white/70 hover:text-amber-400 transition-colors py-2"
+                className="flex items-center gap-3 text-slate-500 hover:text-blue-700 transition-colors py-2"
               >
                 <Mail className="w-5 h-5" />
                 <span>aqeel@aqeelali.com</span>
               </a>
               <a
                 href="tel:+14087180712"
-                className="flex items-center gap-3 text-white/70 hover:text-amber-400 transition-colors py-2"
+                className="flex items-center gap-3 text-slate-500 hover:text-blue-700 transition-colors py-2"
               >
                 <Phone className="w-5 h-5" />
                 <span>+1 (408) 718-0712</span>
               </a>
               <a
-                href="mailto:aqeel@aqeelali.com?subject=I'm ready to make more money and get my time back"
+                href="mailto:aqeel@aqeelali.com?subject=I'd like to learn more about Salience"
                 className="block w-full"
               >
                 <Button className="w-full cta-button py-3 rounded-lg font-medium">
-                  Get Started
+                  Book a Free Consult
                 </Button>
               </a>
             </div>

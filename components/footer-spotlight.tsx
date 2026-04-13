@@ -1,103 +1,74 @@
 "use client";
 
-import { useState, useRef } from "react";
-import Image from "next/image";
+import Link from "next/link";
+import { Phone, Mail } from "lucide-react";
 
-// ─── Props ───
-interface FooterSpotlightProps {
-  /** Path to the removebg Salience wordmark image */
-  wordmarkSrc?: string;
-}
-
-export default function FooterSpotlight({
-  wordmarkSrc = "/assets/assets-whole-word-removebg.svg",
-}: FooterSpotlightProps) {
-  const [mouse, setMouse] = useState({ x: 50, y: 50 });
-  const [hovering, setHovering] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!containerRef.current) return;
-    const rect = containerRef.current.getBoundingClientRect();
-    const x = ((e.clientX - rect.left) / rect.width) * 100;
-    const y = ((e.clientY - rect.top) / rect.height) * 100;
-    setMouse({ x, y });
-  };
-
+export default function FooterSpotlight() {
   return (
-    <footer className="border-t border-white/[0.06]">
-      {/* Giant wordmark with spotlight — full width, above everything */}
-      <div
-        ref={containerRef}
-        onMouseMove={handleMouseMove}
-        onMouseEnter={() => setHovering(true)}
-        onMouseLeave={() => setHovering(false)}
-        className="relative h-[300px] flex items-center justify-center overflow-hidden cursor-default"
-      >
-        {/* Base layer: very dim wordmark — full width */}
-        <div className="relative w-full h-[240px]">
-          <Image
-            src={wordmarkSrc}
-            alt="Salience"
-            fill
-            className="object-contain opacity-[0.04]"
-            style={{ filter: "brightness(0.8)" }}
-            priority={false}
-          />
+    <footer className="border-t border-slate-200 bg-slate-50">
+      <div className="max-w-6xl mx-auto px-6 py-12 md:py-16">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-10">
+          {/* Brand */}
+          <div className="md:col-span-1">
+            <p className="text-xl font-bold">
+              <span className="gold-accent">Salience</span>
+            </p>
+            <p className="text-sm text-slate-500 mt-2 leading-relaxed">
+              Custom AI admin systems for service businesses that live in calls, forms, and follow-ups.
+            </p>
+          </div>
 
-          {/* Spotlight layer: follows cursor */}
-          <div
-            className="absolute inset-0 transition-opacity duration-300"
-            style={{
-              opacity: hovering ? 1 : 0,
-              WebkitMaskImage: `radial-gradient(circle 200px at ${mouse.x}% ${mouse.y}%, black 0%, transparent 100%)`,
-              maskImage: `radial-gradient(circle 200px at ${mouse.x}% ${mouse.y}%, black 0%, transparent 100%)`,
-            }}
+          {/* Services */}
+          <div>
+            <p className="text-sm font-semibold text-slate-800 mb-4">Services</p>
+            <ul className="space-y-2.5 text-sm text-slate-500">
+              <li><Link href="/services#healthcare" className="hover:text-blue-700 transition-colors">Healthcare</Link></li>
+              <li><Link href="/services#real-estate" className="hover:text-blue-700 transition-colors">Real Estate</Link></li>
+              <li><Link href="/services#insurance" className="hover:text-blue-700 transition-colors">Insurance</Link></li>
+            </ul>
+          </div>
+
+          {/* Company */}
+          <div>
+            <p className="text-sm font-semibold text-slate-800 mb-4">Company</p>
+            <ul className="space-y-2.5 text-sm text-slate-500">
+              <li><Link href="/case-studies" className="hover:text-blue-700 transition-colors">Case Studies</Link></li>
+              <li><Link href="/team" className="hover:text-blue-700 transition-colors">Team</Link></li>
+              <li><Link href="/referrals" className="hover:text-blue-700 transition-colors">Referrals</Link></li>
+            </ul>
+          </div>
+
+          {/* Contact */}
+          <div>
+            <p className="text-sm font-semibold text-slate-800 mb-4">Contact</p>
+            <ul className="space-y-2.5 text-sm text-slate-500">
+              <li>
+                <a href="tel:+14087180712" className="flex items-center gap-2 hover:text-blue-700 transition-colors">
+                  <Phone className="w-4 h-4" />
+                  +1 (408) 718-0712
+                </a>
+              </li>
+              <li>
+                <a href="mailto:aqeel@aqeelali.com" className="flex items-center gap-2 hover:text-blue-700 transition-colors">
+                  <Mail className="w-4 h-4" />
+                  aqeel@aqeelali.com
+                </a>
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <div className="mt-12 pt-8 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <p className="text-xs text-slate-400">
+            &copy; 2026 <span className="gold-accent font-semibold">Salience</span>. All rights reserved.
+          </p>
+          <Link
+            href="/i-want-my-time-and-energy-back"
+            className="text-xs text-blue-600 hover:text-blue-800 font-medium transition-colors"
           >
-            <Image
-              src={wordmarkSrc}
-              alt=""
-              fill
-              className="object-contain"
-              style={{
-                opacity: 0.6,
-                filter: "brightness(1.4) saturate(1.2)",
-              }}
-              priority={false}
-            />
-          </div>
+            Chat with our AI assistant &rarr;
+          </Link>
         </div>
-
-        {/* Bottom gradient fade */}
-        <div className="absolute bottom-0 left-0 right-0 h-[60%] bg-gradient-to-t from-[#0a0a0a] to-transparent pointer-events-none" />
-      </div>
-
-      {/* Text content below the wordmark */}
-      <div className="max-w-[1100px] mx-auto px-7 flex justify-between items-start py-8">
-        <div>
-          <div className="text-base font-bold text-white/80 flex items-center gap-2">
-            <span className="w-6 h-6 rounded-md bg-gradient-to-br from-amber-500 to-amber-700 flex items-center justify-center text-xs text-black">
-              {"\u26a1"}
-            </span>
-            Salience
-          </div>
-          <p className="text-sm font-normal text-white/60 mt-1">
-            AI Automation for Private Practices
-          </p>
-          <p className="text-[0.75rem] text-amber-500 italic mt-2.5 max-w-[300px]">
-            &ldquo;Soon the person you&apos;ll spend the most time with is your
-            tax advisor&rdquo;
-          </p>
-        </div>
-        <div className="text-[0.7rem] text-white/30 text-right">
-          &copy; 2026 Salience.
-          <br />
-          All rights reserved.
-        </div>
-      </div>
-
-      <div className="text-center pb-6 text-[0.65rem] text-white/20">
-        Salience
       </div>
     </footer>
   );
