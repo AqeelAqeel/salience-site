@@ -39,6 +39,7 @@ import Image from 'next/image';
 import Navbar from '@/components/navbar';
 import ProcessSection from '@/components/process-section';
 import FooterSpotlight from '@/components/footer-spotlight';
+import { MiniChat } from '@/components/mini-chat';
 
 /* ─── Scroll Reveal Hook ─── */
 function useScrollReveal() {
@@ -156,7 +157,7 @@ function CTABlock({ openCalendly }: { openCalendly: () => void }) {
         <Link href="/i-want-my-time-and-energy-back" className="w-full sm:w-auto">
           <Button variant="outline" size="lg" className="w-full sm:w-auto cta-outline text-lg px-8 py-6 rounded-xl font-semibold">
             <MessageSquare className="mr-2 w-5 h-5" />
-            Chat First
+            Ask Our AI How You&apos;d Get Value
           </Button>
         </Link>
       </div>
@@ -458,11 +459,6 @@ export default function HomePage() {
           <div className="absolute top-40 right-1/4 w-72 h-72 bg-purple-100/30 rounded-full blur-3xl pointer-events-none" />
 
           <div className="relative z-10 max-w-4xl mx-auto w-full text-center">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-50 border border-blue-200 mb-6 scroll-reveal">
-              <Zap className="w-4 h-4 text-blue-600" />
-              <span className="text-blue-700 text-sm font-medium">AI Admin Systems &middot; Built for Your Business</span>
-            </div>
-
             <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight mb-8 leading-tight scroll-reveal stagger-1">
               <span className="text-slate-900">Stop Drowning in</span>
               <br />
@@ -544,37 +540,30 @@ export default function HomePage() {
         <section className="py-16 md:py-20 px-4 sm:px-8 lg:px-16 bg-gradient-to-br from-blue-50 via-white to-purple-50/30">
           <div className="max-w-4xl mx-auto">
             <div className="scroll-reveal">
-              <div className="rounded-2xl border border-blue-200 bg-white p-8 md:p-12 text-center shadow-sm">
-                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-50 border border-blue-200 mb-6">
+              <div className="rounded-2xl border border-blue-200 bg-white p-8 md:p-10 text-center shadow-sm">
+                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-50 border border-blue-200 mb-5">
                   <MessageSquare className="w-4 h-4 text-blue-600" />
                   <span className="text-blue-700 text-sm font-medium">AI Pre-Consultation</span>
                 </div>
 
-                <h2 className="text-2xl md:text-3xl font-bold text-slate-900 mb-4">
-                  Not sure how AI could help your practice?
+                <h2 className="text-2xl md:text-3xl font-bold text-slate-900 mb-3">
+                  Ask our AI how you&apos;d get value
                 </h2>
-                <p className="text-slate-500 text-base md:text-lg mb-8 max-w-xl mx-auto leading-relaxed">
-                  Ask our AI assistant about your workflows and it will outline concrete ways we can help — in under 2 minutes. No commitment required.
+                <p className="text-slate-500 text-base md:text-lg mb-6 max-w-xl mx-auto leading-relaxed">
+                  Tell it about your workflows and it will outline concrete ways we can help — in under 2 minutes. No commitment required.
                 </p>
 
-                <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-                  <Link href="/i-want-my-time-and-energy-back">
-                    <Button size="lg" className="cta-button text-lg px-8 py-6 rounded-xl font-semibold">
-                      <MessageSquare className="mr-2 w-5 h-5" />
-                      Chat About Your Workflows
-                    </Button>
-                  </Link>
-                  <button onClick={openCalendly}>
-                    <Button variant="outline" size="lg" className="cta-outline text-lg px-8 py-6 rounded-xl font-semibold">
-                      <CalendarCheck className="mr-2 w-5 h-5" />
-                      Or Book a Call Directly
-                    </Button>
-                  </button>
-                </div>
+                <button onClick={openCalendly} className="mb-6">
+                  <Button variant="outline" size="lg" className="cta-outline text-base px-6 py-4 rounded-xl font-semibold">
+                    <CalendarCheck className="mr-2 w-4 h-4" />
+                    Or Book a Call Directly
+                  </Button>
+                </button>
+              </div>
 
-                <p className="text-xs text-slate-400 mt-6">
-                  The chat prepares a better human consult with you — it asks about your workflows, identifies quick wins, and outlines ideas.
-                </p>
+              {/* Mini chat — same backend as /i-want-my-time-and-energy-back */}
+              <div className="mt-6">
+                <MiniChat />
               </div>
             </div>
           </div>
