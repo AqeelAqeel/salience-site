@@ -48,7 +48,8 @@ export function MiniChat() {
   const [input, setInput] = useState("");
 
   const hydratedRef = useRef(false);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const hasUserInteractedRef = useRef(false);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Bootstrap session + opening message
@@ -67,6 +68,10 @@ export function MiniChat() {
           setProspectId(parsed.prospectId);
           setSessionId(parsed.sessionId);
           restored = true;
+          // If they'd sent anything in a prior visit, re-enable container auto-scroll.
+          if (parsed.messages.some((m: WinHereMessage) => m.role === "user")) {
+            hasUserInteractedRef.current = true;
+          }
         }
       }
     } catch {
@@ -119,9 +124,14 @@ export function MiniChat() {
     }
   }, [prospectId, sessionId, messages, scratchpad]);
 
-  // Auto scroll
+  // Auto scroll — only scrolls inside the chat container, never the page.
+  // Also skip until the user has actually engaged (sent a message or clicked
+  // a starter), so the page load doesn't get yanked down to the chat.
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (!hasUserInteractedRef.current) return;
+    const el = messagesContainerRef.current;
+    if (!el) return;
+    el.scrollTop = el.scrollHeight;
   }, [messages, isSending]);
 
   const sendMessage = useCallback(
@@ -194,7 +204,13 @@ export function MiniChat() {
 
   const handleSend = () => {
     if (isSending || !input.trim()) return;
+    hasUserInteractedRef.current = true;
     sendMessage(input);
+  };
+
+  const handleStarterClick = (text: string) => {
+    hasUserInteractedRef.current = true;
+    sendMessage(text);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -217,7 +233,7 @@ export function MiniChat() {
   return (
     <div className="w-full rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
       {/* Messages area */}
-      <div className="h-[320px] overflow-y-auto p-4 space-y-3">
+      <div ref={messagesContainerRef} className="h-[320px] overflow-y-auto overscroll-contain p-4 space-y-3">
         {messages.length === 0 && !isSending && (
           <div className="flex items-center justify-center h-full text-slate-400 text-sm italic">
             connecting...
@@ -267,7 +283,6 @@ export function MiniChat() {
             </div>
           </div>
         )}
-        <div ref={messagesEndRef} />
       </div>
 
       {/* Quick starters — only before first user message */}
@@ -280,7 +295,7 @@ export function MiniChat() {
           ].map((s) => (
             <button
               key={s}
-              onClick={() => sendMessage(s)}
+              onClick={() => handleStarterClick(s)}
               className="text-xs px-3 py-1.5 rounded-full bg-slate-50 border border-slate-200 text-slate-500 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 transition-all"
             >
               {s}
