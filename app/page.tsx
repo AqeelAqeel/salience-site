@@ -389,7 +389,7 @@ export default function HomePage() {
       shortLabel: 'Insurance',
       description: 'High-volume quote calls, multiple carrier forms, strict documentation requirements.',
       benefit: 'Automate intake forms and policy processing',
-      href: '/services#insurance',
+      href: '/services/insurance',
       image: '/industries/industries-insurance-brokers.jpg',
     },
     {
@@ -398,7 +398,7 @@ export default function HomePage() {
       shortLabel: 'Telehealth',
       description: 'Patient intake, pharmacy coordination, consent forms, and follow-up scheduling across remote and in-person visits.',
       benefit: 'Capture and structure every patient interaction',
-      href: '/services#healthcare',
+      href: '/services/healthcare',
       image: '/industries/industries-telehealth-clinics.jpg',
     },
     {
@@ -407,7 +407,7 @@ export default function HomePage() {
       shortLabel: 'Dental',
       description: 'New patient intake, insurance verification, treatment plan documentation, and recall reminders.',
       benefit: 'Streamline patient onboarding and insurance',
-      href: '/services#healthcare',
+      href: '/services/healthcare',
       image: '/industries/industries-dentists.jpg',
     },
     {
@@ -416,7 +416,7 @@ export default function HomePage() {
       shortLabel: 'Real Estate',
       description: 'Property inquiries, showing coordination, document management across listings.',
       benefit: 'Organize leads and automate follow-ups',
-      href: '/services#real-estate',
+      href: '/services/real-estate',
       image: '/industries/industries-real-estate.jpg',
     },
     {
@@ -425,7 +425,7 @@ export default function HomePage() {
       shortLabel: 'Legal',
       description: 'Complex intake, government forms, documentation of every client touchpoint.',
       benefit: 'Auto-fill legal forms from call transcripts',
-      href: '/services#insurance',
+      href: '/services/insurance',
       image: '/industries/industries-law-offices.jpg',
     },
     {

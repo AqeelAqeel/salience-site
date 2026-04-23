@@ -23,19 +23,19 @@ const navItems: NavItem[] = [
     label: 'Services',
     dropdown: [
       {
+        label: 'Insurance',
+        href: '/services/insurance',
+        description: 'Quote, renew & retain — your whole agency in one system',
+      },
+      {
         label: 'Healthcare',
-        href: '/services#healthcare',
+        href: '/services/healthcare',
         description: 'AI admin for clinics, telehealth, and practices',
       },
       {
         label: 'Real Estate',
-        href: '/services#real-estate',
+        href: '/services/real-estate',
         description: 'Automation for brokers and property management',
-      },
-      {
-        label: 'Insurance',
-        href: '/services#insurance',
-        description: 'Intake, forms, and policy processing',
       },
     ],
   },

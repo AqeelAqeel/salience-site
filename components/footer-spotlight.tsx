@@ -22,9 +22,9 @@ export default function FooterSpotlight() {
           <div>
             <p className="text-sm font-semibold text-slate-800 mb-4">Services</p>
             <ul className="space-y-2.5 text-sm text-slate-500">
-              <li><Link href="/services#healthcare" className="hover:text-blue-700 transition-colors">Healthcare</Link></li>
-              <li><Link href="/services#real-estate" className="hover:text-blue-700 transition-colors">Real Estate</Link></li>
-              <li><Link href="/services#insurance" className="hover:text-blue-700 transition-colors">Insurance</Link></li>
+              <li><Link href="/services/insurance" className="hover:text-blue-700 transition-colors">Insurance</Link></li>
+              <li><Link href="/services/healthcare" className="hover:text-blue-700 transition-colors">Healthcare</Link></li>
+              <li><Link href="/services/real-estate" className="hover:text-blue-700 transition-colors">Real Estate</Link></li>
             </ul>
           </div>
 
