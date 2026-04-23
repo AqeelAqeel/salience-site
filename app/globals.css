@@ -287,6 +287,55 @@ h1, h2, h3, h4, h5, h6 {
 }
 .animate-scroll { animation: scroll 2s ease-in-out infinite; }
 
+/* ═══ Word-orbit drift paths (satellite logos around a word) ═══ */
+@keyframes orbit-a {
+  0%, 100% { transform: translate(0, 0); }
+  25%      { transform: translate(6px, -8px); }
+  50%      { transform: translate(0, -14px); }
+  75%      { transform: translate(-6px, -8px); }
+}
+@keyframes orbit-b {
+  0%, 100% { transform: translate(0, 0); }
+  25%      { transform: translate(-8px, 6px); }
+  50%      { transform: translate(-14px, 0); }
+  75%      { transform: translate(-8px, -6px); }
+}
+@keyframes orbit-c {
+  0%, 100% { transform: translate(0, 0); }
+  25%      { transform: translate(8px, 6px); }
+  50%      { transform: translate(0, 12px); }
+  75%      { transform: translate(-8px, 6px); }
+}
+@keyframes orbit-d {
+  0%, 100% { transform: translate(0, 0); }
+  25%      { transform: translate(10px, 0); }
+  50%      { transform: translate(14px, -6px); }
+  75%      { transform: translate(10px, -12px); }
+}
+.animate-orbit-a { animation: orbit-a 6s ease-in-out infinite; }
+.animate-orbit-b { animation: orbit-b 7s ease-in-out infinite; }
+.animate-orbit-c { animation: orbit-c 8s ease-in-out infinite; }
+.animate-orbit-d { animation: orbit-d 9s ease-in-out infinite; }
+
+/* ═══ Flow-pipeline traveling pulse ═══ */
+@keyframes flow-pulse {
+  0%   { left: -6%; opacity: 0; }
+  8%   { opacity: 1; }
+  92%  { opacity: 1; }
+  100% { left: 106%; opacity: 0; }
+}
+.animate-flow-pulse { animation: flow-pulse 6s linear infinite; }
+
+/* Subtle shimmer along a gradient line */
+@keyframes flow-shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.animate-flow-shimmer {
+  background-size: 200% 100%;
+  animation: flow-shimmer 4s linear infinite;
+}
+
 /* Number Count Up */
 @keyframes countUp {
   from { opacity: 0; transform: translateY(10px); }

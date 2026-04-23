@@ -40,10 +40,6 @@ const navItems: NavItem[] = [
     ],
   },
   {
-    label: 'Case Studies',
-    href: '/case-studies',
-  },
-  {
     label: 'Team',
     href: '/team',
   },
@@ -123,7 +119,7 @@ const Navbar = () => {
         <div className="flex items-center justify-between h-16 md:h-20">
           {/* Logo */}
           <Link href="/" className="flex items-center space-x-3 group">
-            <div className="relative w-8 h-8 md:w-10 md:h-10">
+            <div className="relative w-14 h-14 md:w-16 md:h-16">
               <Image
                 src="/assets/eyes-favicon.png"
                 alt="Salience Logo"

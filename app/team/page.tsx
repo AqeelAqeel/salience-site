@@ -7,56 +7,13 @@ import { Button } from '@/components/ui/button';
 import { ArrowRight, ExternalLink } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
-
-interface TeamMember {
-  name: string;
-  role: string;
-  expertise: string[];
-  bio: string;
-  image?: string;
-  linkedin?: string;
-}
+import { teamMembers, type TeamMember } from '@/lib/team';
 
 interface Vertical {
   name: string;
   years: string;
   description: string;
 }
-
-const teamMembers: TeamMember[] = [
-  {
-    name: 'Aqeel Ali',
-    role: 'Founding Partner',
-    expertise: ['AI Systems Architecture', 'Enterprise Automation', 'Strategic Advisory'],
-    bio: 'Architect of large-scale AI automation systems deployed across insurance, healthcare, financial services, and professional practices. Deep technical background in machine learning infrastructure with hands-on experience building and shipping AI products used by thousands. Connects cutting-edge research to real business outcomes.',
-    image: '/assets/team/aqeel-ali.jpeg',
-    linkedin: 'https://www.linkedin.com/in/aliaqeel/',
-  },
-  {
-    name: 'Jackson Harris',
-    role: 'Managing Partner',
-    expertise: ['Engineering Leadership', 'Platform Infrastructure', 'M&A Technical Strategy'],
-    bio: 'Battle-tested engineering leader who has architected and scaled core operating infrastructure at multi-billion dollar companies. Former CTO through an acquisition by Niantic, Inc. — bringing firsthand experience navigating technical due diligence, integration, and post-acquisition engineering alignment. Drove engineering performance metrics and operational excellence across high-growth organizations, building the kind of resilient, scalable systems that acquirers pay a premium for. Turns complex technical debt into clean, compounding infrastructure.',
-    image: '/assets/team/jackson-harris.jpeg',
-    linkedin: 'https://www.linkedin.com/in/jacksonharris3/',
-  },
-  {
-    name: 'Danara Buvaeva',
-    role: 'Partner',
-    expertise: ['Ecommerce Operations', 'Supply Chain Optimization', 'Logistics AI'],
-    bio: 'Ecommerce and supply chain expert with deep domain knowledge in inventory optimization, demand forecasting, and fulfillment automation. Has driven operational transformations for brands scaling from seven to nine figures, applying AI at every link in the chain from procurement to last-mile delivery.',
-    image: '/assets/team/danara-buvaeva.png',
-    linkedin: 'https://www.linkedin.com/in/danarab/',
-  },
-  {
-    name: 'George Mazur',
-    role: 'Partner',
-    expertise: ['B2B SaaS Sales', 'Go-to-Market Strategy', 'Revenue Operations'],
-    bio: 'Full-cycle commercial AE with deep experience across B2B SaaS, MarTech, HCM, and fintech. Runs quantified discovery tied to conversion and pipeline levers — visitor-to-lead, MQL-to-SQL, speed-to-lead, attribution. Expert at multi-threading complex deals across Marketing, RevOps, Sales leadership, and Finance. Brings MEDDIC discipline and GTM strategy to every engagement.',
-    image: '/assets/team/george-mazur.jpeg',
-    linkedin: 'https://www.linkedin.com/in/george-m-b69586159/',
-  },
-];
 
 const verticals: Vertical[] = [
   {
@@ -128,21 +85,26 @@ function useScrollReveal() {
 
 function TeamMemberCard({ member, index }: { member: TeamMember; index: number }) {
   const isEven = index % 2 === 0;
+  const profileHref = `/team/${member.slug}`;
 
   return (
     <div className={`scroll-reveal stagger-${index + 1}`}>
       <div
         className={`flex flex-col ${isEven ? 'lg:flex-row' : 'lg:flex-row-reverse'} gap-8 lg:gap-12 items-center`}
       >
-        {/* Photo */}
-        <div className="relative w-full max-w-[320px] lg:max-w-[380px] flex-shrink-0">
-          <div className="relative aspect-[4/5] rounded-2xl overflow-hidden border border-slate-200 group">
+        {/* Photo → links to profile */}
+        <Link
+          href={profileHref}
+          className="relative w-full max-w-[320px] lg:max-w-[380px] flex-shrink-0 group/photo"
+          aria-label={`View ${member.name}'s profile`}
+        >
+          <div className="relative aspect-[4/5] rounded-2xl overflow-hidden border border-slate-200 transition-all duration-300 group-hover/photo:border-blue-300 group-hover/photo:shadow-[0_20px_50px_-15px_rgba(37,99,235,0.25)]">
             {member.image ? (
               <Image
                 src={member.image}
                 alt={member.name}
                 fill
-                className="object-cover object-center transition-transform duration-700 group-hover:scale-105"
+                className="object-cover object-center transition-transform duration-700 group-hover/photo:scale-105"
                 sizes="(max-width: 768px) 320px, 380px"
               />
             ) : (
@@ -156,17 +118,31 @@ function TeamMemberCard({ member, index }: { member: TeamMember; index: number }
               </div>
             )}
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+
+            {/* "View profile" overlay badge */}
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white/95 backdrop-blur-sm text-xs font-semibold text-slate-900 shadow-lg opacity-0 translate-y-2 group-hover/photo:opacity-100 group-hover/photo:translate-y-0 transition-all duration-300">
+              View profile
+              <ArrowRight className="w-3.5 h-3.5" />
+            </div>
           </div>
           {/* Decorative accent */}
           <div
-            className={`absolute -z-10 top-4 ${isEven ? '-right-4' : '-left-4'} w-full h-full rounded-2xl border border-blue-200`}
+            className={`absolute -z-10 top-4 ${isEven ? '-right-4' : '-left-4'} w-full h-full rounded-2xl border border-blue-200 transition-colors duration-300 group-hover/photo:border-blue-300`}
           />
-        </div>
+        </Link>
 
         {/* Content */}
         <div className="flex-1 text-center lg:text-left">
           <div className="flex items-center justify-center lg:justify-start gap-3 mb-2">
-            <h3 className="text-3xl sm:text-4xl font-bold text-slate-900">{member.name}</h3>
+            <Link
+              href={profileHref}
+              className="group/name inline-flex items-center gap-2 rounded-lg -mx-1 px-1 transition-colors"
+            >
+              <h3 className="text-3xl sm:text-4xl font-bold text-slate-900 group-hover/name:text-blue-600 transition-colors duration-300 underline decoration-transparent group-hover/name:decoration-blue-500/40 decoration-2 underline-offset-4">
+                {member.name}
+              </h3>
+              <ArrowRight className="w-5 h-5 text-blue-500 opacity-0 -translate-x-1 group-hover/name:opacity-100 group-hover/name:translate-x-0 transition-all duration-300" />
+            </Link>
             {member.linkedin && (
               <a
                 href={member.linkedin}
@@ -194,9 +170,17 @@ function TeamMemberCard({ member, index }: { member: TeamMember; index: number }
             ))}
           </div>
 
-          <p className="text-slate-500 leading-relaxed text-base max-w-xl mx-auto lg:mx-0">
+          <p className="text-slate-500 leading-relaxed text-base max-w-xl mx-auto lg:mx-0 mb-6">
             {member.bio}
           </p>
+
+          <Link
+            href={profileHref}
+            className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 font-semibold text-sm group/cta"
+          >
+            View {member.name.split(' ')[0]}&apos;s profile &amp; links
+            <ArrowRight className="w-4 h-4 transition-transform duration-300 group-hover/cta:translate-x-1" />
+          </Link>
         </div>
       </div>
     </div>
@@ -265,14 +249,17 @@ export default function TeamPage() {
               <h2 className="text-3xl md:text-5xl font-bold text-slate-900 mb-4">
                 The people behind <span className="section-gradient-text">the work</span>
               </h2>
-              <p className="text-slate-400 text-lg max-w-2xl mx-auto">
+              <p className="text-slate-400 text-lg max-w-2xl mx-auto mb-3">
                 Senior practitioners who&apos;ve built, deployed, and scaled AI in production — not theorists, operators.
+              </p>
+              <p className="text-slate-400 text-sm">
+                Click any name or photo to view their profile and links.
               </p>
             </div>
 
             <div className="space-y-24">
               {teamMembers.map((member, index) => (
-                <TeamMemberCard key={member.name} member={member} index={index} />
+                <TeamMemberCard key={member.slug} member={member} index={index} />
               ))}
             </div>
           </div>

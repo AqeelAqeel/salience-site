@@ -32,7 +32,6 @@ export default function FooterSpotlight() {
           <div>
             <p className="text-sm font-semibold text-slate-800 mb-4">Company</p>
             <ul className="space-y-2.5 text-sm text-slate-500">
-              <li><Link href="/case-studies" className="hover:text-blue-700 transition-colors">Case Studies</Link></li>
               <li><Link href="/team" className="hover:text-blue-700 transition-colors">Team</Link></li>
               <li><Link href="/referrals" className="hover:text-blue-700 transition-colors">Referrals</Link></li>
             </ul>
