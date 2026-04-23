@@ -294,35 +294,35 @@ export default function ServicesPage() {
           className="relative scroll-mt-24 bg-gradient-to-b from-white via-blue-50/40 to-white overflow-hidden"
         >
           {/* ── Word-orbit Hero ── */}
-          <div className="relative px-4 sm:px-8 lg:px-16 pt-24 md:pt-32 pb-16 md:pb-24">
+          <div className="relative px-4 sm:px-8 lg:px-16 pt-32 md:pt-48 pb-24 md:pb-40">
             <div className="absolute top-10 left-1/3 w-[32rem] h-[32rem] bg-blue-100/40 rounded-full blur-3xl pointer-events-none" />
             <div className="absolute bottom-0 right-1/4 w-[28rem] h-[28rem] bg-amber-100/40 rounded-full blur-3xl pointer-events-none" />
 
             <div className="relative z-10 max-w-5xl mx-auto text-center scroll-reveal">
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-amber-50 border border-amber-200 text-amber-700 text-sm font-medium mb-10">
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-amber-50 border border-amber-200 text-amber-700 text-sm font-medium mb-16">
                 <Shield className="w-4 h-4" />
                 <span>Insurance · Agencies &amp; Brokerages</span>
               </div>
 
-              <h2 className="text-5xl sm:text-6xl md:text-7xl font-bold text-slate-900 leading-[1.1] mb-10">
-                <span className="block text-slate-400 font-medium text-2xl sm:text-3xl md:text-4xl mb-8">
+              <h2 className="text-5xl sm:text-6xl md:text-7xl font-bold text-slate-900 leading-[1.1] mb-16">
+                <span className="block text-slate-400 font-medium text-2xl sm:text-3xl md:text-4xl mb-16">
                   One system to
                 </span>
-                <span className="block py-6 md:py-10">
+                <span className="block py-16 md:py-24">
                   <WordOrbit
                     word="quote"
                     logos={QUOTE_LOGOS}
                     gradient="blue-gradient-text"
                   />
                 </span>
-                <span className="block py-6 md:py-10">
+                <span className="block py-16 md:py-24">
                   <WordOrbit
                     word="renew"
                     logos={RENEW_LOGOS}
                     gradient="text-amber-600"
                   />
                 </span>
-                <span className="block py-6 md:py-10">
+                <span className="block py-16 md:py-24">
                   <WordOrbit
                     word="& retain."
                     logos={RETAIN_LOGOS}
@@ -331,7 +331,7 @@ export default function ServicesPage() {
                 </span>
               </h2>
 
-              <p className="text-lg md:text-xl text-slate-500 max-w-2xl mx-auto leading-relaxed mb-8 mt-12">
+              <p className="text-lg md:text-xl text-slate-500 max-w-2xl mx-auto leading-relaxed mb-10 mt-20">
                 Bring your AMS, email, phone, forms, and carrier intelligence into a
                 single living, breathing system — so your team produces 5-10×
                 more with the same hours.
@@ -343,17 +343,38 @@ export default function ServicesPage() {
                     <ArrowRight className="ml-2 w-5 h-5" />
                   </Button>
                 </a>
-                <Link href="#client-flow">
+                <Link href="#salient-system">
                   <Button variant="outline" className="cta-outline px-7 py-5 text-base font-semibold rounded-xl">
-                    See the flow
+                    See the system
                   </Button>
                 </Link>
               </div>
             </div>
           </div>
 
+          {/* ── Central hub visual (moved to top) ── */}
+          <div
+            id="salient-system"
+            className="relative z-10 px-4 sm:px-8 lg:px-16 py-24 md:py-40 scroll-mt-24"
+          >
+            <div className="max-w-6xl mx-auto">
+              <div className="text-center mb-20 scroll-reveal">
+                <p className="text-sm font-semibold uppercase tracking-wider text-slate-400 mb-4">
+                  The architecture
+                </p>
+                <h3 className="text-3xl md:text-5xl font-bold text-slate-900 leading-tight">
+                  Every tool you pay for,{' '}
+                  <span className="blue-gradient-text">routed through one brain.</span>
+                </h3>
+              </div>
+              <div className="scroll-reveal-scale">
+                <SalientHub />
+              </div>
+            </div>
+          </div>
+
           {/* ── Stat strip ── */}
-          <div className="relative z-10 px-4 sm:px-8 lg:px-16 pb-16 md:pb-24">
+          <div className="relative z-10 px-4 sm:px-8 lg:px-16 py-24 md:py-40">
             <div className="max-w-5xl mx-auto grid grid-cols-1 sm:grid-cols-3 gap-6 scroll-reveal">
               {[
                 { value: '5-10×', label: 'More output, same hours', tone: 'text-blue-600', bg: 'from-blue-50 to-white' },
@@ -378,10 +399,10 @@ export default function ServicesPage() {
           {/* ── Client flow pipeline ── */}
           <div
             id="client-flow"
-            className="relative z-10 px-4 sm:px-8 lg:px-16 py-16 md:py-24 scroll-mt-24"
+            className="relative z-10 px-4 sm:px-8 lg:px-16 py-24 md:py-40 scroll-mt-24"
           >
             <div className="max-w-6xl mx-auto">
-              <div className="text-center mb-12 scroll-reveal">
+              <div className="text-center mb-20 scroll-reveal">
                 <p className="text-sm font-semibold uppercase tracking-wider text-slate-400 mb-3">
                   The loop that runs while you sleep
                 </p>
@@ -400,31 +421,10 @@ export default function ServicesPage() {
             </div>
           </div>
 
-          {/* ── Central hub visual ── */}
-          <div
-            id="salient-system"
-            className="relative z-10 px-4 sm:px-8 lg:px-16 py-16 md:py-24 scroll-mt-24"
-          >
-            <div className="max-w-6xl mx-auto">
-              <div className="text-center mb-12 scroll-reveal">
-                <p className="text-sm font-semibold uppercase tracking-wider text-slate-400 mb-3">
-                  The architecture
-                </p>
-                <h3 className="text-3xl md:text-5xl font-bold text-slate-900 leading-tight">
-                  Every tool you pay for,{' '}
-                  <span className="blue-gradient-text">routed through one brain.</span>
-                </h3>
-              </div>
-              <div className="scroll-reveal-scale">
-                <SalientHub />
-              </div>
-            </div>
-          </div>
-
           {/* ── Feature pillars ── */}
-          <div className="relative z-10 px-4 sm:px-8 lg:px-16 py-16 md:py-24">
+          <div className="relative z-10 px-4 sm:px-8 lg:px-16 py-24 md:py-40">
             <div className="max-w-6xl mx-auto">
-              <div className="text-center mb-12 scroll-reveal">
+              <div className="text-center mb-20 scroll-reveal">
                 <h3 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4">
                   Five pillars. One agency.
                 </h3>
@@ -517,7 +517,7 @@ export default function ServicesPage() {
           </div>
 
           {/* ── Unify-subscriptions banner ── */}
-          <div className="relative z-10 px-4 sm:px-8 lg:px-16 pb-24 md:pb-32">
+          <div className="relative z-10 px-4 sm:px-8 lg:px-16 pb-32 md:pb-48 pt-16 md:pt-24">
             <div className="max-w-6xl mx-auto">
               <div className="scroll-reveal rounded-3xl bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 p-8 md:p-14 overflow-hidden relative">
                 <div className="absolute top-0 right-0 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl" />

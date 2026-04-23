@@ -40,6 +40,33 @@ import Navbar from '@/components/navbar';
 import ProcessSection from '@/components/process-section';
 import FooterSpotlight from '@/components/footer-spotlight';
 import { MiniChat } from '@/components/mini-chat';
+import WordOrbit, { type WordOrbitLogo } from '@/components/insurance/word-orbit';
+import {
+  ClipboardList,
+  MessageCircle,
+  Smartphone,
+} from 'lucide-react';
+
+const HERO_CAPTURE_LOGOS: WordOrbitLogo[] = [
+  { label: 'Phone',    src: '/insurance/logos/logos-ringcentral.png',     icon: Phone },
+  { label: 'Email',    src: '/insurance/logos/logos-gmail.png',           icon: Mail },
+  { label: 'Web Form', src: '/insurance/logos/logos-typeform.png',        icon: ClipboardList },
+  { label: 'SMS',      src: '/insurance/logos/logos-twilio.png',          icon: MessageCircle },
+];
+
+const HERO_COORDINATE_LOGOS: WordOrbitLogo[] = [
+  { label: 'Calendar', src: '/insurance/logos/logos-google-calendar.png', icon: CalendarCheck },
+  { label: 'Outlook',  src: '/insurance/logos/logos-outlook.png',         icon: Mail },
+  { label: 'AMS',      src: '/insurance/logos/logos-hawksoft.png',        icon: Building2 },
+  { label: 'CRM',      src: '/insurance/logos/logos-ezlynx.png',          icon: Users },
+];
+
+const HERO_COMPLETE_LOGOS: WordOrbitLogo[] = [
+  { label: 'Forms',    src: '/insurance/logos/logos-acord.png',           icon: FileText },
+  { label: 'Systems',  src: '/insurance/logos/logos-ams360.png',          icon: Building2 },
+  { label: 'Delivery', src: '/insurance/logos/logos-gmail.png',           icon: Mail },
+  { label: 'Signal',   src: '/insurance/logos/logos-twilio.png',          icon: Smartphone },
+];
 
 /* ─── Scroll Reveal Hook ─── */
 function useScrollReveal() {
@@ -450,28 +477,71 @@ export default function HomePage() {
       <main className="relative overflow-x-clip bg-white min-h-screen">
 
         {/* ============================================ */}
-        {/* HERO                                        */}
+        {/* HERO — WordOrbit tagline                    */}
         {/* ============================================ */}
-        <section className="min-h-[90dvh] flex flex-col items-center px-4 sm:px-8 lg:px-16 relative pt-28 md:pt-36 pb-20">
-          {/* Soft blue gradient background */}
-          <div className="absolute top-0 left-0 right-0 h-[600px] bg-gradient-to-b from-blue-50/80 via-blue-50/30 to-transparent pointer-events-none" />
-          <div className="absolute top-20 left-1/4 w-96 h-96 bg-blue-100/40 rounded-full blur-3xl pointer-events-none" />
-          <div className="absolute top-40 right-1/4 w-72 h-72 bg-purple-100/30 rounded-full blur-3xl pointer-events-none" />
+        <section className="relative flex flex-col items-center px-4 sm:px-8 lg:px-16 pt-32 md:pt-48 pb-32 md:pb-48 overflow-hidden">
+          {/* Soft gradient wash */}
+          <div className="absolute top-0 left-0 right-0 h-[900px] bg-gradient-to-b from-blue-50/80 via-blue-50/20 to-transparent pointer-events-none" />
+          <div className="absolute top-40 left-1/4 w-[32rem] h-[32rem] bg-blue-100/40 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute top-80 right-1/4 w-[28rem] h-[28rem] bg-purple-100/30 rounded-full blur-3xl pointer-events-none" />
 
-          <div className="relative z-10 max-w-4xl mx-auto w-full text-center">
-            <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight mb-8 leading-tight scroll-reveal stagger-1">
-              <span className="text-slate-900">Stop Drowning in</span>
-              <br />
-              <span className="text-slate-900">Calls, Forms &amp; Follow-ups</span>
+          <div className="relative z-10 max-w-5xl mx-auto w-full text-center">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-50 border border-blue-200 text-blue-700 text-sm font-medium mb-16 scroll-reveal">
+              <Sparkles className="w-4 h-4" />
+              <span>Custom AI systems for service businesses</span>
+            </div>
+
+            <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold text-slate-900 leading-[1.05] mb-16 scroll-reveal stagger-1">
+              <span className="block text-slate-400 font-medium text-2xl sm:text-3xl md:text-4xl mb-16">
+                One system to
+              </span>
+              <span className="block py-16 md:py-24">
+                <WordOrbit
+                  word="capture"
+                  logos={HERO_CAPTURE_LOGOS}
+                  gradient="blue-gradient-text"
+                />
+              </span>
+              <span className="block py-16 md:py-24">
+                <WordOrbit
+                  word="coordinate"
+                  logos={HERO_COORDINATE_LOGOS}
+                  gradient="text-amber-600"
+                />
+              </span>
+              <span className="block py-16 md:py-24">
+                <WordOrbit
+                  word="& complete."
+                  logos={HERO_COMPLETE_LOGOS}
+                  gradient="blue-gradient-text"
+                />
+              </span>
             </h1>
 
-            <p className="text-lg md:text-xl text-slate-500 mb-12 max-w-2xl mx-auto scroll-reveal stagger-2 leading-relaxed">
-              We build custom AI admin systems that capture your client interactions, turn them into structured data, and automatically fill your forms and workflows — so your team can focus on real work, not paperwork.
-            </p>
-
-            <div className="scroll-reveal stagger-3">
+            <div className="scroll-reveal stagger-3 mt-20">
               <CTABlock openCalendly={openCalendly} />
             </div>
+          </div>
+        </section>
+
+        {/* ============================================ */}
+        {/* HERO SUBTEXT — moved out of the hero         */}
+        {/* ============================================ */}
+        <section className="py-24 md:py-40 px-4 sm:px-8 lg:px-16 bg-gradient-to-b from-white via-slate-50/60 to-white">
+          <div className="max-w-4xl mx-auto text-center scroll-reveal">
+            <p className="text-sm font-semibold uppercase tracking-wider text-slate-400 mb-5">
+              What we actually do
+            </p>
+            <h2 className="text-3xl md:text-5xl font-bold text-slate-900 leading-tight mb-8">
+              Stop drowning in{' '}
+              <span className="blue-gradient-text">calls, forms &amp; follow-ups.</span>
+            </h2>
+            <p className="text-lg md:text-xl text-slate-500 leading-relaxed max-w-3xl mx-auto">
+              We build custom AI admin systems that capture your client
+              interactions, turn them into structured data, and automatically
+              fill your forms and workflows — so your team can focus on real
+              work, not paperwork.
+            </p>
           </div>
         </section>
 

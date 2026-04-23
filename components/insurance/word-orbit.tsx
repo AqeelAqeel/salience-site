@@ -13,12 +13,12 @@ export interface WordOrbitLogo {
 type Slot = 'tl' | 'tr' | 'bl' | 'br' | 'l' | 'r';
 
 const SLOT_POSITION: Record<Slot, string> = {
-  tl: '-top-10 -left-12 md:-top-12 md:-left-16',
-  tr: '-top-12 -right-10 md:-top-14 md:-right-14',
-  bl: '-bottom-8 -left-14 md:-bottom-10 md:-left-20',
-  br: '-bottom-10 -right-12 md:-bottom-12 md:-right-16',
-  l:  'top-1/2 -translate-y-1/2 -left-24 md:-left-32',
-  r:  'top-1/2 -translate-y-1/2 -right-24 md:-right-32',
+  tl: '-top-20 -left-20 md:-top-24 md:-left-28',
+  tr: '-top-20 -right-20 md:-top-24 md:-right-28',
+  bl: '-bottom-20 -left-20 md:-bottom-24 md:-left-28',
+  br: '-bottom-20 -right-20 md:-bottom-24 md:-right-28',
+  l:  'top-1/2 -translate-y-1/2 -left-28 md:-left-40',
+  r:  'top-1/2 -translate-y-1/2 -right-28 md:-right-40',
 };
 
 const DRIFT_CLASSES = ['animate-orbit-a', 'animate-orbit-b', 'animate-orbit-c', 'animate-orbit-d'];
@@ -67,7 +67,7 @@ export default function WordOrbit({
   word,
   logos,
   gradient = 'blue-gradient-text',
-  slots = ['tl', 'tr', 'bl', 'br'],
+  slots = ['l', 'r', 'tl', 'tr'],
 }: {
   word: ReactNode;
   logos: WordOrbitLogo[];
