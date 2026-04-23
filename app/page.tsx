@@ -41,31 +41,20 @@ import ProcessSection from '@/components/process-section';
 import FooterSpotlight from '@/components/footer-spotlight';
 import { MiniChat } from '@/components/mini-chat';
 import WordOrbit, { type WordOrbitLogo } from '@/components/insurance/word-orbit';
-import {
-  ClipboardList,
-  MessageCircle,
-  Smartphone,
-} from 'lucide-react';
 
 const HERO_CAPTURE_LOGOS: WordOrbitLogo[] = [
   { label: 'Phone',    src: '/insurance/logos/logos-ringcentral.png',     icon: Phone },
   { label: 'Email',    src: '/insurance/logos/logos-gmail.png',           icon: Mail },
-  { label: 'Web Form', src: '/insurance/logos/logos-typeform.png',        icon: ClipboardList },
-  { label: 'SMS',      src: '/insurance/logos/logos-twilio.png',          icon: MessageCircle },
 ];
 
 const HERO_COORDINATE_LOGOS: WordOrbitLogo[] = [
   { label: 'Calendar', src: '/insurance/logos/logos-google-calendar.png', icon: CalendarCheck },
-  { label: 'Outlook',  src: '/insurance/logos/logos-outlook.png',         icon: Mail },
-  { label: 'AMS',      src: '/insurance/logos/logos-hawksoft.png',        icon: Building2 },
   { label: 'CRM',      src: '/insurance/logos/logos-ezlynx.png',          icon: Users },
 ];
 
 const HERO_COMPLETE_LOGOS: WordOrbitLogo[] = [
   { label: 'Forms',    src: '/insurance/logos/logos-acord.png',           icon: FileText },
-  { label: 'Systems',  src: '/insurance/logos/logos-ams360.png',          icon: Building2 },
   { label: 'Delivery', src: '/insurance/logos/logos-gmail.png',           icon: Mail },
-  { label: 'Signal',   src: '/insurance/logos/logos-twilio.png',          icon: Smartphone },
 ];
 
 /* ─── Scroll Reveal Hook ─── */
@@ -479,46 +468,44 @@ export default function HomePage() {
         {/* ============================================ */}
         {/* HERO — WordOrbit tagline                    */}
         {/* ============================================ */}
-        <section className="relative flex flex-col items-center px-4 sm:px-8 lg:px-16 pt-32 md:pt-48 pb-32 md:pb-48 overflow-hidden">
+        <section className="relative flex flex-col items-center justify-center px-4 sm:px-8 lg:px-16 pt-20 md:pt-24 pb-12 md:pb-16 overflow-hidden">
           {/* Soft gradient wash */}
-          <div className="absolute top-0 left-0 right-0 h-[900px] bg-gradient-to-b from-blue-50/80 via-blue-50/20 to-transparent pointer-events-none" />
-          <div className="absolute top-40 left-1/4 w-[32rem] h-[32rem] bg-blue-100/40 rounded-full blur-3xl pointer-events-none" />
-          <div className="absolute top-80 right-1/4 w-[28rem] h-[28rem] bg-purple-100/30 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute top-0 left-0 right-0 h-[600px] bg-gradient-to-b from-blue-50/80 via-blue-50/20 to-transparent pointer-events-none" />
+          <div className="absolute top-20 left-1/4 w-[28rem] h-[28rem] bg-blue-100/40 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute top-40 right-1/4 w-[24rem] h-[24rem] bg-purple-100/30 rounded-full blur-3xl pointer-events-none" />
 
           <div className="relative z-10 max-w-5xl mx-auto w-full text-center">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-50 border border-blue-200 text-blue-700 text-sm font-medium mb-16 scroll-reveal">
-              <Sparkles className="w-4 h-4" />
-              <span>Custom AI systems for service businesses</span>
-            </div>
-
-            <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold text-slate-900 leading-[1.05] mb-16 scroll-reveal stagger-1">
-              <span className="block text-slate-400 font-medium text-2xl sm:text-3xl md:text-4xl mb-16">
+            <h1 className="font-bold text-slate-900 leading-[1.05] mb-6 scroll-reveal stagger-1">
+              <span className="block text-slate-400 font-medium text-xl sm:text-2xl md:text-3xl mb-4 md:mb-6">
                 One system to
               </span>
-              <span className="block py-16 md:py-24">
+              <span className="block text-5xl sm:text-6xl md:text-7xl py-3 md:py-5">
                 <WordOrbit
                   word="capture"
                   logos={HERO_CAPTURE_LOGOS}
                   gradient="blue-gradient-text"
+                  slots={['l', 'r']}
                 />
               </span>
-              <span className="block py-16 md:py-24">
+              <span className="block text-5xl sm:text-6xl md:text-7xl py-3 md:py-5">
                 <WordOrbit
                   word="coordinate"
                   logos={HERO_COORDINATE_LOGOS}
                   gradient="text-amber-600"
+                  slots={['l', 'r']}
                 />
               </span>
-              <span className="block py-16 md:py-24">
+              <span className="block text-5xl sm:text-6xl md:text-7xl py-3 md:py-5">
                 <WordOrbit
                   word="& complete."
                   logos={HERO_COMPLETE_LOGOS}
                   gradient="blue-gradient-text"
+                  slots={['l', 'r']}
                 />
               </span>
             </h1>
 
-            <div className="scroll-reveal stagger-3 mt-20">
+            <div className="scroll-reveal stagger-3 mt-8 md:mt-10">
               <CTABlock openCalendly={openCalendly} />
             </div>
           </div>
