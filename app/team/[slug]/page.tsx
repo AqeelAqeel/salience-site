@@ -165,52 +165,53 @@ export default async function TeamMemberPage({
 
       {/* Card container */}
       <div className="relative z-10 max-w-xl mx-auto px-4 sm:px-6 pt-6 pb-16">
-        {/* Hero photo with gradient fade */}
-        <div className="relative w-full aspect-[4/5] sm:aspect-[1/1] rounded-3xl overflow-hidden ring-1 ring-white/10 shadow-2xl">
-          {member.image ? (
-            <Image
-              src={member.image}
-              alt={member.name}
-              fill
-              priority
-              className="object-cover object-center"
-              sizes="(max-width: 640px) 100vw, 576px"
-            />
-          ) : (
-            <div className="absolute inset-0 bg-gradient-to-br from-blue-700 to-indigo-900 flex items-center justify-center">
-              <span className="text-7xl font-bold text-white/30">
-                {member.name
-                  .split(' ')
-                  .map((n) => n[0])
-                  .join('')}
-              </span>
-            </div>
-          )}
-          {/* Bottom blend to page bg — strong fade so text stays readable over any photo */}
+        {/* Hero photo — mask-fades to transparent at bottom so it dissolves into the dark page bg. Name & social row live on that shared dark plane below, no hard edge. */}
+        <div className="relative w-full aspect-[4/5] sm:aspect-[1/1]">
           <div
-            aria-hidden
-            className="absolute inset-x-0 bottom-0 h-[78%] pointer-events-none"
+            className="absolute inset-0 rounded-t-[2rem] overflow-hidden"
             style={{
-              background:
-                'linear-gradient(to top, #0a0f1e 0%, #0a0f1e 38%, rgba(10,15,30,0.92) 55%, rgba(10,15,30,0.55) 75%, rgba(10,15,30,0) 100%)',
+              WebkitMaskImage:
+                'linear-gradient(to bottom, #000 0%, #000 52%, rgba(0,0,0,0.55) 78%, rgba(0,0,0,0) 100%)',
+              maskImage:
+                'linear-gradient(to bottom, #000 0%, #000 52%, rgba(0,0,0,0.55) 78%, rgba(0,0,0,0) 100%)',
             }}
-          />
+          >
+            {member.image ? (
+              <Image
+                src={member.image}
+                alt={member.name}
+                fill
+                priority
+                className="object-cover object-center"
+                sizes="(max-width: 640px) 100vw, 576px"
+              />
+            ) : (
+              <div className="absolute inset-0 bg-gradient-to-br from-blue-700 to-indigo-900 flex items-center justify-center">
+                <span className="text-7xl font-bold text-white/30">
+                  {member.name
+                    .split(' ')
+                    .map((n) => n[0])
+                    .join('')}
+                </span>
+              </div>
+            )}
+          </div>
 
-          {/* Name + tagline overlay */}
-          <div className="absolute inset-x-0 bottom-0 p-6 sm:p-8 text-center">
+          {/* Name + tagline sit in the dissolved zone against the page's solid dark bg */}
+          <div className="absolute inset-x-0 bottom-0 px-5 pb-2 text-center">
             <h1
-              className="text-4xl sm:text-5xl font-bold tracking-tight leading-[1.1] text-white"
+              className="text-4xl sm:text-5xl font-bold tracking-tight leading-[1.05] text-white"
               style={{
                 textShadow:
-                  '0 2px 12px rgba(0,0,0,0.85), 0 1px 3px rgba(0,0,0,0.9)',
+                  '0 2px 16px rgba(0,0,0,0.7), 0 1px 3px rgba(0,0,0,0.95)',
               }}
             >
               {member.name}
             </h1>
-            <p className="mt-2 text-sm sm:text-base font-semibold text-blue-300 uppercase tracking-[0.18em] drop-shadow-[0_1px_4px_rgba(0,0,0,0.8)]">
+            <p className="mt-2 text-xs sm:text-sm font-semibold text-blue-300 uppercase tracking-[0.22em]">
               {member.role}
             </p>
-            <p className="mt-3 text-slate-200/90 text-sm sm:text-base max-w-md mx-auto leading-relaxed drop-shadow-[0_1px_3px_rgba(0,0,0,0.8)]">
+            <p className="mt-2.5 text-slate-300 text-sm sm:text-base max-w-md mx-auto leading-relaxed">
               {member.tagline}
             </p>
           </div>
