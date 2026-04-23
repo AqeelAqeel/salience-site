@@ -186,18 +186,31 @@ export default async function TeamMemberPage({
               </span>
             </div>
           )}
-          {/* Bottom blend to page bg */}
-          <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-[#0a0f1e] via-[#0a0f1e]/80 to-transparent" />
+          {/* Bottom blend to page bg — strong fade so text stays readable over any photo */}
+          <div
+            aria-hidden
+            className="absolute inset-x-0 bottom-0 h-[78%] pointer-events-none"
+            style={{
+              background:
+                'linear-gradient(to top, #0a0f1e 0%, #0a0f1e 38%, rgba(10,15,30,0.92) 55%, rgba(10,15,30,0.55) 75%, rgba(10,15,30,0) 100%)',
+            }}
+          />
 
           {/* Name + tagline overlay */}
           <div className="absolute inset-x-0 bottom-0 p-6 sm:p-8 text-center">
-            <h1 className="text-3xl sm:text-4xl font-bold tracking-tight leading-tight text-white drop-shadow-lg">
+            <h1
+              className="text-4xl sm:text-5xl font-bold tracking-tight leading-[1.1] text-white"
+              style={{
+                textShadow:
+                  '0 2px 12px rgba(0,0,0,0.85), 0 1px 3px rgba(0,0,0,0.9)',
+              }}
+            >
               {member.name}
             </h1>
-            <p className="mt-1.5 text-sm sm:text-base font-medium text-blue-300/90 uppercase tracking-[0.18em]">
+            <p className="mt-2 text-sm sm:text-base font-semibold text-blue-300 uppercase tracking-[0.18em] drop-shadow-[0_1px_4px_rgba(0,0,0,0.8)]">
               {member.role}
             </p>
-            <p className="mt-3 text-slate-300 text-sm sm:text-base max-w-md mx-auto leading-relaxed">
+            <p className="mt-3 text-slate-200/90 text-sm sm:text-base max-w-md mx-auto leading-relaxed drop-shadow-[0_1px_3px_rgba(0,0,0,0.8)]">
               {member.tagline}
             </p>
           </div>
