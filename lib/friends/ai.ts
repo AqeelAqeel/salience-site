@@ -49,6 +49,7 @@ const INTERPRETATION_JSON_SCHEMA = {
 
 export async function interpretThread(args: {
   friend: FriendSurface;
+  learnedStyle?: string;
   subject: string;
   participants: string[];
   messages: {
@@ -59,7 +60,7 @@ export async function interpretThread(args: {
   }[];
 }): Promise<AIThreadInterpretation> {
   const client = openai();
-  const system = buildInterpretationSystemPrompt(args.friend);
+  const system = buildInterpretationSystemPrompt(args.friend, args.learnedStyle);
   const user = buildThreadUserPrompt({
     subject: args.subject,
     participants: args.participants,

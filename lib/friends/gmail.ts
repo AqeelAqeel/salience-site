@@ -233,6 +233,41 @@ export async function fetchRecentThreads(
   return threads;
 }
 
+export async function fetchSentBodies(
+  token: FriendGmailToken,
+  opts: { maxMessages?: number } = {}
+): Promise<string[]> {
+  const fresh = await refreshIfNeeded(token);
+  const gmail = gmailClient(fresh);
+  const max = opts.maxMessages ?? 20;
+
+  const list = await gmail.users.messages.list({
+    userId: "me",
+    maxResults: max,
+    q: "in:sent",
+  });
+
+  const ids = (list.data.messages ?? [])
+    .map((m) => m.id)
+    .filter((x): x is string => Boolean(x));
+
+  const bodies: string[] = [];
+  for (const id of ids) {
+    try {
+      const detail = await gmail.users.messages.get({
+        userId: "me",
+        id,
+        format: "full",
+      });
+      const { text } = extractBody(detail.data.payload);
+      if (text) bodies.push(text.slice(0, 4000));
+    } catch (err) {
+      console.warn(`[gmail] failed to load sent message ${id}`, err);
+    }
+  }
+  return bodies;
+}
+
 export async function createGmailDraft(
   token: FriendGmailToken,
   args: {

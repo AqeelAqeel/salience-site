@@ -1,6 +1,6 @@
 import { getServerSupabase } from "../supabase-server";
-import { fetchRecentThreads } from "./gmail";
-import { interpretThread } from "./ai";
+import { fetchRecentThreads, fetchSentBodies } from "./gmail";
+import { interpretThread, extractStyleSummary } from "./ai";
 import type {
   FriendEmailThread,
   FriendGmailToken,
@@ -28,6 +28,36 @@ export async function runSync(args: {
   const supa = getServerSupabase();
 
   emit?.({ type: "sync_started", totalEstimate: max });
+
+  // Learn the user's voice from their own recent sent mail so drafts sound
+  // like them — not the seed friend_tone_hints from the prospect row. Failure
+  // here is non-fatal; we fall back to the seed cues.
+  let learnedStyle = "";
+  try {
+    const sentBodies = await fetchSentBodies(token, { maxMessages: 20 });
+    if (sentBodies.length) {
+      learnedStyle = await extractStyleSummary(sentBodies);
+      if (learnedStyle) {
+        const { data: aiStateRow } = await supa
+          .from("friend_ai_state")
+          .upsert(
+            {
+              prospect_id: friend.id,
+              communication_style: learnedStyle,
+            },
+            { onConflict: "prospect_id" }
+          )
+          .select()
+          .single();
+        emit?.({
+          type: "user_state_updated",
+          aiStateId: (aiStateRow as { id: string } | null)?.id ?? "",
+        });
+      }
+    }
+  } catch (err) {
+    console.warn("[friends] voice extraction failed, continuing without it:", err);
+  }
 
   let threads;
   try {
@@ -112,6 +142,7 @@ export async function runSync(args: {
     try {
       const interpretation = await interpretThread({
         friend,
+        learnedStyle,
         subject: t.subject,
         participants: t.participants,
         messages: t.messages,

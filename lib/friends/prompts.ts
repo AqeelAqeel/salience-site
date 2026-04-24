@@ -14,9 +14,16 @@ const INTERPRETATION_SCHEMA = `Return JSON matching this exact shape:
   "draftReply": string
 }`;
 
-export function buildInterpretationSystemPrompt(friend: FriendSurface): string {
+export function buildInterpretationSystemPrompt(
+  friend: FriendSurface,
+  learnedStyle?: string
+): string {
   const toneBlock = friend.friend_tone_hints
-    ? `\nTone cues from ${friend.full_name || "the user"} (match this voice in draftReply):\n${friend.friend_tone_hints}`
+    ? `\nSeed tone cues for ${friend.full_name || "the user"} (generic guidance):\n${friend.friend_tone_hints}`
+    : "";
+
+  const learnedBlock = learnedStyle
+    ? `\nObserved writing style from their own recent sent emails (PREFER this over the seed tone cues — this is how they actually write):\n${learnedStyle}`
     : "";
 
   const signoffBlock = friend.friend_signoff
@@ -37,7 +44,7 @@ Rules:
 - Be concise, practical, action-oriented.
 - Do NOT invent facts. If context is missing, say so in the summary.
 - draftReply should be ready to copy-paste into Gmail; address them by first name, keep it short unless the thread calls for more.
-- urgency: low = FYI/no action, medium = reply within a few days, high = same-day.${toneBlock}${signoffBlock}
+- urgency: low = FYI/no action, medium = reply within a few days, high = same-day.${toneBlock}${learnedBlock}${signoffBlock}
 
 ${INTERPRETATION_SCHEMA}`;
 }
