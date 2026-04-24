@@ -108,59 +108,94 @@ export function Cockpit({ slug, initialSnapshot, supabase }: Props) {
   }, [slug]);
 
   useEffect(() => {
-    if (didLinkRef.current) return;
     if (typeof window === "undefined") return;
-    const url = new URL(window.location.href);
-    const hash = window.location.hash;
-    const looksLikeReturn =
-      url.searchParams.get("just_signed_in") === "1" ||
-      hash.includes("access_token=") ||
-      hash.includes("provider_token=");
-    if (!looksLikeReturn) return;
+    let cancelled = false;
 
-    didLinkRef.current = true;
+    type ProviderSession = {
+      user: { id: string; email?: string | null };
+      expires_at?: number | null;
+      provider_token?: string | null;
+      provider_refresh_token?: string | null;
+    };
 
-    (async () => {
-      const { data } = await supa.auth.getSession();
-      const session = data.session;
+    async function linkAndStart(rawSession: unknown) {
+      if (cancelled || didLinkRef.current) return;
+      const session = rawSession as ProviderSession | null;
       if (!session) return;
 
-      const providerToken =
-        (session as unknown as { provider_token?: string }).provider_token ??
-        null;
-      const providerRefreshToken =
-        (session as unknown as { provider_refresh_token?: string })
-          .provider_refresh_token ?? null;
+      const providerToken = session.provider_token ?? null;
+      const providerRefreshToken = session.provider_refresh_token ?? null;
 
-      if (!providerToken || !providerRefreshToken) {
+      if (!providerToken) {
         console.warn(
-          "[friends] Google session returned without provider refresh token — make sure `access_type=offline` + `prompt=consent` are set in signInWithOAuth"
+          "[friends] Session present but no provider_token. This usually means (a) the OAuth redirect failed silently because :3001 isn't in Supabase's Redirect URL allowlist, or (b) scopes weren't granted. Check Supabase Dashboard → Authentication → URL Configuration."
+        );
+        return;
+      }
+      if (!providerRefreshToken) {
+        console.warn(
+          "[friends] Got provider_token but no provider_refresh_token. Re-authorize with prompt=consent or confirm Google provider in Supabase has offline access enabled."
         );
       }
 
-      await fetch(`/api/friends/${slug}/link-tokens`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          supabaseUserId: session.user.id,
-          googleEmail: session.user.email ?? "",
-          accessToken: providerToken,
-          refreshToken: providerRefreshToken,
-          scope: GMAIL_SCOPE,
-          expiresAt: session.expires_at ?? null,
-        }),
-      });
+      didLinkRef.current = true;
 
-      url.searchParams.delete("just_signed_in");
-      window.history.replaceState(
-        {},
-        "",
-        url.pathname + (url.search ? `?${url.searchParams}` : "")
-      );
+      try {
+        const res = await fetch(`/api/friends/${slug}/link-tokens`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            supabaseUserId: session.user.id,
+            googleEmail: session.user.email ?? "",
+            accessToken: providerToken,
+            refreshToken: providerRefreshToken ?? "",
+            scope: GMAIL_SCOPE,
+            expiresAt: session.expires_at ?? null,
+          }),
+        });
+        if (!res.ok) {
+          const text = await res.text();
+          console.error("[friends] link-tokens failed", res.status, text);
+          didLinkRef.current = false;
+          return;
+        }
+      } catch (err) {
+        console.error("[friends] link-tokens threw", err);
+        didLinkRef.current = false;
+        return;
+      }
 
+      const url = new URL(window.location.href);
+      if (url.searchParams.has("just_signed_in") || url.searchParams.has("code")) {
+        url.searchParams.delete("just_signed_in");
+        url.searchParams.delete("code");
+        window.history.replaceState(
+          {},
+          "",
+          url.pathname + (url.search ? `?${url.searchParams}` : "")
+        );
+      }
+
+      if (cancelled) return;
       await refreshSnapshot();
       startSync();
-    })();
+    }
+
+    // 1. Pick up an existing session (also covers the case where Supabase
+    //    auto-exchanged ?code=... on this load).
+    supa.auth.getSession().then(({ data }) => {
+      if (data.session) linkAndStart(data.session);
+    });
+
+    // 2. Fire on new sign-ins (the canonical post-OAuth signal).
+    const { data: authSub } = supa.auth.onAuthStateChange((event, session) => {
+      if (event === "SIGNED_IN" && session) linkAndStart(session);
+    });
+
+    return () => {
+      cancelled = true;
+      authSub.subscription.unsubscribe();
+    };
   }, [slug, supa, refreshSnapshot, startSync]);
 
   useEffect(() => () => streamRef.current?.close(), []);
