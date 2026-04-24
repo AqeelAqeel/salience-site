@@ -48,3 +48,6 @@ scripts/.crm-sheet-id
 
 # Python venv
 .venv/
+
+# Supabase CLI local state
+supabase/.temp/

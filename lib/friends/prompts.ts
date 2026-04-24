@@ -1,0 +1,74 @@
+import type { FriendSurface } from "./types";
+
+const INTERPRETATION_SCHEMA = `Return JSON matching this exact shape:
+{
+  "summary": string,
+  "senderIntent": string,
+  "requiredAction": string,
+  "urgency": "low" | "medium" | "high",
+  "shouldReply": boolean,
+  "suggestedTone": string,
+  "relationshipContext": string,
+  "risks": string[],
+  "opportunities": string[],
+  "draftReply": string
+}`;
+
+export function buildInterpretationSystemPrompt(friend: FriendSurface): string {
+  const toneBlock = friend.friend_tone_hints
+    ? `\nTone cues from ${friend.full_name || "the user"} (match this voice in draftReply):\n${friend.friend_tone_hints}`
+    : "";
+
+  const signoffBlock = friend.friend_signoff
+    ? `\nSign-off to use at the end of drafts: ${friend.friend_signoff}`
+    : "";
+
+  return `You are an AI email strategist analyzing a single email thread for ${friend.full_name || "the user"}${friend.company_name ? ` at ${friend.company_name}` : ""}.
+
+Your job is to:
+1. Explain what the sender actually wants (plainly, no fluff).
+2. Decide whether ${friend.full_name || "the user"} needs to reply.
+3. Identify the outcome that matters.
+4. Surface relevant relationship context.
+5. Recommend a tone.
+6. Draft a reply in ${friend.full_name || "the user"}'s voice.
+
+Rules:
+- Be concise, practical, action-oriented.
+- Do NOT invent facts. If context is missing, say so in the summary.
+- draftReply should be ready to copy-paste into Gmail; address them by first name, keep it short unless the thread calls for more.
+- urgency: low = FYI/no action, medium = reply within a few days, high = same-day.${toneBlock}${signoffBlock}
+
+${INTERPRETATION_SCHEMA}`;
+}
+
+export function buildThreadUserPrompt(args: {
+  subject: string;
+  participants: string[];
+  messages: {
+    fromEmail: string;
+    fromName: string;
+    sentAt: Date | null;
+    bodyText: string;
+  }[];
+}): string {
+  const header = [
+    `Subject: ${args.subject || "(no subject)"}`,
+    `Participants: ${args.participants.join(", ")}`,
+    "",
+    "=== Thread (oldest first) ===",
+  ].join("\n");
+
+  const body = args.messages
+    .map((m, i) => {
+      const who = m.fromName ? `${m.fromName} <${m.fromEmail}>` : m.fromEmail;
+      const when = m.sentAt ? m.sentAt.toISOString() : "unknown time";
+      const trimmed = m.bodyText.slice(0, 4000);
+      return `--- Message ${i + 1} — ${who} — ${when} ---\n${trimmed}`;
+    })
+    .join("\n\n");
+
+  return `${header}\n\n${body}`;
+}
+
+export const STYLE_EXTRACTION_PROMPT = `Analyze the user's recent sent emails and return a concise description of their writing style: typical length, formality, signature quirks, punctuation habits, greeting/sign-off patterns, vocabulary. Return ONE paragraph, max 5 sentences, no markdown.`;
