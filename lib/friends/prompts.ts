@@ -16,7 +16,8 @@ const INTERPRETATION_SCHEMA = `Return JSON matching this exact shape:
 
 export function buildInterpretationSystemPrompt(
   friend: FriendSurface,
-  learnedStyle?: string
+  learnedStyle?: string,
+  learnedSignoff?: string
 ): string {
   const toneBlock = friend.friend_tone_hints
     ? `\nSeed tone cues for ${friend.full_name || "the user"} (generic guidance):\n${friend.friend_tone_hints}`
@@ -26,8 +27,11 @@ export function buildInterpretationSystemPrompt(
     ? `\nObserved writing style from their own recent sent emails (PREFER this over the seed tone cues — this is how they actually write):\n${learnedStyle}`
     : "";
 
-  const signoffBlock = friend.friend_signoff
-    ? `\nSign-off to use at the end of drafts: ${friend.friend_signoff}`
+  // Adaptive sign-off: if we observed one in their sent mail, use that verbatim.
+  // Otherwise fall back to the static seed on the prospects row.
+  const effectiveSignoff = learnedSignoff || friend.friend_signoff || "";
+  const signoffBlock = effectiveSignoff
+    ? `\nSign-off to use at the end of drafts (use this exactly, including any line breaks): ${JSON.stringify(effectiveSignoff)}`
     : "";
 
   return `You are an AI email strategist analyzing a single email thread for ${friend.full_name || "the user"}${friend.company_name ? ` at ${friend.company_name}` : ""}.

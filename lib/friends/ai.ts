@@ -50,6 +50,7 @@ const INTERPRETATION_JSON_SCHEMA = {
 export async function interpretThread(args: {
   friend: FriendSurface;
   learnedStyle?: string;
+  learnedSignoff?: string;
   subject: string;
   participants: string[];
   messages: {
@@ -60,7 +61,11 @@ export async function interpretThread(args: {
   }[];
 }): Promise<AIThreadInterpretation> {
   const client = openai();
-  const system = buildInterpretationSystemPrompt(args.friend, args.learnedStyle);
+  const system = buildInterpretationSystemPrompt(
+    args.friend,
+    args.learnedStyle,
+    args.learnedSignoff
+  );
   const user = buildThreadUserPrompt({
     subject: args.subject,
     participants: args.participants,
@@ -103,8 +108,25 @@ export async function interpretThread(args: {
   };
 }
 
-export async function extractStyleSummary(sentBodies: string[]): Promise<string> {
-  if (!sentBodies.length) return "";
+const STYLE_SCHEMA = {
+  type: "object",
+  additionalProperties: false,
+  required: ["communicationStyle", "signoff"],
+  properties: {
+    communicationStyle: { type: "string" },
+    signoff: { type: "string" },
+  },
+} as const;
+
+export interface ExtractedStyle {
+  style: string;
+  signoff: string;
+}
+
+export async function extractStyleSummary(
+  sentBodies: string[]
+): Promise<ExtractedStyle> {
+  if (!sentBodies.length) return { style: "", signoff: "" };
   const client = openai();
   const res = await client.chat.completions.create({
     model: "gpt-4o-mini",
@@ -112,14 +134,36 @@ export async function extractStyleSummary(sentBodies: string[]): Promise<string>
     messages: [
       {
         role: "system",
-        content:
-          "Analyze the user's sent emails and return ONE paragraph (max 5 sentences) describing their writing style: typical length, formality, quirks, sign-offs, vocabulary. No markdown.",
+        content: `Analyze the user's own sent emails (these are messages THEY wrote). Return JSON:
+
+- communicationStyle: ONE paragraph (max 5 sentences) describing how they write — typical length, formality, punctuation habits, vocabulary quirks, opening patterns, how they structure thoughts. Plain prose, no markdown.
+- signoff: the EXACT text they most consistently use to sign off at the end of their emails. Capture it verbatim including line breaks (e.g. "— R", "Best,\\nRobert", "Cheers,\\nBob", "Thanks,\\nR"). If no consistent pattern emerges, return an empty string.
+
+Base this on patterns ACROSS the samples — ignore one-off messages. If the emails are mostly forwards/auto-replies/too short to read a style, return short strings or empty strings rather than guessing.`,
       },
       {
         role: "user",
         content: sentBodies.slice(0, 20).join("\n\n---\n\n").slice(0, 12000),
       },
     ],
+    response_format: {
+      type: "json_schema",
+      json_schema: {
+        name: "style_summary",
+        strict: true,
+        schema: STYLE_SCHEMA,
+      },
+    },
   });
-  return res.choices[0]?.message?.content?.trim() ?? "";
+  const raw = res.choices[0]?.message?.content;
+  if (!raw) return { style: "", signoff: "" };
+  try {
+    const parsed = JSON.parse(raw);
+    return {
+      style: String(parsed.communicationStyle ?? "").trim(),
+      signoff: String(parsed.signoff ?? "").trim(),
+    };
+  } catch {
+    return { style: "", signoff: "" };
+  }
 }

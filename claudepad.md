@@ -6,6 +6,15 @@ Session memory for salience-site. New summaries go at the top of **Session Summa
 
 ## Session Summaries
 
+### 2026-04-24 08:10 UTC — Adaptive sign-off + draft dedup
+
+- Cordwell asked for two follow-ups to the voice-extraction push: (a) make `friend_signoff` adaptive (learn it from sent mail, override the seed), (b) fix the resync-duplicate-drafts bug.
+- Sign-off: `extractStyleSummary()` now returns `{ style, signoff }` via a strict `json_schema` response — it captures the user's most consistent sign-off verbatim (line breaks preserved). `interpretThread()` gained `learnedSignoff` param. `buildInterpretationSystemPrompt()` prefers `learnedSignoff` over `friend.friend_signoff`; the effective sign-off is passed to the model as `JSON.stringify()` so line breaks survive. No schema change — `signoff` is derived per sync and threaded through in memory (not persisted to `friend_ai_state`).
+- Draft dedup in `runSync()`: replaced blind `insert` with a read-before-write. Queries the latest draft for the thread (`order by version desc, updated_at desc`). If none → insert v1. If latest is still `status='generated'` and body changed → update in place, bump version. If latest is `generated` with unchanged body → no-op. If latest is `edited|approved|sent_to_gmail|discarded` → leave alone (don't clobber user edits). Existing duplicate draft rows from prior resyncs will remain until cleaned up manually; only the latest is touched.
+- `ARCHITECTURE.md` updated (voice extraction description + draft persistence behavior + new cost caveat). `claudepad.md`: this entry + updated Key Findings (removed "draft duplication is open", added signoff-adaptive note).
+- `npm run build` clean.
+- No automated test added (repo has no test framework yet; user said tests coming later).
+
 ### 2026-04-24 07:50 UTC — Wired up Friends voice extraction
 
 - Bug report: Cordwell signed into `/friends/test-slug` with his own Google account (cordwell@gmail.com) and saw the sync complete successfully (40 threads / 7 pending) but all drafts were written in the generic "Test Friend" seed voice, not his.
@@ -76,13 +85,13 @@ Session memory for salience-site. New summaries go at the top of **Session Summa
 ### Friends cockpit specifics
 - A "friend" is just a `prospects` row with `friend_enabled=true` and the `friend_*` fields populated. Claude Code skill `.claude/skills/friend-new-prospect/SKILL.md` provisions one via `insert ... on conflict (friend_slug) do update`.
 - `friend_headline` uses `*asterisk*` wrapping for italic-amber accent words. `friend_tone_hints` is second-person voice guidance for the AI ("write like Jamie: short, direct, no fluff"). Treated as generic seed — overridden by learned style once the user signs in and syncs (see next point).
-- **Voice extraction is wired**: `runSync()` pulls the user's 20 most recent `in:sent` emails, runs `extractStyleSummary()` (gpt-4o-mini), upserts `friend_ai_state.communication_style`, and passes the result into every `interpretThread()` call so drafts mirror the user's actual writing, not the seed. Non-fatal on failure.
+- **Voice + sign-off extraction is wired**: `runSync()` pulls the user's 20 most recent `in:sent` emails and runs `extractStyleSummary()` (gpt-4o-mini with strict JSON schema). It returns `{ style, signoff }`. The style is upserted into `friend_ai_state.communication_style`; the sign-off is threaded in memory into every `interpretThread()` call and **overrides the seed `friend_signoff`** in the prompt. Non-fatal on failure.
 - Sync flow is SSE-streamed: `/api/friends/[slug]/stream` emits `sync_started → user_state_updated → email_loaded → analysis_started → analysis_completed → draft_created → sync_completed` (or `error`). Default 40 threads, query `in:inbox -category:promotions -category:social`.
 - Thread statuses: `new | processing | analyzed | needs_reply | done | ignored`.
 - Draft statuses: `generated | edited | approved | sent_to_gmail | discarded`. Drafts are pushed to Gmail via `gmail.users.drafts.create` — not auto-sent.
 - Gmail token refresh is a direct POST to `oauth2.googleapis.com/token` in `lib/friends/gmail.ts:refreshIfNeeded`, using the GOOGLE_OAUTH_* env vars. This is why those are duplicated from the Supabase dashboard config.
 - Friends layout uses fonts Instrument Serif + Geist + Geist Mono, dedicated CSS at `app/friends/friends.css`, and `robots: noindex`. Completely distinct chrome from marketing.
-- **Draft duplication on resync is a known open issue**: `runSync` always `insert`s into `friend_reply_drafts` with no dedup; hitting resync N times produces N drafts per thread. Not fixed here — flagged for Aqeel.
+- **Draft dedup on resync is wired**: `runSync()` reads the latest draft per thread. No prior draft → insert v1. Latest is still `generated` with changed body → update in place and bump version. Latest is `generated` unchanged → no-op. Latest has any other status (user-touched) → leave alone. Older duplicate rows from before this fix remain until cleaned up manually.
 
 ### Orphan routes (no shipped caller)
 - `/api/chat` and `/api/analyze` — no live page. Candidates for deletion.

@@ -29,14 +29,17 @@ export async function runSync(args: {
 
   emit?.({ type: "sync_started", totalEstimate: max });
 
-  // Learn the user's voice from their own recent sent mail so drafts sound
-  // like them — not the seed friend_tone_hints from the prospect row. Failure
-  // here is non-fatal; we fall back to the seed cues.
+  // Learn the user's voice + sign-off from their own recent sent mail so drafts
+  // sound like them — not the seed friend_tone_hints / friend_signoff. Failure
+  // is non-fatal; we fall back to the seed cues.
   let learnedStyle = "";
+  let learnedSignoff = "";
   try {
     const sentBodies = await fetchSentBodies(token, { maxMessages: 20 });
     if (sentBodies.length) {
-      learnedStyle = await extractStyleSummary(sentBodies);
+      const extracted = await extractStyleSummary(sentBodies);
+      learnedStyle = extracted.style;
+      learnedSignoff = extracted.signoff;
       if (learnedStyle) {
         const { data: aiStateRow } = await supa
           .from("friend_ai_state")
@@ -143,6 +146,7 @@ export async function runSync(args: {
       const interpretation = await interpretThread({
         friend,
         learnedStyle,
+        learnedSignoff,
         subject: t.subject,
         participants: t.participants,
         messages: t.messages,
@@ -182,22 +186,64 @@ export async function runSync(args: {
       });
 
       if (interpretation.shouldReply && interpretation.draftReply) {
-        const { data: draftRow } = await supa
+        // Don't duplicate drafts on resync. Inspect the latest draft for this
+        // thread: if it's still `generated` (AI-authored, untouched), refresh
+        // it in place with a version bump. If the user has `edited`, approved,
+        // sent, or discarded it, leave their work alone.
+        const { data: existing } = await supa
           .from("friend_reply_drafts")
-          .insert({
-            prospect_id: friend.id,
-            thread_id: row.id,
-            body: interpretation.draftReply,
-            tone: interpretation.suggestedTone,
-            status: "generated",
-            version: 1,
-          })
-          .select()
-          .single();
+          .select("id, status, version, body")
+          .eq("thread_id", row.id)
+          .order("version", { ascending: false })
+          .order("updated_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        let draftId = "";
+
+        if (!existing) {
+          const { data: draftRow } = await supa
+            .from("friend_reply_drafts")
+            .insert({
+              prospect_id: friend.id,
+              thread_id: row.id,
+              body: interpretation.draftReply,
+              tone: interpretation.suggestedTone,
+              status: "generated",
+              version: 1,
+            })
+            .select()
+            .single();
+          draftId = (draftRow as { id: string } | null)?.id ?? "";
+        } else if ((existing as { status: string }).status === "generated") {
+          const row0 = existing as {
+            id: string;
+            version: number;
+            body: string;
+          };
+          if (row0.body !== interpretation.draftReply) {
+            const { data: draftRow } = await supa
+              .from("friend_reply_drafts")
+              .update({
+                body: interpretation.draftReply,
+                tone: interpretation.suggestedTone,
+                version: row0.version + 1,
+              })
+              .eq("id", row0.id)
+              .select()
+              .single();
+            draftId = (draftRow as { id: string } | null)?.id ?? row0.id;
+          } else {
+            draftId = row0.id;
+          }
+        } else {
+          draftId = (existing as { id: string }).id;
+        }
+
         emit?.({
           type: "draft_created",
           threadId: row.id,
-          draftId: (draftRow as { id: string } | null)?.id ?? "",
+          draftId,
         });
       }
     } catch (err) {
