@@ -4,9 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type {
   CockpitSnapshot,
-  FriendEmailThread,
-  FriendReplyDraft,
-  FriendThreadInterpretation,
+  FriendSurface,
   StreamEvent,
 } from "@/lib/friends/types";
 import { SignInHero } from "./sign-in-hero";
@@ -16,47 +14,113 @@ import { ConnectionStrip } from "./connection-strip";
 
 type Props = {
   slug: string;
-  initialSnapshot: CockpitSnapshot;
+  friend: FriendSurface;
   supabase: { url: string; anonKey: string };
 };
 
 const GMAIL_SCOPE = "https://www.googleapis.com/auth/gmail.readonly";
 
-export function Cockpit({ slug, initialSnapshot, supabase }: Props) {
+type AuthState =
+  | { kind: "loading" }
+  | { kind: "signed_out" }
+  | { kind: "linking"; accessToken: string }
+  | { kind: "wrong_owner"; userEmail: string }
+  | { kind: "ready"; accessToken: string };
+
+type Session = {
+  user: { id: string; email?: string | null };
+  expires_at?: number | null;
+  access_token: string;
+  provider_token?: string | null;
+  provider_refresh_token?: string | null;
+};
+
+export function Cockpit({ slug, friend: friendProp, supabase }: Props) {
   const supa = useMemo<SupabaseClient>(
     () =>
       createClient(supabase.url, supabase.anonKey, {
-        auth: { detectSessionInUrl: true, persistSession: true, autoRefreshToken: true },
+        auth: {
+          detectSessionInUrl: true,
+          persistSession: true,
+          autoRefreshToken: true,
+        },
       }),
     [supabase.url, supabase.anonKey]
   );
 
-  const [snapshot, setSnapshot] = useState<CockpitSnapshot>(initialSnapshot);
+  const [authState, setAuthState] = useState<AuthState>({ kind: "loading" });
+  const [snapshot, setSnapshot] = useState<CockpitSnapshot | null>(null);
   const [authing, setAuthing] = useState(false);
-  const [syncState, setSyncState] = useState<"idle" | "syncing" | "complete" | "error">(
-    initialSnapshot.threads.length > 0 ? "complete" : "idle"
-  );
+  const [syncState, setSyncState] = useState<
+    "idle" | "syncing" | "complete" | "error"
+  >("idle");
   const [syncProgress, setSyncProgress] = useState<{
     loaded: number;
     analyzed: number;
     total: number;
     error?: string;
   }>({ loaded: 0, analyzed: 0, total: 0 });
-  const [analyzingThreadIds, setAnalyzingThreadIds] = useState<Set<string>>(new Set());
+  const [analyzingThreadIds, setAnalyzingThreadIds] = useState<Set<string>>(
+    new Set()
+  );
   const [selectedThreadId, setSelectedThreadId] = useState<string | null>(null);
 
   const streamRef = useRef<EventSource | null>(null);
-  const didLinkRef = useRef(false);
+  const linkAttemptedRef = useRef(false);
 
-  const hasConnection = Boolean(snapshot.connectedGoogleEmail);
-  const friend = snapshot.friend;
+  // Always read the friend identity from snapshot if available (it'll have
+  // edits like updated personalization context). Fall back to the SSR'd
+  // friendProp until the first snapshot lands.
+  const friend = snapshot?.friend ?? friendProp;
 
-  const startSync = useCallback(() => {
+  const authedFetch = useCallback(
+    async (path: string, init?: RequestInit) => {
+      const { data } = await supa.auth.getSession();
+      const token = data.session?.access_token ?? "";
+      return fetch(path, {
+        ...init,
+        headers: {
+          ...(init?.headers ?? {}),
+          Authorization: `Bearer ${token}`,
+        },
+      });
+    },
+    [supa]
+  );
+
+  const refreshSnapshot = useCallback(async () => {
+    try {
+      const res = await authedFetch(`/api/friends/${slug}/snapshot`, {
+        cache: "no-store",
+      });
+      if (res.status === 403) {
+        const { data } = await supa.auth.getSession();
+        setAuthState({
+          kind: "wrong_owner",
+          userEmail: data.session?.user.email ?? "",
+        });
+        return;
+      }
+      if (!res.ok) return;
+      const next = (await res.json()) as CockpitSnapshot;
+      setSnapshot(next);
+      if (next.threads.length > 0 && syncState === "idle") {
+        setSyncState("complete");
+      }
+    } catch {
+      /* ignore */
+    }
+  }, [authedFetch, slug, supa, syncState]);
+
+  const startSync = useCallback(async () => {
     streamRef.current?.close();
     setSyncState("syncing");
     setSyncProgress({ loaded: 0, analyzed: 0, total: 0 });
 
-    const es = new EventSource(`/api/friends/${slug}/stream`);
+    const { data } = await supa.auth.getSession();
+    const token = data.session?.access_token ?? "";
+    const url = `/api/friends/${slug}/stream?access_token=${encodeURIComponent(token)}`;
+    const es = new EventSource(url);
     streamRef.current = es;
 
     es.onmessage = (evt) => {
@@ -66,6 +130,10 @@ export function Cockpit({ slug, initialSnapshot, supabase }: Props) {
           setSyncProgress((p) => ({ ...p, total: ev.totalEstimate }));
         } else if (ev.type === "email_loaded") {
           setSyncProgress((p) => ({ ...p, loaded: p.loaded + 1 }));
+          // Fire a snapshot refresh so the new thread card shows up in the
+          // list immediately, in "analyzing" state, instead of waiting for
+          // the entire sync to complete.
+          void refreshSnapshot();
         } else if (ev.type === "analysis_started") {
           setAnalyzingThreadIds((prev) => new Set(prev).add(ev.threadId));
         } else if (ev.type === "analysis_completed") {
@@ -75,6 +143,13 @@ export function Cockpit({ slug, initialSnapshot, supabase }: Props) {
             return next;
           });
           setSyncProgress((p) => ({ ...p, analyzed: p.analyzed + 1 }));
+          // Pull in the interpretation + draft for this thread now that the
+          // LLM is done — the card transitions from "analyzing" to populated.
+          void refreshSnapshot();
+        } else if (ev.type === "user_state_updated") {
+          // Voice extraction finished — pull in the new auto-detected
+          // communication_style + common_phrases for the top-left panel.
+          void refreshSnapshot();
         } else if (ev.type === "sync_completed") {
           setSyncState("complete");
           es.close();
@@ -89,114 +164,160 @@ export function Cockpit({ slug, initialSnapshot, supabase }: Props) {
     };
 
     es.onerror = () => {
-      setSyncState("error");
-      setSyncProgress((p) => ({ ...p, error: "connection lost" }));
+      setSyncState((curr) => (curr === "complete" ? curr : "error"));
+      setSyncProgress((p) => ({
+        ...p,
+        error: p.error ?? "connection lost",
+      }));
       es.close();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [slug]);
+  }, [refreshSnapshot, slug, supa]);
 
-  const refreshSnapshot = useCallback(async () => {
-    try {
-      const res = await fetch(`/api/friends/${slug}/snapshot`, { cache: "no-store" });
-      if (!res.ok) return;
-      const next = (await res.json()) as CockpitSnapshot;
-      setSnapshot(next);
-    } catch {
-      /* ignore */
-    }
-  }, [slug]);
+  const evaluateSession = useCallback(
+    async (raw: unknown) => {
+      const session = (raw as Session | null) ?? null;
+      if (!session) {
+        setAuthState({ kind: "signed_out" });
+        return;
+      }
+
+      // If we already linked + ready, the upstream onAuthStateChange may fire
+      // again on TOKEN_REFRESHED — just update the cached token, don't relink.
+      if (linkAttemptedRef.current) {
+        setAuthState((curr) =>
+          curr.kind === "ready" || curr.kind === "linking"
+            ? { kind: "ready", accessToken: session.access_token }
+            : curr
+        );
+        return;
+      }
+
+      linkAttemptedRef.current = true;
+      setAuthState({ kind: "linking", accessToken: session.access_token });
+
+      const providerToken = session.provider_token ?? null;
+      const providerRefreshToken = session.provider_refresh_token ?? null;
+
+      // If we have provider tokens (fresh OAuth callback), claim/refresh
+      // ownership + token storage. If we don't (returning user with a
+      // persisted Supabase session but no fresh OAuth roundtrip), skip the
+      // POST — server tokens are already stored and refreshed on demand.
+      if (providerToken) {
+        try {
+          const linkRes = await fetch(`/api/friends/${slug}/link-tokens`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${session.access_token}`,
+            },
+            body: JSON.stringify({
+              googleEmail: session.user.email ?? "",
+              accessToken: providerToken,
+              refreshToken: providerRefreshToken ?? "",
+              scope: GMAIL_SCOPE,
+              expiresAt: session.expires_at ?? null,
+            }),
+          });
+          if (linkRes.status === 403) {
+            setAuthState({
+              kind: "wrong_owner",
+              userEmail: session.user.email ?? "",
+            });
+            return;
+          }
+          if (!linkRes.ok) {
+            console.error(
+              "[friends] link-tokens failed",
+              linkRes.status,
+              await linkRes.text().catch(() => "")
+            );
+            linkAttemptedRef.current = false;
+            setAuthState({ kind: "signed_out" });
+            return;
+          }
+        } catch (err) {
+          console.error("[friends] link-tokens threw", err);
+          linkAttemptedRef.current = false;
+          setAuthState({ kind: "signed_out" });
+          return;
+        }
+      }
+
+      // Strip post-OAuth params from the URL for cosmetics.
+      if (typeof window !== "undefined") {
+        const url = new URL(window.location.href);
+        if (
+          url.searchParams.has("just_signed_in") ||
+          url.searchParams.has("code")
+        ) {
+          url.searchParams.delete("just_signed_in");
+          url.searchParams.delete("code");
+          window.history.replaceState(
+            {},
+            "",
+            url.pathname + (url.search ? `?${url.searchParams}` : "")
+          );
+        }
+      }
+
+      // Pull snapshot. snapshot also gates wrong_owner via 403.
+      const snapRes = await fetch(`/api/friends/${slug}/snapshot`, {
+        cache: "no-store",
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      if (snapRes.status === 403) {
+        setAuthState({
+          kind: "wrong_owner",
+          userEmail: session.user.email ?? "",
+        });
+        return;
+      }
+      if (!snapRes.ok) {
+        console.error("[friends] snapshot failed", snapRes.status);
+        setAuthState({ kind: "signed_out" });
+        return;
+      }
+      const snap = (await snapRes.json()) as CockpitSnapshot;
+      setSnapshot(snap);
+      setAuthState({ kind: "ready", accessToken: session.access_token });
+
+      // First-link with provider tokens or empty mailbox → kick off sync.
+      if (providerToken || snap.threads.length === 0) {
+        if (snap.connectedGoogleEmail) void startSync();
+      } else {
+        setSyncState("complete");
+      }
+    },
+    [slug, startSync]
+  );
 
   useEffect(() => {
     if (typeof window === "undefined") return;
     let cancelled = false;
 
-    type ProviderSession = {
-      user: { id: string; email?: string | null };
-      expires_at?: number | null;
-      provider_token?: string | null;
-      provider_refresh_token?: string | null;
-    };
-
-    async function linkAndStart(rawSession: unknown) {
-      if (cancelled || didLinkRef.current) return;
-      const session = rawSession as ProviderSession | null;
-      if (!session) return;
-
-      const providerToken = session.provider_token ?? null;
-      const providerRefreshToken = session.provider_refresh_token ?? null;
-
-      if (!providerToken) {
-        console.warn(
-          "[friends] Session present but no provider_token. This usually means (a) the OAuth redirect failed silently because :3001 isn't in Supabase's Redirect URL allowlist, or (b) scopes weren't granted. Check Supabase Dashboard → Authentication → URL Configuration."
-        );
-        return;
-      }
-      if (!providerRefreshToken) {
-        console.warn(
-          "[friends] Got provider_token but no provider_refresh_token. Re-authorize with prompt=consent or confirm Google provider in Supabase has offline access enabled."
-        );
-      }
-
-      didLinkRef.current = true;
-
-      try {
-        const res = await fetch(`/api/friends/${slug}/link-tokens`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            supabaseUserId: session.user.id,
-            googleEmail: session.user.email ?? "",
-            accessToken: providerToken,
-            refreshToken: providerRefreshToken ?? "",
-            scope: GMAIL_SCOPE,
-            expiresAt: session.expires_at ?? null,
-          }),
-        });
-        if (!res.ok) {
-          const text = await res.text();
-          console.error("[friends] link-tokens failed", res.status, text);
-          didLinkRef.current = false;
-          return;
-        }
-      } catch (err) {
-        console.error("[friends] link-tokens threw", err);
-        didLinkRef.current = false;
-        return;
-      }
-
-      const url = new URL(window.location.href);
-      if (url.searchParams.has("just_signed_in") || url.searchParams.has("code")) {
-        url.searchParams.delete("just_signed_in");
-        url.searchParams.delete("code");
-        window.history.replaceState(
-          {},
-          "",
-          url.pathname + (url.search ? `?${url.searchParams}` : "")
-        );
-      }
-
-      if (cancelled) return;
-      await refreshSnapshot();
-      startSync();
-    }
-
-    // 1. Pick up an existing session (also covers the case where Supabase
-    //    auto-exchanged ?code=... on this load).
     supa.auth.getSession().then(({ data }) => {
-      if (data.session) linkAndStart(data.session);
+      if (!cancelled) void evaluateSession(data.session);
     });
 
-    // 2. Fire on new sign-ins (the canonical post-OAuth signal).
     const { data: authSub } = supa.auth.onAuthStateChange((event, session) => {
-      if (event === "SIGNED_IN" && session) linkAndStart(session);
+      if (cancelled) return;
+      if (event === "SIGNED_OUT") {
+        linkAttemptedRef.current = false;
+        setAuthState({ kind: "signed_out" });
+        setSnapshot(null);
+        setSyncState("idle");
+        return;
+      }
+      if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED") {
+        void evaluateSession(session);
+      }
     });
 
     return () => {
       cancelled = true;
       authSub.subscription.unsubscribe();
     };
-  }, [slug, supa, refreshSnapshot, startSync]);
+  }, [supa, evaluateSession]);
 
   useEffect(() => () => streamRef.current?.close(), []);
 
@@ -220,12 +341,19 @@ export function Cockpit({ slug, initialSnapshot, supabase }: Props) {
     }
   }
 
+  async function handleSignOut() {
+    await supa.auth.signOut();
+    linkAttemptedRef.current = false;
+    setAuthState({ kind: "signed_out" });
+    setSnapshot(null);
+  }
+
   function handleThreadOpen(threadId: string) {
     setSelectedThreadId((curr) => (curr === threadId ? null : threadId));
   }
 
   async function handleSaveDraft(draftId: string, body: string) {
-    const res = await fetch(`/api/friends/${slug}/drafts/${draftId}`, {
+    const res = await authedFetch(`/api/friends/${slug}/drafts/${draftId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ body, status: "edited" }),
@@ -234,31 +362,35 @@ export function Cockpit({ slug, initialSnapshot, supabase }: Props) {
   }
 
   async function handleSavePersonalization(value: string) {
-    const res = await fetch(`/api/friends/${slug}/context`, {
+    const res = await authedFetch(`/api/friends/${slug}/context`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ friend_personalization_context: value }),
     });
     if (!res.ok) {
-      const data = (await res.json().catch(() => null)) as { error?: string } | null;
+      const data = (await res.json().catch(() => null)) as {
+        error?: string;
+      } | null;
       throw new Error(data?.error ?? "save failed");
     }
     await refreshSnapshot();
   }
 
   async function handlePushToGmail(draftId: string) {
-    const res = await fetch(`/api/friends/${slug}/drafts/${draftId}`, {
+    const res = await authedFetch(`/api/friends/${slug}/drafts/${draftId}`, {
       method: "POST",
     });
     if (res.ok) await refreshSnapshot();
     else {
       const data = await res.json().catch(() => null);
-      alert(data?.error ?? "Push to Gmail failed — may need gmail.compose scope.");
+      alert(
+        data?.error ?? "Push to Gmail failed — may need gmail.compose scope."
+      );
     }
   }
 
   async function handleMarkDone(threadId: string) {
-    await fetch(`/api/friends/${slug}/threads/${threadId}/status`, {
+    await authedFetch(`/api/friends/${slug}/threads/${threadId}/status`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status: "done" }),
@@ -266,7 +398,13 @@ export function Cockpit({ slug, initialSnapshot, supabase }: Props) {
     await refreshSnapshot();
   }
 
-  if (!hasConnection) {
+  // ─────────────────────── Render branches ───────────────────────
+
+  if (authState.kind === "loading") {
+    return <LoadingShell />;
+  }
+
+  if (authState.kind === "signed_out") {
     return (
       <SignInHero
         friend={friend}
@@ -274,6 +412,20 @@ export function Cockpit({ slug, initialSnapshot, supabase }: Props) {
         onSignIn={handleSignIn}
       />
     );
+  }
+
+  if (authState.kind === "wrong_owner") {
+    return (
+      <WrongOwnerScreen
+        friend={friend}
+        userEmail={authState.userEmail}
+        onSignOut={handleSignOut}
+      />
+    );
+  }
+
+  if (authState.kind === "linking" || !snapshot) {
+    return <LoadingShell label="loading your cockpit" />;
   }
 
   const needsReply = snapshot.threads.filter((t) => t.status === "needs_reply");
@@ -288,12 +440,15 @@ export function Cockpit({ slug, initialSnapshot, supabase }: Props) {
         pendingCount={needsReply.length}
         syncState={syncState}
         syncProgress={syncProgress}
-        onResync={startSync}
+        onResync={() => void startSync()}
       />
 
       <div className="mx-auto w-full max-w-[1400px] px-4 md:px-8 lg:grid lg:grid-cols-[340px_minmax(0,1fr)] lg:gap-10 pt-6 pb-28">
         <aside className="hidden lg:block sticky top-16 self-start h-[calc(100dvh-5rem)] overflow-y-auto pr-2">
-          <ContextPanel snapshot={snapshot} onSavePersonalization={handleSavePersonalization} />
+          <ContextPanel
+            snapshot={snapshot}
+            onSavePersonalization={handleSavePersonalization}
+          />
         </aside>
 
         <section className="min-w-0">
@@ -309,7 +464,10 @@ export function Cockpit({ slug, initialSnapshot, supabase }: Props) {
               <span className="mono text-xs">open</span>
             </summary>
             <div className="mt-3 px-1">
-              <ContextPanel snapshot={snapshot} onSavePersonalization={handleSavePersonalization} />
+              <ContextPanel
+                snapshot={snapshot}
+                onSavePersonalization={handleSavePersonalization}
+              />
             </div>
           </details>
 
@@ -342,7 +500,10 @@ export function Cockpit({ slug, initialSnapshot, supabase }: Props) {
 
           {other.length > 0 && (
             <div className="mt-10">
-              <SectionHeader label="recent, no action needed" count={other.length} />
+              <SectionHeader
+                label="recent, no action needed"
+                count={other.length}
+              />
               <div className="flex flex-col gap-3 mt-3">
                 {other.map((t) => (
                   <ThreadCard
@@ -385,7 +546,8 @@ function HeroStrip({
       <h1 className="display rise rise-2 text-[clamp(2rem,5vw,3.4rem)] leading-[1.02] mt-3">
         Here&rsquo;s what&rsquo;s
         <br className="hidden md:block" />{" "}
-        <em className="italic text-[var(--fr-accent-soft)]">waiting on you</em>, {first}.
+        <em className="italic text-[var(--fr-accent-soft)]">waiting on you</em>
+        , {first}.
       </h1>
       <p className="rise rise-3 mt-4 text-[var(--fr-text-mid)] max-w-xl">
         {pendingCount > 0
@@ -416,8 +578,97 @@ function EmptyScanning() {
       </div>
       <p className="small-caps mt-6">scanning your inbox</p>
       <p className="text-[var(--fr-text-mid)] text-sm mt-2 max-w-sm">
-        Reading recent threads, understanding senders, and drafting replies. First cards appear in a few seconds.
+        Reading recent threads, understanding senders, and drafting replies.
+        First cards appear in a few seconds.
       </p>
     </div>
+  );
+}
+
+function LoadingShell({ label = "loading" }: { label?: string }) {
+  return (
+    <main className="min-h-[100dvh] w-full flex items-center justify-center">
+      <div className="text-center">
+        <div className="w-3 h-3 rounded-full bg-[var(--fr-accent)] mx-auto animate-pulse shadow-[0_0_12px_rgba(245,158,11,0.6)]" />
+        <p className="small-caps mt-5">{label}</p>
+      </div>
+    </main>
+  );
+}
+
+function WrongOwnerScreen({
+  friend,
+  userEmail,
+  onSignOut,
+}: {
+  friend: FriendSurface;
+  userEmail: string;
+  onSignOut: () => void;
+}) {
+  return (
+    <main className="min-h-[100dvh] w-full flex flex-col">
+      <nav className="px-6 md:px-10 py-6 flex items-center justify-between rule-bot">
+        <div className="flex items-center gap-3">
+          <span className="inline-block w-2 h-2 rounded-full bg-[var(--fr-signal-red)]" />
+          <p className="small-caps">friends · {friend.friend_slug}</p>
+        </div>
+        <p className="mono text-xs text-[var(--fr-text-low)] hidden md:block">
+          access denied
+        </p>
+      </nav>
+
+      <section className="flex-1 flex items-center px-6 md:px-10">
+        <div className="mx-auto w-full max-w-2xl py-14 md:py-24">
+          <p className="small-caps rise rise-1">not your cockpit</p>
+
+          <h1 className="display rise rise-2 text-[clamp(2rem,5vw,3.4rem)] leading-[1.05] mt-5">
+            This cockpit is bound to a{" "}
+            <em className="italic text-[var(--fr-accent-soft)]">
+              different account
+            </em>
+            .
+          </h1>
+
+          <p className="rise rise-3 mt-6 text-[var(--fr-text-mid)] leading-relaxed max-w-xl">
+            You&rsquo;re signed in as{" "}
+            <span className="mono text-[var(--fr-text-hi)]">{userEmail}</span>,
+            but <span className="text-[var(--fr-text-hi)]">{friend.full_name}</span>
+            &rsquo;s cockpit is privately bound to whoever first signed in here.
+            Each cockpit is one person&rsquo;s tool — by design.
+          </p>
+
+          <p className="rise rise-3 mt-4 text-[var(--fr-text-mid)] leading-relaxed max-w-xl">
+            If you should have access, ask the operator to reset this cockpit
+            (clears the bound account so you can sign in fresh). Otherwise,
+            sign out and ask for your own URL.
+          </p>
+
+          <div className="rise rise-4 mt-10 flex flex-col sm:flex-row gap-3 sm:items-center">
+            <button
+              type="button"
+              onClick={onSignOut}
+              className="fr-btn fr-btn-ghost"
+            >
+              Sign out
+            </button>
+            <a className="fr-btn fr-btn-ghost" href="mailto:aqeel@aqeelali.com">
+              Contact the operator
+            </a>
+          </div>
+        </div>
+      </section>
+
+      <footer className="px-6 md:px-10 py-6 rule-top flex items-center justify-between text-[var(--fr-text-low)] mono text-xs">
+        <span>private · unlisted</span>
+        <div className="flex gap-4">
+          <a className="hover:text-[var(--fr-text-mid)]" href="/privacy">
+            privacy
+          </a>
+          <a className="hover:text-[var(--fr-text-mid)]" href="/terms">
+            terms
+          </a>
+        </div>
+      </footer>
+    </main>
   );
 }

@@ -51,6 +51,7 @@ export async function interpretThread(args: {
   friend: FriendSurface;
   learnedStyle?: string;
   learnedSignoff?: string;
+  learnedPhrases?: string[];
   subject: string;
   participants: string[];
   messages: {
@@ -64,7 +65,8 @@ export async function interpretThread(args: {
   const system = buildInterpretationSystemPrompt(
     args.friend,
     args.learnedStyle,
-    args.learnedSignoff
+    args.learnedSignoff,
+    args.learnedPhrases
   );
   const user = buildThreadUserPrompt({
     subject: args.subject,
@@ -111,22 +113,24 @@ export async function interpretThread(args: {
 const STYLE_SCHEMA = {
   type: "object",
   additionalProperties: false,
-  required: ["communicationStyle", "signoff"],
+  required: ["communicationStyle", "signoff", "commonPhrases"],
   properties: {
     communicationStyle: { type: "string" },
     signoff: { type: "string" },
+    commonPhrases: { type: "array", items: { type: "string" } },
   },
 } as const;
 
 export interface ExtractedStyle {
   style: string;
   signoff: string;
+  commonPhrases: string[];
 }
 
 export async function extractStyleSummary(
   sentBodies: string[]
 ): Promise<ExtractedStyle> {
-  if (!sentBodies.length) return { style: "", signoff: "" };
+  if (!sentBodies.length) return { style: "", signoff: "", commonPhrases: [] };
   const client = openai();
   const res = await client.chat.completions.create({
     model: "gpt-4o-mini",
@@ -138,12 +142,13 @@ export async function extractStyleSummary(
 
 - communicationStyle: ONE paragraph (max 5 sentences) describing how they write — typical length, formality, punctuation habits, vocabulary quirks, opening patterns, how they structure thoughts. Plain prose, no markdown.
 - signoff: the EXACT text they most consistently use to sign off at the end of their emails. Capture it verbatim including line breaks (e.g. "— R", "Best,\\nRobert", "Cheers,\\nBob", "Thanks,\\nR"). If no consistent pattern emerges, return an empty string.
+- commonPhrases: an array of 6–12 SHORT (≤8 words) phrases / openers / connectors / closers the user actually uses across multiple emails. Capture them verbatim, in their casing — these are reused turns of phrase, not a description of them. Examples of what to capture: "circling back on", "happy to jump on a call", "lmk what works", "thanks!". Skip phrases that appear in only one email. Empty array if nothing repeats meaningfully.
 
-Base this on patterns ACROSS the samples — ignore one-off messages. If the emails are mostly forwards/auto-replies/too short to read a style, return short strings or empty strings rather than guessing.`,
+Base this on patterns ACROSS the samples — ignore one-off messages. If the emails are mostly forwards/auto-replies/too short to read a style, return short strings or empty arrays rather than guessing.`,
       },
       {
         role: "user",
-        content: sentBodies.slice(0, 20).join("\n\n---\n\n").slice(0, 12000),
+        content: sentBodies.slice(0, 30).join("\n\n---\n\n").slice(0, 16000),
       },
     ],
     response_format: {
@@ -156,14 +161,18 @@ Base this on patterns ACROSS the samples — ignore one-off messages. If the ema
     },
   });
   const raw = res.choices[0]?.message?.content;
-  if (!raw) return { style: "", signoff: "" };
+  if (!raw) return { style: "", signoff: "", commonPhrases: [] };
   try {
     const parsed = JSON.parse(raw);
+    const phrases = Array.isArray(parsed.commonPhrases)
+      ? parsed.commonPhrases.map((p: unknown) => String(p).trim()).filter(Boolean)
+      : [];
     return {
       style: String(parsed.communicationStyle ?? "").trim(),
       signoff: String(parsed.signoff ?? "").trim(),
+      commonPhrases: phrases,
     };
   } catch {
-    return { style: "", signoff: "" };
+    return { style: "", signoff: "", commonPhrases: [] };
   }
 }

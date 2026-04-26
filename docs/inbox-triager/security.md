@@ -1,8 +1,11 @@
 # Security & Tenancy
 
-> **Status: Phase 1 has real data-tenancy gaps.** This doc names them
-> concretely, then lays out the remediation. Don't share `/friends/{slug}`
-> URLs publicly until at least the Phase 2A fix lands.
+> **Status: Phase 2A shipped.** The data-tenancy gaps named below are
+> closed at the route layer: every API route verifies a Supabase JWT and
+> checks the user owns the slug, the slug binds to one user on first link,
+> and SSR no longer pre-fetches the snapshot. Phase 2B (encrypt refresh
+> tokens at rest, tighten RLS, audit log) and 2C (in-cockpit disconnect /
+> delete-my-data) are next.
 
 ## The mental model we promise to friends
 
@@ -13,9 +16,30 @@ When a friend visits `/friends/jamie`, the implicit promise is:
 
 That's the contract the trust panel and privacy policy commit to.
 
-## What the implementation actually does (today)
+## What Phase 2A landed
 
-The slug `jamie` resolves to a `prospects` row. Anyone who knows the URL can:
+- `lib/friends/auth.ts` — `requireFriendOwner(req, slug)` verifies the
+  Supabase JWT and ensures `user.id === friend.friend_supabase_user_id`.
+  `requireSessionForFriend` is the looser variant for `link-tokens` (the
+  only route that can claim an unclaimed slug).
+- Every API route uses one of those gates. Before this, all routes checked
+  only `friend_enabled`.
+- `link-tokens` claims the slug for the first signing-in user; subsequent
+  mismatched users get a hard 403.
+- `app/friends/[slug]/page.tsx` no longer calls `getCockpitSnapshot`. It
+  passes only the operator-authored copy (`friend_headline`, `friend_pitch`,
+  etc.) to the Cockpit. The snapshot is fetched client-side from
+  `/api/friends/{slug}/snapshot` only after auth + ownership confirmed.
+- Cockpit has a new render branch: `kind: "wrong_owner"` shows a clear
+  "this cockpit is bound to a different account" screen with a sign-out
+  affordance.
+- SSE auth: the cockpit appends `?access_token=<jwt>` to the EventSource
+  URL because the spec doesn't permit custom headers. The route's auth
+  helper accepts either the header or the query param.
+
+## What the implementation USED to do (pre-2A) — for context
+
+The slug `jamie` resolved to a `prospects` row. Anyone who knew the URL could:
 
 1. **See pre-rendered cockpit data on initial page load** — `app/friends/[slug]/page.tsx` is a server component that calls `getCockpitSnapshot(friend)` *before* any auth check. The HTML it streams to the browser embeds whatever threads, drafts, summaries, and recipient names are stored under that prospect_id.
 2. **Hit any `/api/friends/{slug}/*` route** — none of them check a Supabase session. They only check that `friend_slug` exists in `prospects`. So:
@@ -55,7 +79,7 @@ That's not enough.
 
 ## Remediation plan
 
-### Phase 2A — minimum viable hardening (4–6 hours)
+### Phase 2A — minimum viable hardening (SHIPPED)
 
 **1. Bind a slug to one Supabase user on first link.**
 
@@ -122,10 +146,12 @@ session exists. SSR no longer leaks data.
 Same `requireFriendOwner` gate. After 2A, no one without a valid Supabase
 session matching `friend_supabase_user_id` can read the cockpit.
 
-After 2A:
+**After 2A (shipped reality):**
 - Anonymous URL access shows only the (publicly-known) headline + pitch + CTA.
 - Only the bound user can read snapshots, run syncs, edit drafts.
-- Cross-pollination between users is impossible.
+- Cross-pollination between users is impossible at the route layer.
+- A second user signing in at someone else's slug sees the WrongOwnerScreen
+  immediately; their tokens are not stored.
 
 ### Phase 2B — defensive depth (4–8 hours)
 
@@ -165,16 +191,22 @@ Same backend, exposed at `/legal/data-request` with email confirmation.
 "Last fetched 14m ago by aqeel@salience.ventures from 73.x.x.x" — visible to
 the friend so unauthorized access is conspicuous.
 
-## What you need to know operationally — until 2A lands
+## What you need to know operationally (post-2A)
 
-- Treat slug URLs as **share-once, in-DM-only** links. Don't post them in
-  group chats, public Notion, public spreadsheets.
-- Don't reuse a slug across people. Each friend gets a unique slug.
-- If you suspect a slug leaked: in Supabase, run `update prospects set
-  friend_enabled = false where friend_slug = 'xyz'`. The route returns 404
-  and the SSE shuts down. Then run `delete from friend_gmail_tokens where
-  prospect_id = '...'` and `delete from friend_email_threads where
-  prospect_id = '...'` to wipe content.
+- Slug URLs are still **first-come-first-served** for ownership. Whoever
+  signs in first claims the slug. If you intend a specific friend to own
+  it, they need to be the first to click sign-in.
+- To **reset a slug** so someone else can claim it: clear the binding.
+  ```sql
+  update prospects set friend_supabase_user_id = null where friend_slug = '<slug>';
+  delete from friend_gmail_tokens where prospect_id = (
+    select id from prospects where friend_slug = '<slug>'
+  );
+  ```
+- To **fully retire a slug**: `update prospects set friend_enabled = false
+  where friend_slug = '<slug>'`. The route 404s and SSE shuts down.
+- To **wipe content** after a leak: cascade by `prospect_id` per
+  [`runbook.md`](./runbook.md).
 
 ## Other security considerations
 

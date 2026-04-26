@@ -174,10 +174,15 @@ function normalizeMessage(
   };
 }
 
-export async function fetchRecentThreads(
+/**
+ * Lists recent inbox thread IDs only — no body fetch. Cheap; meant to be
+ * paired with `fetchThreadById` so callers can stream threads in one at a
+ * time instead of waiting for a 40-thread batch to fully hydrate.
+ */
+export async function listInboxThreadIds(
   token: FriendGmailToken,
   opts: { maxThreads?: number; query?: string } = {}
-): Promise<NormalizedThread[]> {
+): Promise<string[]> {
   const fresh = await refreshIfNeeded(token);
   const gmail = gmailClient(fresh);
   const max = opts.maxThreads ?? 50;
@@ -188,49 +193,59 @@ export async function fetchRecentThreads(
     q: opts.query ?? "in:inbox -category:promotions -category:social",
   });
 
-  const threadIds = (list.data.threads ?? [])
+  return (list.data.threads ?? [])
     .map((t) => t.id)
     .filter((x): x is string => Boolean(x));
+}
 
-  const threads: NormalizedThread[] = [];
-  for (const id of threadIds) {
-    try {
-      const detail = await gmail.users.threads.get({
-        userId: "me",
-        id,
-        format: "full",
-      });
-      const msgs = (detail.data.messages ?? [])
-        .map(normalizeMessage)
-        .filter((m): m is NormalizedMessage => m !== null);
-      if (!msgs.length) continue;
+/**
+ * Hydrates a single thread (full body + headers). Returns null if the thread
+ * is empty or the fetch fails — callers should skip and continue rather than
+ * letting one bad thread tank the whole sync.
+ */
+export async function fetchThreadById(
+  token: FriendGmailToken,
+  id: string
+): Promise<NormalizedThread | null> {
+  const fresh = await refreshIfNeeded(token);
+  const gmail = gmailClient(fresh);
 
-      const subject = msgs[0]?.subject ?? "";
-      const participants = Array.from(
-        new Set(
-          msgs.flatMap((m) =>
-            [m.fromEmail, ...m.toEmails, ...m.ccEmails].filter(Boolean)
-          )
+  try {
+    const detail = await gmail.users.threads.get({
+      userId: "me",
+      id,
+      format: "full",
+    });
+    const msgs = (detail.data.messages ?? [])
+      .map(normalizeMessage)
+      .filter((m): m is NormalizedMessage => m !== null);
+    if (!msgs.length) return null;
+
+    const subject = msgs[0]?.subject ?? "";
+    const participants = Array.from(
+      new Set(
+        msgs.flatMap((m) =>
+          [m.fromEmail, ...m.toEmails, ...m.ccEmails].filter(Boolean)
         )
-      );
-      const last = msgs.reduce<Date | null>((acc, m) => {
-        if (!m.sentAt) return acc;
-        return !acc || m.sentAt > acc ? m.sentAt : acc;
-      }, null);
+      )
+    );
+    const last = msgs.reduce<Date | null>((acc, m) => {
+      if (!m.sentAt) return acc;
+      return !acc || m.sentAt > acc ? m.sentAt : acc;
+    }, null);
 
-      threads.push({
-        gmailThreadId: id,
-        subject,
-        participants,
-        lastMessageAt: last,
-        snippet: detail.data.snippet ?? msgs[msgs.length - 1]?.snippet ?? "",
-        messages: msgs,
-      });
-    } catch (err) {
-      console.warn(`[gmail] failed to load thread ${id}`, err);
-    }
+    return {
+      gmailThreadId: id,
+      subject,
+      participants,
+      lastMessageAt: last,
+      snippet: detail.data.snippet ?? msgs[msgs.length - 1]?.snippet ?? "",
+      messages: msgs,
+    };
+  } catch (err) {
+    console.warn(`[gmail] failed to load thread ${id}`, err);
+    return null;
   }
-  return threads;
 }
 
 export async function fetchSentBodies(

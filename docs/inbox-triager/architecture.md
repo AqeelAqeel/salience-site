@@ -106,19 +106,43 @@ the friend.
 - **Final flush.** A 50ms timeout before `controller.close()` lets the buffer
   drain so the final event reaches the client.
 
-## Auth model (current — Phase 1)
+## Auth model (Phase 2A)
 
-- Supabase handles the Google OAuth handshake. We pass extra options:
+- Supabase handles the Google OAuth handshake. The client passes extra options:
   - `scopes: "https://www.googleapis.com/auth/gmail.readonly"`
   - `queryParams: { access_type: "offline", prompt: "consent" }` (forces a
     refresh token on every consent)
   - `redirectTo: "{origin}/friends/{slug}?just_signed_in=1"`
-- After redirect, `supabase.auth.onAuthStateChange("SIGNED_IN")` fires; the
-  client posts the session's `provider_token` + `provider_refresh_token` to
-  our `/link-tokens` route which upserts `friend_gmail_tokens`.
-- **Server routes do not currently verify a Supabase session** — they only
-  check that a `friend_slug` exists in `prospects`. See
-  [`security.md`](./security.md).
+- After redirect, `onAuthStateChange("SIGNED_IN")` fires. The Cockpit posts
+  the session's `provider_token` + `provider_refresh_token` to
+  `/api/friends/{slug}/link-tokens` with `Authorization: Bearer
+  {supabase_access_token}`.
+- **link-tokens** verifies the JWT and:
+  - If `prospects.friend_supabase_user_id` is null → claim it for the
+    signing-in user (this slug is now bound to them).
+  - If set + matches → refresh tokens in place.
+  - If set + doesn't match → 403, and the Cockpit shows a "this cockpit is
+    bound to a different account" screen.
+- **Every other API route** uses `requireFriendOwner(req, slug)`
+  (`lib/friends/auth.ts`):
+  - Extract Bearer token from `Authorization` header, or — for the SSE
+    stream, since `EventSource` can't set headers — from
+    `?access_token=`.
+  - Verify with Supabase `auth.getUser(token)`.
+  - Ensure the verified user_id matches `prospects.friend_supabase_user_id`.
+  - Otherwise return a typed failure (`401`, `403`, `404`, `409` for
+    unclaimed).
+- **SSR doesn't preload the snapshot.** `app/friends/[slug]/page.tsx`
+  fetches only the friend's *public-facing* metadata (`friend_headline`,
+  `friend_pitch`, `friend_tone_hints`, `friend_signoff`,
+  `friend_personalization_context` — all operator-authored marketing copy,
+  not email content). The Cockpit fetches the real snapshot from
+  `/api/friends/{slug}/snapshot` after auth + ownership confirmed.
+- **Why the query-param fallback for SSE?** EventSource has no API to set
+  request headers. The token is short-lived (1h), travels over HTTPS in
+  prod, and is scoped to a single slug. URL logging is the residual risk —
+  acceptable for this surface; revisit if we move to a logging-heavy
+  environment.
 
 ## Server runtime
 

@@ -124,6 +124,7 @@ export interface FriendAIState {
   prospect_id: string;
   observed_patterns: string[];
   communication_style: string;
+  common_phrases: string[];
   common_tasks: string[];
   known_priorities: string[];
   people_map_summary: string;

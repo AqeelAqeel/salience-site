@@ -3,8 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import type { CockpitSnapshot } from "@/lib/friends/types";
 
-const PLACEHOLDER =
-  "Paste a few of your real replies here, plus phrases you actually say. The drafter studies this to mimic your voice — opener style, sentence length, vocabulary, sign-offs. The more honest the samples, the more the drafts sound like you and not like an AI.";
+const INSTRUCTIONS_PLACEHOLDER =
+  "Specific instructions that should override defaults. e.g. 'always offer a 15min call when asked about pricing', 'never apologize for late replies', 'match the sender's formality', 'cc legal on anything contract-related'.";
 
 export function ContextPanel({
   snapshot,
@@ -23,6 +23,10 @@ export function ContextPanel({
     .sort((a, b) => (b.name.length > 0 ? 1 : 0) - (a.name.length > 0 ? 1 : 0))
     .slice(0, 6);
 
+  const hasVoice = Boolean(
+    aiState?.communication_style || aiState?.common_phrases?.length
+  );
+
   return (
     <div className="space-y-8 pt-4 text-[13.5px] text-[var(--fr-text-mid)]">
       <PanelSection label="who this is for">
@@ -32,12 +36,11 @@ export function ContextPanel({
         {friend.company_name && (
           <p className="mono text-[11px] mt-1">{friend.company_name}</p>
         )}
-        {friend.friend_tone_hints && (
-          <p className="mt-3 leading-relaxed">{friend.friend_tone_hints}</p>
-        )}
       </PanelSection>
 
-      <PersonalizationEditor
+      <VoiceSection aiState={aiState} hasVoice={hasVoice} />
+
+      <InstructionsEditor
         initial={friend.friend_personalization_context}
         onSave={onSavePersonalization}
       />
@@ -63,12 +66,6 @@ export function ContextPanel({
         </PanelSection>
       ) : null}
 
-      {aiState?.communication_style ? (
-        <PanelSection label="how you write">
-          <p className="leading-relaxed">{aiState.communication_style}</p>
-        </PanelSection>
-      ) : null}
-
       {topSenders.length > 0 && (
         <PanelSection label="people in your inbox">
           <ul className="space-y-3">
@@ -90,7 +87,59 @@ export function ContextPanel({
   );
 }
 
-function PersonalizationEditor({
+function VoiceSection({
+  aiState,
+  hasVoice,
+}: {
+  aiState: CockpitSnapshot["aiState"];
+  hasVoice: boolean;
+}) {
+  return (
+    <section>
+      <div className="flex items-baseline justify-between mb-3">
+        <p className="small-caps">your voice · auto-detected</p>
+        <span className="mono text-[10.5px] text-[var(--fr-text-low)]">
+          from sent mail
+        </span>
+      </div>
+
+      {!hasVoice ? (
+        <p className="text-[12.5px] text-[var(--fr-text-low)] leading-relaxed italic">
+          we&rsquo;ll read ~30 of your recent sent emails on the next sync and
+          extract how you write, the phrases you actually reuse, and your
+          sign-off — then feed that to the drafter so replies sound like you.
+        </p>
+      ) : (
+        <div className="space-y-4">
+          {aiState?.communication_style && (
+            <p className="text-[13px] leading-relaxed text-[var(--fr-text-hi)]">
+              {aiState.communication_style}
+            </p>
+          )}
+          {aiState?.common_phrases?.length ? (
+            <div>
+              <p className="mono text-[10.5px] text-[var(--fr-text-low)] mb-2">
+                phrases you actually reuse
+              </p>
+              <div className="flex flex-wrap gap-1.5">
+                {aiState.common_phrases.map((p, i) => (
+                  <span
+                    key={i}
+                    className="mono text-[11px] px-2 py-0.5 rounded-full border hairline text-[var(--fr-text-mid)] bg-[color:var(--fr-text-hi)]/[0.02]"
+                  >
+                    {p}
+                  </span>
+                ))}
+              </div>
+            </div>
+          ) : null}
+        </div>
+      )}
+    </section>
+  );
+}
+
+function InstructionsEditor({
   initial,
   onSave,
 }: {
@@ -113,7 +162,7 @@ function PersonalizationEditor({
     const el = ref.current;
     if (!el) return;
     el.style.height = "auto";
-    el.style.height = `${Math.min(el.scrollHeight, 480)}px`;
+    el.style.height = `${Math.min(el.scrollHeight, 360)}px`;
   }, [value]);
 
   const dirty = value !== savedValue;
@@ -137,7 +186,7 @@ function PersonalizationEditor({
   return (
     <section>
       <div className="flex items-baseline justify-between mb-3">
-        <p className="small-caps">your voice · samples</p>
+        <p className="small-caps">specific instructions</p>
         <span
           className={`mono text-[10.5px] ${
             error
@@ -163,14 +212,14 @@ function PersonalizationEditor({
             void handleSave();
           }
         }}
-        placeholder={PLACEHOLDER}
+        placeholder={INSTRUCTIONS_PLACEHOLDER}
         spellCheck={false}
-        rows={6}
+        rows={5}
         className="w-full resize-none bg-transparent border hairline rounded-md px-3 py-2 text-[13px] leading-relaxed text-[var(--fr-text-hi)] placeholder:text-[var(--fr-text-low)] focus:outline-none focus:border-[var(--fr-accent)] transition-colors"
       />
       <div className="mt-2 flex items-center justify-between">
         <p className="text-[11px] text-[var(--fr-text-low)] leading-snug pr-3">
-          injected into the drafter prompt as voice grounding
+          overrides the auto-detected voice when they conflict
         </p>
         <button
           type="button"

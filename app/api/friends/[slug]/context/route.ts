@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getFriendBySlug } from "@/lib/friends/db";
 import { getServerSupabase } from "@/lib/supabase-server";
+import {
+  authFailureResponse,
+  isAuthFailure,
+  requireFriendOwner,
+} from "@/lib/friends/auth";
 
 export const runtime = "nodejs";
 
@@ -17,10 +21,8 @@ export async function PATCH(
   { params }: { params: Promise<{ slug: string }> }
 ) {
   const { slug } = await params;
-  const friend = await getFriendBySlug(slug);
-  if (!friend) {
-    return NextResponse.json({ error: "friend not found" }, { status: 404 });
-  }
+  const auth = await requireFriendOwner(req, slug);
+  if (isAuthFailure(auth)) return authFailureResponse(auth);
 
   const body = (await req.json().catch(() => null)) as Partial<
     Record<EditableField, unknown>
@@ -36,14 +38,17 @@ export async function PATCH(
   }
 
   if (Object.keys(patch).length === 0) {
-    return NextResponse.json({ error: "no editable fields supplied" }, { status: 400 });
+    return NextResponse.json(
+      { error: "no editable fields supplied" },
+      { status: 400 }
+    );
   }
 
   const supa = getServerSupabase();
   const { data, error } = await supa
     .from("prospects")
     .update({ ...patch, updated_at: new Date().toISOString() })
-    .eq("id", friend.id)
+    .eq("id", auth.friend.id)
     .select(
       "friend_personalization_context, friend_tone_hints, friend_signoff"
     )

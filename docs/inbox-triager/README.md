@@ -9,13 +9,17 @@ trying to win. Not a SaaS signup, not a public app.
 
 ## Status
 
-- **Phase 1 (current)** — Single-tenant cockpit per slug. End-to-end Gmail
-  read + AI interpretation + draft persistence + push-to-Gmail-drafts is
-  wired. **Has known data-tenancy issues — see [`security.md`](./security.md)
-  before sharing slugs widely.**
-- **Phase 2 (planned)** — Auth-gated tenancy: a slug binds to one Supabase
-  user, and SSR + every API route verifies session. See
-  [`security.md`](./security.md) → "Remediation plan".
+- **Phase 1 (shipped)** — End-to-end Gmail read + AI interpretation + draft
+  persistence + push-to-Gmail-drafts wired.
+- **Phase 2A (shipped)** — Tenancy fix: every API route auth-gated via
+  Supabase JWT (Bearer header or `?access_token=` for SSE); slug binds to
+  the first signing-in Supabase user (`prospects.friend_supabase_user_id`)
+  and rejects mismatches; SSR no longer pre-fetches the snapshot. Cockpit
+  fetches snapshot client-side after ownership confirmed. See
+  [`security.md`](./security.md) for what's still open in 2B/2C.
+- **Phase 2B (next)** — Encrypt refresh tokens at rest (`pgsodium`), tighten
+  RLS to enforce ownership, add `friend_audit_log`.
+- **Phase 2C** — In-cockpit "disconnect" + "delete my data" controls.
 - **Phase 3 (deferred)** — `gmail.compose` scope, recipient enrichment,
   pattern extraction across sent mail, OAuth verification submission to
   Google.
@@ -28,7 +32,7 @@ app/friends/[slug]/not-found.tsx         404 surface for inactive slugs
 app/friends/layout.tsx                   font + dark-theme shell
 app/friends/friends.css                  scoped editorial dark theme
 app/api/friends/[slug]/
-  link-tokens/route.ts                   client posts Supabase session here post-OAuth
+  link-tokens/route.ts                   claims slug ownership + stores Gmail tokens
   stream/route.ts                        SSE: fetch + analyze + emit events
   snapshot/route.ts                      JSON cockpit state
   context/route.ts                       PATCH friend_personalization_context (voice samples)
@@ -45,10 +49,11 @@ components/friends/
 lib/friends/
   types.ts                               shared types
   prompts.ts                             OpenAI system + user prompts
-  ai.ts                                  OpenAI structured-output interpretation
-  gmail.ts                               threads.list + threads.get + draft create
+  ai.ts                                  OpenAI structured-output interpretation + style extraction
+  gmail.ts                               threads.list + threads.get + sent fetch + draft create
   sync.ts                                end-to-end ingestion pipeline
   db.ts                                  DAL on top of Supabase service role
+  auth.ts                                requireFriendOwner / requireSessionForFriend (JWT verify)
 lib/supabase-server.ts                   service-role server client
 
 scripts/friends/seed-test-slug.mjs       one-off seeder for /friends/test-slug

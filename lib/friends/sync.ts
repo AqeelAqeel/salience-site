@@ -1,5 +1,9 @@
 import { getServerSupabase } from "../supabase-server";
-import { fetchRecentThreads, fetchSentBodies } from "./gmail";
+import {
+  fetchSentBodies,
+  fetchThreadById,
+  listInboxThreadIds,
+} from "./gmail";
 import { interpretThread, extractStyleSummary } from "./ai";
 import type {
   FriendEmailThread,
@@ -27,26 +31,27 @@ export async function runSync(args: {
   const max = args.maxThreads ?? 40;
   const supa = getServerSupabase();
 
-  emit?.({ type: "sync_started", totalEstimate: max });
-
-  // Learn the user's voice + sign-off from their own recent sent mail so drafts
-  // sound like them — not the seed friend_tone_hints / friend_signoff. Failure
-  // is non-fatal; we fall back to the seed cues.
+  // Learn the user's voice + sign-off + common phrases from their own recent
+  // sent mail so drafts sound like them — not the seed friend_tone_hints /
+  // friend_signoff. Failure is non-fatal; we fall back to the seed cues.
   let learnedStyle = "";
   let learnedSignoff = "";
+  let learnedPhrases: string[] = [];
   try {
-    const sentBodies = await fetchSentBodies(token, { maxMessages: 20 });
+    const sentBodies = await fetchSentBodies(token, { maxMessages: 30 });
     if (sentBodies.length) {
       const extracted = await extractStyleSummary(sentBodies);
       learnedStyle = extracted.style;
       learnedSignoff = extracted.signoff;
-      if (learnedStyle) {
+      learnedPhrases = extracted.commonPhrases;
+      if (learnedStyle || learnedPhrases.length) {
         const { data: aiStateRow } = await supa
           .from("friend_ai_state")
           .upsert(
             {
               prospect_id: friend.id,
               communication_style: learnedStyle,
+              common_phrases: learnedPhrases,
             },
             { onConflict: "prospect_id" }
           )
@@ -62,16 +67,26 @@ export async function runSync(args: {
     console.warn("[friends] voice extraction failed, continuing without it:", err);
   }
 
-  let threads;
+  // Stream threads in one at a time: list cheap IDs first, then fetch +
+  // analyze + draft per thread so each card lands in the cockpit as soon as
+  // it's ready instead of waiting for a 40-thread upfront batch.
+  let threadIds: string[];
   try {
-    threads = await fetchRecentThreads(token, { maxThreads: max });
+    threadIds = await listInboxThreadIds(token, { maxThreads: max });
   } catch (err) {
     const message = err instanceof Error ? err.message : "gmail fetch failed";
     emit?.({ type: "error", message });
     throw err;
   }
 
-  for (const t of threads) {
+  emit?.({ type: "sync_started", totalEstimate: threadIds.length });
+
+  let processed = 0;
+
+  for (const gmailThreadId of threadIds) {
+    const t = await fetchThreadById(token, gmailThreadId);
+    if (!t) continue;
+
     const { data: threadRow, error: threadErr } = await supa
       .from("friend_email_threads")
       .upsert(
@@ -147,6 +162,7 @@ export async function runSync(args: {
         friend,
         learnedStyle,
         learnedSignoff,
+        learnedPhrases,
         subject: t.subject,
         participants: t.participants,
         messages: t.messages,
@@ -254,7 +270,9 @@ export async function runSync(args: {
         .update({ status: "analyzed" })
         .eq("id", row.id);
     }
+
+    processed += 1;
   }
 
-  emit?.({ type: "sync_completed", threadCount: threads.length });
+  emit?.({ type: "sync_completed", threadCount: processed });
 }

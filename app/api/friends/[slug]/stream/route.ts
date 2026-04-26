@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
-import { getFriendBySlug, getGmailToken } from "@/lib/friends/db";
+import { getGmailToken } from "@/lib/friends/db";
 import { runSync } from "@/lib/friends/sync";
+import { isAuthFailure, requireFriendOwner } from "@/lib/friends/auth";
 import type { StreamEvent } from "@/lib/friends/types";
 
 export const runtime = "nodejs";
@@ -9,6 +10,17 @@ export const dynamic = "force-dynamic";
 
 function toSSE(event: StreamEvent): string {
   return `data: ${JSON.stringify(event)}\n\n`;
+}
+
+function sseResponse(events: StreamEvent[]): Response {
+  return new Response(events.map(toSSE).join(""), {
+    headers: {
+      "Content-Type": "text/event-stream; charset=utf-8",
+      "Cache-Control": "no-cache, no-transform",
+      Connection: "keep-alive",
+      "X-Accel-Buffering": "no",
+    },
+  });
 }
 
 function preflightMissingEnv(): string | null {
@@ -23,54 +35,34 @@ function preflightMissingEnv(): string | null {
 }
 
 export async function GET(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ slug: string }> }
 ) {
   const { slug } = await params;
 
-  const encoder = new TextEncoder();
-  const respond = (events: StreamEvent[]) => {
-    const body = events.map(toSSE).join("");
-    return new Response(body, {
-      headers: {
-        "Content-Type": "text/event-stream; charset=utf-8",
-        "Cache-Control": "no-cache, no-transform",
-        Connection: "keep-alive",
-        "X-Accel-Buffering": "no",
-      },
-    });
-  };
-
   const missing = preflightMissingEnv();
   if (missing) {
-    return respond([
+    return sseResponse([
       {
         type: "error",
-        message: `server is missing env vars: ${missing}. The cockpit can't refresh Gmail tokens without GOOGLE_OAUTH_CLIENT_ID/SECRET; see docs/inbox-triager/configuration.md.`,
+        message: `server is missing env vars: ${missing}. See docs/inbox-triager/configuration.md.`,
       },
     ]);
   }
 
-  let friend;
-  try {
-    friend = await getFriendBySlug(slug);
-  } catch (err) {
-    return respond([
-      {
-        type: "error",
-        message: `failed to load friend: ${err instanceof Error ? err.message : "unknown"}`,
-      },
-    ]);
+  // Auth gate. EventSource can't set headers, so the cockpit appends
+  // ?access_token=<jwt>. requireFriendOwner picks it up from there.
+  const auth = await requireFriendOwner(req, slug);
+  if (isAuthFailure(auth)) {
+    return sseResponse([{ type: "error", message: auth.message }]);
   }
-  if (!friend) {
-    return respond([{ type: "error", message: `no friend at slug "${slug}"` }]);
-  }
+  const { friend } = auth;
 
   let token;
   try {
     token = await getGmailToken(friend.id);
   } catch (err) {
-    return respond([
+    return sseResponse([
       {
         type: "error",
         message: `failed to read gmail token: ${err instanceof Error ? err.message : "unknown"}`,
@@ -78,7 +70,7 @@ export async function GET(
     ]);
   }
   if (!token) {
-    return respond([
+    return sseResponse([
       {
         type: "error",
         message:
@@ -87,6 +79,7 @@ export async function GET(
     ]);
   }
 
+  const encoder = new TextEncoder();
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
       let closed = false;
@@ -108,7 +101,8 @@ export async function GET(
         }
       };
 
-      // Heartbeat so EventSource doesn't time out on slow OpenAI calls.
+      // Heartbeat — keeps Vercel's edge proxy from idle-closing the stream
+      // during long OpenAI calls.
       const heartbeat = setInterval(() => {
         if (closed) return;
         try {
@@ -126,13 +120,11 @@ export async function GET(
         emit({ type: "error", message });
       } finally {
         clearInterval(heartbeat);
-        // Give the buffer a tick to flush before closing so the client sees
-        // the final event instead of an abrupt drop ("connection lost").
         setTimeout(safeClose, 50);
       }
     },
     cancel() {
-      // Client navigated away or aborted — nothing to do, controller is closed.
+      // Client navigated away or aborted.
     },
   });
 

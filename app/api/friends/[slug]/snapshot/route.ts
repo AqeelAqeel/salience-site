@@ -1,18 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getCockpitSnapshot, getFriendBySlug } from "@/lib/friends/db";
+import { getCockpitSnapshot } from "@/lib/friends/db";
+import {
+  authFailureResponse,
+  isAuthFailure,
+  requireFriendOwner,
+} from "@/lib/friends/auth";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function GET(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ slug: string }> }
 ) {
   const { slug } = await params;
-  const friend = await getFriendBySlug(slug);
-  if (!friend) {
-    return NextResponse.json({ error: "friend not found" }, { status: 404 });
-  }
-  const snapshot = await getCockpitSnapshot(friend);
+  const auth = await requireFriendOwner(req, slug);
+  if (isAuthFailure(auth)) return authFailureResponse(auth);
+
+  const snapshot = await getCockpitSnapshot(auth.friend);
   return NextResponse.json(snapshot);
 }

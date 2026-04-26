@@ -133,11 +133,29 @@ delete from friend_reply_drafts where created_at <
 **Permanent fix:** in `lib/friends/sync.ts`, after generating a new draft,
 upsert with `version = (max(version) + 1)` instead of always `version = 1`.
 
-## Symptom: cockpit shows another user's data
+## Symptom: "this cockpit is bound to a different account"
 
-If you're seeing this, you're hitting the data-tenancy issue described in
-[`security.md`](./security.md). Anyone who has the slug URL — even without
-signing in — sees the data of whoever previously linked tokens at that slug.
+The signed-in Supabase user doesn't match `prospects.friend_supabase_user_id`.
+Phase 2A binds a slug to the first user who signs in, hard-rejects others.
+
+**To re-bind to a different user** (e.g. you tested with your account, now
+you want to hand it to the real friend):
+```sql
+update prospects set friend_supabase_user_id = null
+  where friend_slug = '<slug>';
+delete from friend_gmail_tokens
+  where prospect_id = (
+    select id from prospects where friend_slug = '<slug>'
+  );
+```
+Optionally also wipe the cached email content so the new owner starts clean
+(use the cascade block in the next section).
+
+## Symptom: cockpit shows another user's data — pre-2A only
+
+This was the data-tenancy issue described in [`security.md`](./security.md)
+before the Phase 2A fix landed. If you're seeing this on a deployment with
+2A shipped, file an issue — it shouldn't be possible.
 
 **Immediate mitigation:** disable the affected slug:
 ```sql
@@ -155,7 +173,7 @@ delete from friend_recipient_profiles where prospect_id = '<id>';
 delete from friend_ai_state where prospect_id = '<id>';
 ```
 
-**Real fix:** Phase 2A in [`security.md`](./security.md).
+**Real fix:** Phase 2A is shipped — see [`security.md`](./security.md).
 
 ## Symptom: dev server fails to start with "Missing NEXT_PUBLIC_SUPABASE_URL"
 

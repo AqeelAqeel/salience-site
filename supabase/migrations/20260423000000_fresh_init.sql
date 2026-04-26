@@ -383,6 +383,7 @@ create table public.friend_ai_state (
   prospect_id uuid not null references public.prospects(id) on delete cascade unique,
   observed_patterns text[] default '{}',
   communication_style text default '',
+  common_phrases text[] not null default '{}',
   common_tasks text[] default '{}',
   known_priorities text[] default '{}',
   people_map_summary text default '',

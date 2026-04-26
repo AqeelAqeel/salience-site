@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getFriendBySlug, getGmailToken } from "@/lib/friends/db";
+import { getGmailToken } from "@/lib/friends/db";
 import { getServerSupabase } from "@/lib/supabase-server";
 import { createGmailDraft } from "@/lib/friends/gmail";
+import {
+  authFailureResponse,
+  isAuthFailure,
+  requireFriendOwner,
+} from "@/lib/friends/auth";
 
 export const runtime = "nodejs";
 
@@ -10,12 +15,10 @@ export async function PATCH(
   { params }: { params: Promise<{ slug: string; draftId: string }> }
 ) {
   const { slug, draftId } = await params;
-  const friend = await getFriendBySlug(slug);
-  if (!friend) {
-    return NextResponse.json({ error: "friend not found" }, { status: 404 });
-  }
+  const auth = await requireFriendOwner(req, slug);
+  if (isAuthFailure(auth)) return authFailureResponse(auth);
 
-  const body = (await req.json()) as {
+  const body = (await req.json().catch(() => ({}))) as {
     body?: string;
     status?: "generated" | "edited" | "approved" | "sent_to_gmail" | "discarded";
   };
@@ -27,13 +30,16 @@ export async function PATCH(
   } else if (body.status) {
     patch.status = body.status;
   }
+  if (Object.keys(patch).length === 0) {
+    return NextResponse.json({ error: "no fields to update" }, { status: 400 });
+  }
 
   const supa = getServerSupabase();
   const { data, error } = await supa
     .from("friend_reply_drafts")
     .update(patch)
     .eq("id", draftId)
-    .eq("prospect_id", friend.id)
+    .eq("prospect_id", auth.friend.id)
     .select()
     .single();
 
@@ -44,15 +50,14 @@ export async function PATCH(
 }
 
 export async function POST(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ slug: string; draftId: string }> }
 ) {
   const { slug, draftId } = await params;
-  const friend = await getFriendBySlug(slug);
-  if (!friend) {
-    return NextResponse.json({ error: "friend not found" }, { status: 404 });
-  }
-  const token = await getGmailToken(friend.id);
+  const auth = await requireFriendOwner(req, slug);
+  if (isAuthFailure(auth)) return authFailureResponse(auth);
+
+  const token = await getGmailToken(auth.friend.id);
   if (!token) {
     return NextResponse.json(
       { error: "gmail not connected" },
@@ -65,7 +70,7 @@ export async function POST(
     .from("friend_reply_drafts")
     .select("*, thread:friend_email_threads(*)")
     .eq("id", draftId)
-    .eq("prospect_id", friend.id)
+    .eq("prospect_id", auth.friend.id)
     .single();
   if (draftErr || !draft) {
     return NextResponse.json(
@@ -74,7 +79,16 @@ export async function POST(
     );
   }
 
-  const thread = (draft as { thread: { gmail_thread_id: string; subject: string; participants: string[] } }).thread;
+  const thread = (
+    draft as {
+      thread: {
+        gmail_thread_id: string;
+        subject: string;
+        participants: string[];
+      };
+    }
+  ).thread;
+
   const { data: lastMsg } = await supa
     .from("friend_email_messages")
     .select("gmail_message_id, from_email")
@@ -87,7 +101,9 @@ export async function POST(
     const draftGmailId = await createGmailDraft(token, {
       threadId: thread.gmail_thread_id,
       to: lastMsg?.from_email ? [lastMsg.from_email] : thread.participants,
-      subject: thread.subject.startsWith("Re:") ? thread.subject : `Re: ${thread.subject}`,
+      subject: thread.subject.startsWith("Re:")
+        ? thread.subject
+        : `Re: ${thread.subject}`,
       body: (draft as { body: string }).body,
       inReplyToMessageId: lastMsg?.gmail_message_id,
     });

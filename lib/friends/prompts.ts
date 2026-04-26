@@ -17,7 +17,8 @@ const INTERPRETATION_SCHEMA = `Return JSON matching this exact shape:
 export function buildInterpretationSystemPrompt(
   friend: FriendSurface,
   learnedStyle?: string,
-  learnedSignoff?: string
+  learnedSignoff?: string,
+  learnedPhrases?: string[]
 ): string {
   const who = friend.full_name || "the user";
 
@@ -29,10 +30,17 @@ export function buildInterpretationSystemPrompt(
     ? `\nObserved writing style from their own recent sent emails (PREFER this over the seed tone cues — this is how they actually write):\n${learnedStyle}`
     : "";
 
-  // User-curated voice samples — strongest signal because the user picked them.
-  // Should outweigh both the seed tone cues and the heuristically-learned style.
+  const phrases = (learnedPhrases ?? []).filter(Boolean);
+  const phrasesBlock = phrases.length
+    ? `\nPhrases ${who} actually reuses across their sent mail — fold these in verbatim where they fit (don't force them, but prefer them over generic equivalents):\n${phrases.map((p) => `- ${p}`).join("\n")}`
+    : "";
+
+  // Specific instructions the user wrote themselves — overrides everything
+  // else. Could be "always offer a call when they ask for pricing", "never
+  // apologize for delay", "match their formality", etc. Treat as an
+  // authoritative override, not as samples.
   const personalizationBlock = friend.friend_personalization_context
-    ? `\nWriting samples and common phrases hand-picked by ${who} (HIGHEST priority — outranks both the seed tone cues and the observed style above; mirror the cadence, vocabulary, sentence length, and openers/closers):\n"""\n${friend.friend_personalization_context}\n"""`
+    ? `\nSpecific instructions from ${who} (HIGHEST priority — these override the seed tone cues, observed style, and reused phrases above whenever they conflict; follow them literally):\n"""\n${friend.friend_personalization_context}\n"""`
     : "";
 
   // Adaptive sign-off: if we observed one in their sent mail, use that verbatim.
@@ -56,7 +64,7 @@ Rules:
 - Be concise, practical, action-oriented.
 - Do NOT invent facts. If context is missing, say so in the summary.
 - draftReply should be ready to copy-paste into Gmail; address them by first name, keep it short unless the thread calls for more.
-- urgency: low = FYI/no action, medium = reply within a few days, high = same-day.${toneBlock}${learnedBlock}${personalizationBlock}${signoffBlock}
+- urgency: low = FYI/no action, medium = reply within a few days, high = same-day.${toneBlock}${learnedBlock}${phrasesBlock}${personalizationBlock}${signoffBlock}
 
 ${INTERPRETATION_SCHEMA}`;
 }
