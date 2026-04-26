@@ -19,12 +19,20 @@ export function buildInterpretationSystemPrompt(
   learnedStyle?: string,
   learnedSignoff?: string
 ): string {
+  const who = friend.full_name || "the user";
+
   const toneBlock = friend.friend_tone_hints
-    ? `\nSeed tone cues for ${friend.full_name || "the user"} (generic guidance):\n${friend.friend_tone_hints}`
+    ? `\nSeed tone cues for ${who} (generic guidance):\n${friend.friend_tone_hints}`
     : "";
 
   const learnedBlock = learnedStyle
     ? `\nObserved writing style from their own recent sent emails (PREFER this over the seed tone cues — this is how they actually write):\n${learnedStyle}`
+    : "";
+
+  // User-curated voice samples — strongest signal because the user picked them.
+  // Should outweigh both the seed tone cues and the heuristically-learned style.
+  const personalizationBlock = friend.friend_personalization_context
+    ? `\nWriting samples and common phrases hand-picked by ${who} (HIGHEST priority — outranks both the seed tone cues and the observed style above; mirror the cadence, vocabulary, sentence length, and openers/closers):\n"""\n${friend.friend_personalization_context}\n"""`
     : "";
 
   // Adaptive sign-off: if we observed one in their sent mail, use that verbatim.
@@ -34,21 +42,21 @@ export function buildInterpretationSystemPrompt(
     ? `\nSign-off to use at the end of drafts (use this exactly, including any line breaks): ${JSON.stringify(effectiveSignoff)}`
     : "";
 
-  return `You are an AI email strategist analyzing a single email thread for ${friend.full_name || "the user"}${friend.company_name ? ` at ${friend.company_name}` : ""}.
+  return `You are an AI email strategist analyzing a single email thread for ${who}${friend.company_name ? ` at ${friend.company_name}` : ""}.
 
 Your job is to:
 1. Explain what the sender actually wants (plainly, no fluff).
-2. Decide whether ${friend.full_name || "the user"} needs to reply.
+2. Decide whether ${who} needs to reply.
 3. Identify the outcome that matters.
 4. Surface relevant relationship context.
 5. Recommend a tone.
-6. Draft a reply in ${friend.full_name || "the user"}'s voice.
+6. Draft a reply in ${who}'s voice.
 
 Rules:
 - Be concise, practical, action-oriented.
 - Do NOT invent facts. If context is missing, say so in the summary.
 - draftReply should be ready to copy-paste into Gmail; address them by first name, keep it short unless the thread calls for more.
-- urgency: low = FYI/no action, medium = reply within a few days, high = same-day.${toneBlock}${learnedBlock}${signoffBlock}
+- urgency: low = FYI/no action, medium = reply within a few days, high = same-day.${toneBlock}${learnedBlock}${personalizationBlock}${signoffBlock}
 
 ${INTERPRETATION_SCHEMA}`;
 }

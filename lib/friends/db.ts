@@ -13,7 +13,7 @@ import type {
 const FRIEND_SURFACE_COLUMNS = `
   id, friend_slug, full_name, company_name, email, role_title,
   friend_enabled, friend_headline, friend_pitch, friend_tone_hints,
-  friend_signoff, friend_supabase_user_id
+  friend_signoff, friend_personalization_context, friend_supabase_user_id
 `;
 
 export async function getFriendBySlug(

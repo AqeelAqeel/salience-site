@@ -233,6 +233,19 @@ export function Cockpit({ slug, initialSnapshot, supabase }: Props) {
     if (res.ok) await refreshSnapshot();
   }
 
+  async function handleSavePersonalization(value: string) {
+    const res = await fetch(`/api/friends/${slug}/context`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ friend_personalization_context: value }),
+    });
+    if (!res.ok) {
+      const data = (await res.json().catch(() => null)) as { error?: string } | null;
+      throw new Error(data?.error ?? "save failed");
+    }
+    await refreshSnapshot();
+  }
+
   async function handlePushToGmail(draftId: string) {
     const res = await fetch(`/api/friends/${slug}/drafts/${draftId}`, {
       method: "POST",
@@ -280,7 +293,7 @@ export function Cockpit({ slug, initialSnapshot, supabase }: Props) {
 
       <div className="mx-auto w-full max-w-[1400px] px-4 md:px-8 lg:grid lg:grid-cols-[340px_minmax(0,1fr)] lg:gap-10 pt-6 pb-28">
         <aside className="hidden lg:block sticky top-16 self-start h-[calc(100dvh-5rem)] overflow-y-auto pr-2">
-          <ContextPanel snapshot={snapshot} />
+          <ContextPanel snapshot={snapshot} onSavePersonalization={handleSavePersonalization} />
         </aside>
 
         <section className="min-w-0">
@@ -296,7 +309,7 @@ export function Cockpit({ slug, initialSnapshot, supabase }: Props) {
               <span className="mono text-xs">open</span>
             </summary>
             <div className="mt-3 px-1">
-              <ContextPanel snapshot={snapshot} />
+              <ContextPanel snapshot={snapshot} onSavePersonalization={handleSavePersonalization} />
             </div>
           </details>
 

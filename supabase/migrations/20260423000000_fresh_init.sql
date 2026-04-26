@@ -169,6 +169,7 @@ create table public.prospects (
   friend_pitch text default '',
   friend_tone_hints text default '',
   friend_signoff text default '',
+  friend_personalization_context text not null default '',
   friend_supabase_user_id uuid,
 
   -- Metadata

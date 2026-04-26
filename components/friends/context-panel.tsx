@@ -1,8 +1,18 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
 import type { CockpitSnapshot } from "@/lib/friends/types";
 
-export function ContextPanel({ snapshot }: { snapshot: CockpitSnapshot }) {
+const PLACEHOLDER =
+  "Paste a few of your real replies here, plus phrases you actually say. The drafter studies this to mimic your voice — opener style, sentence length, vocabulary, sign-offs. The more honest the samples, the more the drafts sound like you and not like an AI.";
+
+export function ContextPanel({
+  snapshot,
+  onSavePersonalization,
+}: {
+  snapshot: CockpitSnapshot;
+  onSavePersonalization?: (value: string) => Promise<void>;
+}) {
   const { friend, aiState, threads, recipients } = snapshot;
   const needsReply = threads.filter((t) => t.status === "needs_reply").length;
   const highUrgency = Object.values(snapshot.interpretations).filter(
@@ -26,6 +36,11 @@ export function ContextPanel({ snapshot }: { snapshot: CockpitSnapshot }) {
           <p className="mt-3 leading-relaxed">{friend.friend_tone_hints}</p>
         )}
       </PanelSection>
+
+      <PersonalizationEditor
+        initial={friend.friend_personalization_context}
+        onSave={onSavePersonalization}
+      />
 
       <PanelSection label="signal">
         <div className="space-y-2">
@@ -72,6 +87,104 @@ export function ContextPanel({ snapshot }: { snapshot: CockpitSnapshot }) {
         </PanelSection>
       )}
     </div>
+  );
+}
+
+function PersonalizationEditor({
+  initial,
+  onSave,
+}: {
+  initial: string;
+  onSave?: (value: string) => Promise<void>;
+}) {
+  const [value, setValue] = useState(initial);
+  const [savedValue, setSavedValue] = useState(initial);
+  const [saving, setSaving] = useState(false);
+  const [savedAt, setSavedAt] = useState<number | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const ref = useRef<HTMLTextAreaElement | null>(null);
+
+  useEffect(() => {
+    setValue(initial);
+    setSavedValue(initial);
+  }, [initial]);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${Math.min(el.scrollHeight, 480)}px`;
+  }, [value]);
+
+  const dirty = value !== savedValue;
+  const justSaved = savedAt !== null && !dirty;
+
+  async function handleSave() {
+    if (!onSave || !dirty || saving) return;
+    setSaving(true);
+    setError(null);
+    try {
+      await onSave(value);
+      setSavedValue(value);
+      setSavedAt(Date.now());
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "save failed");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <section>
+      <div className="flex items-baseline justify-between mb-3">
+        <p className="small-caps">your voice · samples</p>
+        <span
+          className={`mono text-[10.5px] ${
+            error
+              ? "text-[var(--fr-accent-soft)]"
+              : dirty
+                ? "text-[var(--fr-text-low)]"
+                : justSaved
+                  ? "text-[var(--fr-text-mid)]"
+                  : "text-transparent"
+          }`}
+        >
+          {error ? "error" : dirty ? "unsaved" : justSaved ? "saved" : "·"}
+        </span>
+      </div>
+      <textarea
+        ref={ref}
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        onBlur={handleSave}
+        onKeyDown={(e) => {
+          if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+            e.preventDefault();
+            void handleSave();
+          }
+        }}
+        placeholder={PLACEHOLDER}
+        spellCheck={false}
+        rows={6}
+        className="w-full resize-none bg-transparent border hairline rounded-md px-3 py-2 text-[13px] leading-relaxed text-[var(--fr-text-hi)] placeholder:text-[var(--fr-text-low)] focus:outline-none focus:border-[var(--fr-accent)] transition-colors"
+      />
+      <div className="mt-2 flex items-center justify-between">
+        <p className="text-[11px] text-[var(--fr-text-low)] leading-snug pr-3">
+          injected into the drafter prompt as voice grounding
+        </p>
+        <button
+          type="button"
+          onClick={handleSave}
+          disabled={!dirty || saving || !onSave}
+          className="mono text-[11px] px-2 py-1 rounded border hairline text-[var(--fr-text-mid)] hover:text-[var(--fr-text-hi)] hover:border-[var(--fr-accent)] disabled:opacity-30 disabled:hover:border-[color:inherit] disabled:hover:text-[var(--fr-text-mid)] transition-colors"
+        >
+          {saving ? "saving…" : dirty ? "save (⌘↵)" : "saved"}
+        </button>
+      </div>
+      {error && (
+        <p className="mt-2 text-[11px] text-[var(--fr-accent-soft)]">{error}</p>
+      )}
+    </section>
   );
 }
 

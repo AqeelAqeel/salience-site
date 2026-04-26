@@ -27,6 +27,7 @@ export interface FriendSurface {
   friend_pitch: string;
   friend_tone_hints: string;
   friend_signoff: string;
+  friend_personalization_context: string;
   friend_supabase_user_id: string | null;
 }
 
