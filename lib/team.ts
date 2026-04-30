@@ -45,6 +45,17 @@ export const teamMembers: TeamMember[] = [
     website: { label: 'selfrow.com', url: 'https://selfrow.com' },
   },
   {
+    slug: 'nicholas',
+    name: 'Nicholas Miller',
+    role: 'Partner',
+    tagline: 'Frontier tech and venture superconnector.',
+    expertise: ['Frontier Tech', 'Venture Capital', 'Business Development'],
+    bio: 'One of the biggest superconnectors in the frontier tech and venture startup ecosystem. Nick was previously Director of Business Development at one of the largest consumer AI companies, and is an invisible hand catalyzing the future of innovation — from investing in robotics companies capable of doing your dishes and housework, to consulting companies on multiplying their throughput across every revenue-tied activity.',
+    image: '/assets/team/nicholas-miller.png',
+    phone: '+13302457041',
+    linkedin: 'https://www.linkedin.com/in/nicholas-miller-37916b11b/',
+  },
+  {
     slug: 'danara',
     name: 'Danara Buvaeva',
     role: 'Partner',
