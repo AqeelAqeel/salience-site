@@ -1,30 +1,22 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import type { ReactNode } from "react";
+import type { DragEvent } from "react";
 import type { LucideIcon } from "lucide-react";
 import {
   AlertTriangle,
-  ArrowRight,
-  BadgeCheck,
   Check,
   CheckCircle2,
-  ClipboardList,
+  ChevronDown,
   Download,
   FileAudio,
-  FileCheck2,
   FileText,
-  Layers,
   Loader2,
-  Lock,
   Mic,
-  Paperclip,
   RefreshCcw,
-  Shield,
   Sparkles,
   Square,
   Upload,
-  WandSparkles,
   X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -53,8 +45,6 @@ interface AutofillResult {
   error?: string;
 }
 
-type StepState = "done" | "active" | "waiting";
-
 function base64ToBlobUrl(base64: string, mimeType = "application/pdf"): string {
   const binary = atob(base64);
   const bytes = new Uint8Array(binary.length);
@@ -71,191 +61,115 @@ function fileSizeLabel(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-function sourceMaterialCount(notes: string, supportingFiles: File[], voiceNote: File | null): number {
-  return (notes.trim() ? 1 : 0) + supportingFiles.length + (voiceNote ? 1 : 0);
+function isPdf(file: File): boolean {
+  return file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
 }
 
-function BrokerPill({ icon: Icon, children }: { icon: LucideIcon; children: ReactNode }) {
+function isAudio(file: File): boolean {
+  const name = file.name.toLowerCase();
   return (
-    <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700">
-      <Icon className="h-3.5 w-3.5" />
-      {children}
-    </span>
+    file.type.startsWith("audio/") ||
+    [".webm", ".m4a", ".mp3", ".mp4", ".mpeg", ".mpga", ".wav", ".ogg"].some((ext) => name.endsWith(ext))
   );
 }
 
-function PacketIcon({
+function hasContext(notes: string, supportingFiles: File[], voiceNote: File | null): boolean {
+  return Boolean(notes.trim() || supportingFiles.length > 0 || voiceNote);
+}
+
+function SourceChip({
   icon: Icon,
-  tone,
-}: {
-  icon: LucideIcon;
-  tone: "amber" | "emerald" | "sky" | "violet" | "stone";
-}) {
-  const classes = {
-    amber: "bg-amber-50 text-amber-700 ring-amber-100",
-    emerald: "bg-emerald-50 text-emerald-700 ring-emerald-100",
-    sky: "bg-sky-50 text-sky-700 ring-sky-100",
-    violet: "bg-violet-50 text-violet-700 ring-violet-100",
-    stone: "bg-stone-100 text-stone-700 ring-stone-200",
-  };
-
-  return (
-    <span className={cn("flex h-12 w-12 shrink-0 items-center justify-center rounded-xl ring-1", classes[tone])}>
-      <Icon className="h-6 w-6" />
-    </span>
-  );
-}
-
-function WorkflowStep({
-  icon: Icon,
-  title,
-  detail,
-  state,
-}: {
-  icon: LucideIcon;
-  title: string;
-  detail: string;
-  state: StepState;
-}) {
-  return (
-    <div className="relative flex gap-3 px-4 py-3">
-      <div className="relative z-10">
-        <div
-          className={cn(
-            "flex h-9 w-9 items-center justify-center rounded-full border text-sm font-bold ring-4 ring-white",
-            state === "done" && "border-emerald-500 bg-emerald-500 text-white",
-            state === "active" && "border-stone-900 bg-stone-900 text-white",
-            state === "waiting" && "border-stone-200 bg-white text-stone-400"
-          )}
-        >
-          {state === "done" ? <Check className="h-4 w-4" /> : <Icon className="h-4 w-4" />}
-        </div>
-      </div>
-      <div className="min-w-0 pt-0.5">
-        <p
-          className={cn(
-            "text-sm font-bold",
-            state === "waiting" ? "text-stone-500" : "text-stone-950"
-          )}
-        >
-          {title}
-        </p>
-        <p className="mt-0.5 text-xs leading-snug text-stone-500">{detail}</p>
-      </div>
-    </div>
-  );
-}
-
-function MetricTile({
   label,
-  value,
-  tone,
+  onRemove,
+  tone = "slate",
 }: {
+  icon: LucideIcon;
   label: string;
-  value: string | number;
-  tone: "emerald" | "amber" | "sky" | "stone";
+  onRemove: () => void;
+  tone?: "emerald" | "amber" | "slate";
 }) {
   const classes = {
     emerald: "border-emerald-100 bg-emerald-50 text-emerald-700",
     amber: "border-amber-100 bg-amber-50 text-amber-700",
-    sky: "border-sky-100 bg-sky-50 text-sky-700",
-    stone: "border-stone-200 bg-stone-50 text-stone-700",
+    slate: "border-slate-200 bg-slate-50 text-slate-700",
   };
 
   return (
-    <div className={cn("rounded-xl border px-3 py-2.5", classes[tone])}>
-      <p className="text-2xl font-bold tabular-nums">{value}</p>
-      <p className="mt-0.5 text-[11px] font-semibold uppercase tracking-normal opacity-80">{label}</p>
-    </div>
-  );
-}
-
-function FileSummary({
-  file,
-  fallback,
-  onRemove,
-}: {
-  file: File | null;
-  fallback: string;
-  onRemove?: () => void;
-}) {
-  return (
-    <div className="mt-2 flex items-center justify-between gap-2 text-sm text-stone-500">
-      <span className="min-w-0 truncate">
-        {file ? `${file.name} · ${fileSizeLabel(file.size)}` : fallback}
-      </span>
-      {file && onRemove && (
-        <button
-          type="button"
-          onClick={onRemove}
-          className="rounded-md p-1 text-stone-400 transition-colors hover:bg-red-50 hover:text-red-600"
-          aria-label="Remove file"
-        >
-          <X className="h-4 w-4" />
-        </button>
-      )}
-    </div>
+    <span className={cn("inline-flex max-w-full items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold", classes[tone])}>
+      <Icon className="h-3.5 w-3.5 shrink-0" />
+      <span className="min-w-0 truncate">{label}</span>
+      <button
+        type="button"
+        onClick={onRemove}
+        className="ml-0.5 rounded-full p-0.5 opacity-70 transition hover:bg-white hover:opacity-100"
+        aria-label={`Remove ${label}`}
+      >
+        <X className="h-3 w-3" />
+      </button>
+    </span>
   );
 }
 
 function ResultNotice({ result }: { result: AutofillResult }) {
-  const warning = result.status === "missing_api_key" || result.status === "no_fillable_fields";
-
   return (
-    <div
-      className={cn(
-        "m-4 rounded-2xl border p-4 text-sm",
-        warning ? "border-amber-200 bg-amber-50 text-amber-900" : "border-stone-200 bg-stone-50 text-stone-700"
-      )}
-    >
+    <div className="m-4 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
       <div className="flex items-start gap-3">
         <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-        <p>{result.message || "The form could not be filled yet."}</p>
+        <p>{result.message || "This PDF could not be filled yet."}</p>
       </div>
     </div>
   );
 }
 
-function FieldAuditList({
+function DetailSection({
   title,
   icon: Icon,
   items,
-  tone,
   empty,
+  tone,
 }: {
   title: string;
   icon: LucideIcon;
   items: Array<{ key: string; primary: string; secondary?: string }>;
-  tone: "emerald" | "amber" | "stone";
   empty: string;
+  tone: "emerald" | "amber" | "stone";
 }) {
   const classes = {
-    emerald: "bg-emerald-50 text-emerald-700 border-emerald-100",
-    amber: "bg-amber-50 text-amber-700 border-amber-100",
-    stone: "bg-stone-50 text-stone-700 border-stone-200",
+    emerald: "text-emerald-700 bg-emerald-50 border-emerald-100",
+    amber: "text-amber-700 bg-amber-50 border-amber-100",
+    stone: "text-slate-700 bg-slate-50 border-slate-200",
   };
 
   return (
-    <section className="rounded-2xl border border-stone-200 bg-white">
-      <div className={cn("flex items-center gap-2 rounded-t-2xl border-b px-3 py-2.5", classes[tone])}>
-        <Icon className="h-4 w-4" />
-        <h3 className="text-sm font-bold !tracking-normal !text-current">{title}</h3>
+    <section className="min-w-0">
+      <div className={cn("mb-2 inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-bold", classes[tone])}>
+        <Icon className="h-3.5 w-3.5" />
+        {title}
       </div>
-      <div className="max-h-56 overflow-y-auto p-2">
-        {items.length === 0 ? (
-          <p className="px-2 py-3 text-xs text-stone-500">{empty}</p>
-        ) : (
-          <div className="space-y-2">
-            {items.map((item) => (
-              <div key={item.key} className="rounded-xl border border-stone-100 bg-stone-50 px-3 py-2">
-                <p className="break-words text-xs font-bold text-stone-900">{item.primary}</p>
-                {item.secondary && <p className="mt-1 break-words text-xs text-stone-500">{item.secondary}</p>}
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+      {items.length === 0 ? (
+        <p className="rounded-xl border border-slate-100 bg-white px-3 py-2 text-xs text-slate-500">{empty}</p>
+      ) : (
+        <div className="space-y-2">
+          {items.map((item) => (
+            <div key={item.key} className="rounded-xl border border-slate-100 bg-white px-3 py-2">
+              <p className="break-words text-xs font-bold text-slate-900">{item.primary}</p>
+              {item.secondary && <p className="mt-1 break-words text-xs leading-relaxed text-slate-500">{item.secondary}</p>}
+            </div>
+          ))}
+        </div>
+      )}
     </section>
+  );
+}
+
+function EmptyPdfGhost() {
+  return (
+    <div className="relative h-40 w-32 rounded-2xl border-2 border-slate-200/70 bg-white/60 shadow-sm">
+      <div className="absolute right-0 top-0 h-10 w-10 rounded-bl-2xl border-b-2 border-l-2 border-slate-200/70 bg-slate-50" />
+      <FileText className="absolute left-1/2 top-1/2 h-12 w-12 -translate-x-1/2 -translate-y-1/2 text-slate-200" />
+      <div className="absolute bottom-7 left-6 right-6 h-1.5 rounded-full bg-slate-100" />
+      <div className="absolute bottom-4 left-6 right-10 h-1.5 rounded-full bg-slate-100" />
+    </div>
   );
 }
 
@@ -265,7 +179,9 @@ export default function PdfAutofillDemo() {
   const [supportingFiles, setSupportingFiles] = useState<File[]>([]);
   const [voiceNote, setVoiceNote] = useState<File | null>(null);
   const [isRecording, setIsRecording] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [detailsOpen, setDetailsOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<AutofillResult | null>(null);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
@@ -274,39 +190,11 @@ export default function PdfAutofillDemo() {
   const streamRef = useRef<MediaStream | null>(null);
   const chunksRef = useRef<Blob[]>([]);
 
-  const sourceCount = sourceMaterialCount(notes, supportingFiles, voiceNote);
-  const hasSourceMaterial = sourceCount > 0;
+  const appliedFields = result?.appliedFields || [];
+  const unfilledFields = result?.unfilledFields || [];
+  const warnings = result?.summary?.warnings || [];
   const filledCount = result?.filledCount || 0;
-  const attemptedCount = result?.attemptedCount || 0;
   const fieldCount = result?.document?.fieldCount || 0;
-  const fillRate = fieldCount > 0 ? Math.round((filledCount / fieldCount) * 100) : 0;
-
-  const workflow: Array<{ icon: LucideIcon; title: string; detail: string; state: StepState }> = [
-    {
-      icon: FileText,
-      title: "Register PDF fields",
-      detail: template ? `${template.name} is ready for inspection.` : "Upload the blank fillable form.",
-      state: template ? "done" : "active",
-    },
-    {
-      icon: ClipboardList,
-      title: "Load case context",
-      detail: hasSourceMaterial ? `${sourceCount} source item${sourceCount === 1 ? "" : "s"} attached.` : "Paste notes or add source files.",
-      state: hasSourceMaterial ? "done" : template ? "active" : "waiting",
-    },
-    {
-      icon: WandSparkles,
-      title: "Map evidence to fields",
-      detail: isSubmitting ? "Matching facts against exact PDF field names." : result ? "AI field matching has completed." : "Only supported, evidenced fields are filled.",
-      state: result ? "done" : isSubmitting ? "active" : template && hasSourceMaterial ? "active" : "waiting",
-    },
-    {
-      icon: FileCheck2,
-      title: "Broker review",
-      detail: result ? `${filledCount} fields filled, ${result.unfilledFields?.length || 0} gaps flagged.` : "Download the editable PDF and inspect gaps.",
-      state: result ? "active" : "waiting",
-    },
-  ];
 
   useEffect(() => {
     return () => {
@@ -314,6 +202,97 @@ export default function PdfAutofillDemo() {
       streamRef.current?.getTracks().forEach((track) => track.stop());
     };
   }, [pdfUrl]);
+
+  function clearOutput() {
+    setResult(null);
+    setDetailsOpen(false);
+    if (pdfUrl) {
+      URL.revokeObjectURL(pdfUrl);
+      setPdfUrl(null);
+    }
+  }
+
+  async function runAutofill(
+    templateFile = template,
+    notesValue = notes,
+    supporting = supportingFiles,
+    voice = voiceNote
+  ) {
+    if (!templateFile) {
+      setError("Upload a PDF first.");
+      return;
+    }
+
+    if (!hasContext(notesValue, supporting, voice)) {
+      setError("Add notes, a transcript, an attachment, or a voice note.");
+      return;
+    }
+
+    setIsSubmitting(true);
+    setError(null);
+    clearOutput();
+
+    try {
+      const formData = new FormData();
+      formData.append("template", templateFile);
+      formData.append("notes", notesValue);
+      supporting.forEach((file) => formData.append("supportingFiles", file));
+      if (voice) formData.append("voiceNote", voice);
+
+      const response = await fetch("/api/insurance/pdf-autofill", {
+        method: "POST",
+        body: formData,
+      });
+      const data = (await response.json()) as AutofillResult;
+
+      if (!response.ok) {
+        throw new Error(data.error || "PDF autofill failed.");
+      }
+
+      setResult(data);
+      setDetailsOpen(false);
+      if (data.pdfBase64) {
+        setPdfUrl(base64ToBlobUrl(data.pdfBase64, data.mimeType));
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "PDF autofill failed.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  function ingestFiles(fileList: FileList | File[] | null | undefined) {
+    const incoming = Array.from(fileList || []);
+    if (incoming.length === 0) return;
+
+    const pdfs = incoming.filter(isPdf);
+    const nonPdfs = incoming.filter((file) => !isPdf(file));
+    const audioFiles = nonPdfs.filter(isAudio);
+    const sourceFiles = nonPdfs.filter((file) => !isAudio(file));
+    const nextTemplate = pdfs[0] || template;
+    const nextVoiceNote = audioFiles[0] || voiceNote;
+    const nextSupportingFiles = [
+      ...supportingFiles,
+      ...sourceFiles,
+      ...(pdfs.length > 1 ? pdfs.slice(1) : []),
+    ];
+
+    setTemplate(nextTemplate);
+    setVoiceNote(nextVoiceNote);
+    setSupportingFiles(nextSupportingFiles);
+    setError(null);
+    clearOutput();
+
+    if (nextTemplate && hasContext(notes, nextSupportingFiles, nextVoiceNote)) {
+      void runAutofill(nextTemplate, notes, nextSupportingFiles, nextVoiceNote);
+    }
+  }
+
+  function handleFileDrop(event: DragEvent<HTMLElement>) {
+    event.preventDefault();
+    setIsDragging(false);
+    ingestFiles(event.dataTransfer.files);
+  }
 
   async function startRecording() {
     try {
@@ -332,9 +311,14 @@ export default function PdfAutofillDemo() {
       };
       recorder.onstop = () => {
         const blob = new Blob(chunksRef.current, { type: mimeType });
-        setVoiceNote(new File([blob], "voice-note.webm", { type: mimeType }));
+        const recordedFile = new File([blob], "voice-note.webm", { type: mimeType });
+        setVoiceNote(recordedFile);
         stream.getTracks().forEach((track) => track.stop());
         streamRef.current = null;
+
+        if (template && hasContext(notes, supportingFiles, recordedFile)) {
+          void runAutofill(template, notes, supportingFiles, recordedFile);
+        }
       };
 
       recorder.start();
@@ -351,50 +335,7 @@ export default function PdfAutofillDemo() {
   }
 
   async function submit() {
-    if (!template) {
-      setError("Upload a PDF first.");
-      return;
-    }
-
-    if (!notes.trim() && supportingFiles.length === 0 && !voiceNote) {
-      setError("Add notes, a transcript, a text attachment, or a voice note.");
-      return;
-    }
-
-    setIsSubmitting(true);
-    setError(null);
-    setResult(null);
-    if (pdfUrl) {
-      URL.revokeObjectURL(pdfUrl);
-      setPdfUrl(null);
-    }
-
-    try {
-      const formData = new FormData();
-      formData.append("template", template);
-      formData.append("notes", notes);
-      supportingFiles.forEach((file) => formData.append("supportingFiles", file));
-      if (voiceNote) formData.append("voiceNote", voiceNote);
-
-      const response = await fetch("/api/insurance/pdf-autofill", {
-        method: "POST",
-        body: formData,
-      });
-      const data = (await response.json()) as AutofillResult;
-
-      if (!response.ok) {
-        throw new Error(data.error || "PDF autofill failed.");
-      }
-
-      setResult(data);
-      if (data.pdfBase64) {
-        setPdfUrl(base64ToBlobUrl(data.pdfBase64, data.mimeType));
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "PDF autofill failed.");
-    } finally {
-      setIsSubmitting(false);
-    }
+    await runAutofill();
   }
 
   function reset() {
@@ -402,298 +343,264 @@ export default function PdfAutofillDemo() {
     setNotes("");
     setSupportingFiles([]);
     setVoiceNote(null);
-    setResult(null);
+    setIsDragging(false);
     setError(null);
-    if (pdfUrl) {
-      URL.revokeObjectURL(pdfUrl);
-      setPdfUrl(null);
-    }
+    clearOutput();
   }
 
   return (
     <div className="mx-auto max-w-6xl">
-      <section className="mb-5 overflow-hidden rounded-[1.75rem] border border-stone-200 bg-white/90 shadow-xl shadow-stone-200/70">
-        <div className="flex flex-col gap-4 p-5 sm:p-6 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex min-w-0 items-start gap-4">
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-stone-950 text-white shadow-md">
-              <Shield className="h-6 w-6" />
-            </div>
-            <div className="min-w-0">
-              <p className="text-sm font-semibold text-stone-500">StarOne Valley Insurance</p>
-              <h1 className="mt-1 text-3xl font-bold leading-tight !tracking-normal !text-stone-950 sm:text-4xl">
-                Broker PDF Autofill
-              </h1>
-              <p className="mt-2 max-w-2xl text-sm leading-relaxed text-stone-600 sm:text-base">
-                Upload a blank carrier, agency, or compliance form. Drop in the messy source material and get back an editable PDF plus the gaps a broker still needs to resolve.
-              </p>
-            </div>
-          </div>
+      <div className="mb-5">
+        <h1 className="text-3xl font-bold !tracking-normal !text-slate-950 sm:text-4xl">
+          Fill <span className="gold-accent">Any</span> PDF
+        </h1>
+      </div>
 
-          <div className="flex flex-wrap items-center gap-2">
-            <BrokerPill icon={Lock}>Encrypted session</BrokerPill>
-            <BrokerPill icon={BadgeCheck}>Editable PDF</BrokerPill>
-          </div>
-        </div>
-      </section>
-
-      <div className="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,0.88fr)_minmax(0,1.12fr)]">
-        <section className="space-y-4">
-          <div className="rounded-2xl border border-stone-200 bg-white p-4 shadow-sm">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <h2 className="text-lg font-bold !tracking-normal !text-stone-950">Case packet</h2>
-                <p className="mt-0.5 text-sm text-stone-500">Everything the agent needs for this one form.</p>
-              </div>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={reset}
-                className="rounded-xl border-stone-200 bg-white text-stone-700 hover:bg-stone-100"
-              >
-                <RefreshCcw className="h-4 w-4" />
-                Reset
-              </Button>
-            </div>
-          </div>
-
-          <label
-            className={cn(
-              "block cursor-pointer rounded-2xl border bg-white p-5 shadow-sm transition-all hover:shadow-md",
-              template ? "border-emerald-200 ring-2 ring-emerald-50" : "border-stone-200 hover:border-amber-300"
-            )}
+      <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-[minmax(320px,0.82fr)_minmax(0,1.18fr)]">
+        <section
+          className="value-card relative !rounded-2xl bg-white p-5 shadow-sm"
+          onDragEnter={(event) => {
+            event.preventDefault();
+            setIsDragging(true);
+          }}
+          onDragOver={(event) => event.preventDefault()}
+          onDragLeave={(event) => {
+            if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
+              setIsDragging(false);
+            }
+          }}
+          onDrop={handleFileDrop}
+        >
+          <button
+            type="button"
+            onClick={reset}
+            className="absolute right-4 top-4 rounded-full p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+            aria-label="Reset"
           >
-            <input
-              type="file"
-              accept="application/pdf,.pdf"
-              className="sr-only"
-              onChange={(event) => setTemplate(event.target.files?.[0] || null)}
-            />
-            <span className="flex items-start gap-4">
-              <PacketIcon icon={Upload} tone={template ? "emerald" : "amber"} />
-              <span className="min-w-0 flex-1">
-                <span className="flex items-center justify-between gap-3">
-                  <span className="text-base font-bold text-stone-950">Empty PDF</span>
-                  {template ? (
-                    <CheckCircle2 className="h-5 w-5 text-emerald-600" />
-                  ) : (
-                    <ArrowRight className="h-5 w-5 text-stone-300" />
-                  )}
-                </span>
-                <span className="mt-1 block text-sm leading-relaxed text-stone-500">
-                  {template ? `${template.name} · ${fileSizeLabel(template.size)}` : "Choose the fillable PDF someone else already uses for work."}
-                </span>
-              </span>
-            </span>
-          </label>
+            <RefreshCcw className="h-4 w-4" />
+          </button>
 
-          <div className="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm">
-            <div className="mb-3 flex items-start gap-4">
-              <PacketIcon icon={FileText} tone={notes.trim() ? "emerald" : "sky"} />
-              <div className="min-w-0">
-                <label htmlFor="broker-notes" className="text-base font-bold text-stone-950">
-                  Notes or transcript
+          <div className="space-y-4">
+            {template ? (
+              <div
+                className={cn(
+                  "flex items-center gap-2 rounded-2xl border px-3 py-2 transition",
+                  isDragging ? "border-amber-300 bg-amber-50" : "border-emerald-100 bg-emerald-50"
+                )}
+              >
+                <label className="flex min-w-0 flex-1 cursor-pointer items-center gap-2">
+                  <input
+                    type="file"
+                    multiple
+                    className="sr-only"
+                    onChange={(event) => ingestFiles(event.target.files)}
+                  />
+                  <FileText className="h-4 w-4 shrink-0 text-emerald-700" />
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-sm font-bold text-emerald-900">{template.name}</span>
+                    <span className="block truncate text-xs font-semibold text-emerald-700">
+                      {fileSizeLabel(template.size)} · drop more files here
+                    </span>
+                  </span>
                 </label>
-                <p className="mt-1 text-sm leading-relaxed text-stone-500">
-                  Paste call notes, email text, client facts, or a raw transcript.
-                </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setTemplate(null);
+                    clearOutput();
+                  }}
+                  className="rounded-full p-1 text-emerald-600 transition hover:bg-white hover:text-emerald-800"
+                  aria-label="Remove PDF"
+                >
+                  <X className="h-4 w-4" />
+                </button>
               </div>
-            </div>
+            ) : (
+              <label
+                className={cn(
+                  "flex min-h-40 cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed p-6 text-center transition",
+                  isDragging
+                    ? "border-amber-400 bg-amber-50"
+                    : "border-slate-300 bg-[#fbf7ef] hover:border-amber-300 hover:bg-amber-50/70"
+                )}
+              >
+                <input
+                  type="file"
+                  multiple
+                  className="sr-only"
+                  onChange={(event) => ingestFiles(event.target.files)}
+                />
+                <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-amber-700 shadow-sm ring-1 ring-amber-100">
+                  <Upload className="h-5 w-5" />
+                </div>
+                <p className="text-sm font-bold text-slate-950">Drop PDF, notes, or files</p>
+                <p className="mt-1 text-xs text-slate-500">PDF becomes the form; other files become context.</p>
+              </label>
+            )}
+
             <Textarea
-              id="broker-notes"
               value={notes}
               onChange={(event) => setNotes(event.target.value)}
-              placeholder="Example: Acme Cleaning LLC is a janitorial business at 123 Market Street in San Francisco. Contact is Dana Ruiz..."
-              className="min-h-44 resize-y rounded-xl border-stone-200 bg-stone-50 text-stone-900 placeholder:text-stone-400 focus-visible:ring-amber-500"
+              onBlur={() => {
+                if (template && hasContext(notes, supportingFiles, voiceNote) && !result && !isSubmitting) {
+                  void runAutofill();
+                }
+              }}
+              placeholder="Paste notes, transcripts, emails, or facts that should appear in the form."
+              className="min-h-56 resize-y rounded-2xl border-slate-200 bg-[#fbf7ef] text-sm text-slate-900 placeholder:text-slate-400 focus-visible:ring-amber-500"
             />
-          </div>
 
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <label className="cursor-pointer rounded-2xl border border-stone-200 bg-white p-4 shadow-sm transition-all hover:border-violet-300 hover:shadow-md">
-              <input
-                type="file"
-                multiple
-                accept=".txt,.md,.csv,.json,.eml,.rtf,text/*,application/json"
-                className="sr-only"
-                onChange={(event) => setSupportingFiles(Array.from(event.target.files || []))}
-              />
-              <span className="flex items-start gap-3">
-                <PacketIcon icon={Paperclip} tone={supportingFiles.length > 0 ? "emerald" : "violet"} />
-                <span className="min-w-0 flex-1">
-                  <span className="block text-sm font-bold text-stone-950">Text files</span>
-                  <span className="mt-1 block truncate text-sm text-stone-500">
-                    {supportingFiles.length > 0 ? `${supportingFiles.length} selected` : "Optional attachments"}
-                  </span>
-                </span>
-              </span>
-            </label>
+            <div className="flex items-center gap-2 border-t border-slate-100 pt-1">
+              {isRecording ? (
+                <Button type="button" size="icon" onClick={stopRecording} className="rounded-xl bg-red-600 text-white hover:bg-red-700" title="Stop recording">
+                  <Square className="h-4 w-4" />
+                </Button>
+              ) : (
+                <Button type="button" size="icon" variant="outline" onClick={startRecording} className="rounded-xl border-slate-200 bg-white text-slate-700" title="Record voice note">
+                  <Mic className="h-4 w-4" />
+                </Button>
+              )}
 
-            <div className="rounded-2xl border border-stone-200 bg-white p-4 shadow-sm">
-              <div className="flex items-start gap-3">
-                <PacketIcon icon={FileAudio} tone={voiceNote ? "emerald" : "sky"} />
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-sm font-bold text-stone-950">Voice note</span>
-                    {isRecording ? (
-                      <Button type="button" size="sm" onClick={stopRecording} className="rounded-xl bg-red-600 hover:bg-red-700">
-                        <Square className="h-4 w-4" />
-                        Stop
-                      </Button>
-                    ) : (
-                      <div className="flex items-center gap-1.5">
-                        <label className="inline-flex h-8 cursor-pointer items-center justify-center gap-1.5 rounded-xl border border-stone-200 bg-white px-2.5 text-xs font-bold text-stone-700 shadow-xs transition-colors hover:bg-stone-100">
-                          <input
-                            type="file"
-                            accept="audio/*,.webm,.m4a,.mp3,.mp4,.mpeg,.mpga,.wav,.ogg"
-                            className="sr-only"
-                            onChange={(event) => setVoiceNote(event.target.files?.[0] || null)}
-                          />
-                          <Upload className="h-3.5 w-3.5" />
-                          Audio
-                        </label>
-                        <Button type="button" size="sm" variant="outline" onClick={startRecording} className="rounded-xl border-stone-200">
-                          <Mic className="h-4 w-4" />
-                          Record
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-                  <FileSummary file={voiceNote} fallback="Optional" onRemove={() => setVoiceNote(null)} />
-                </div>
+              <p className="text-xs font-medium text-slate-500">Drop or click the upload area for source files.</p>
+            </div>
+
+            {(voiceNote || supportingFiles.length > 0) && (
+              <div className="flex flex-wrap gap-2">
+                {voiceNote && (
+                  <SourceChip
+                    icon={FileAudio}
+                    label={`${voiceNote.name} · ${fileSizeLabel(voiceNote.size)}`}
+                    tone="amber"
+                    onRemove={() => setVoiceNote(null)}
+                  />
+                )}
+                {supportingFiles.map((file) => (
+                  <SourceChip
+                    key={`${file.name}-${file.lastModified}`}
+                    icon={FileText}
+                    label={`${file.name} · ${fileSizeLabel(file.size)}`}
+                    tone="slate"
+                    onRemove={() => setSupportingFiles((files) => files.filter((item) => item !== file))}
+                  />
+                ))}
               </div>
-            </div>
-          </div>
+            )}
 
-          {error && (
-            <div className="flex items-start gap-2 rounded-2xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-              <span>{error}</span>
-            </div>
-          )}
+            {error && (
+              <div className="flex items-start gap-2 rounded-2xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+                <span>{error}</span>
+              </div>
+            )}
 
-          <div className="rounded-2xl border border-stone-200 bg-white p-3 shadow-sm">
             <Button
               type="button"
               onClick={submit}
               disabled={isSubmitting}
-              className="w-full rounded-xl bg-stone-950 py-6 text-base font-bold text-white shadow-md transition-all hover:bg-amber-600"
+              className="w-full rounded-xl bg-slate-950 py-6 text-base font-bold text-white shadow-md transition hover:bg-amber-600"
             >
               {isSubmitting ? <Loader2 className="h-5 w-5 animate-spin" /> : <Sparkles className="h-5 w-5" />}
-              Generate filled PDF
+              Generate
             </Button>
           </div>
         </section>
 
-        <section className="overflow-hidden rounded-[1.5rem] border border-stone-200 bg-white shadow-xl shadow-stone-200/70 xl:sticky xl:top-28 xl:self-start">
-          <div className="border-b border-stone-200 bg-stone-950 px-5 py-4 text-white">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-normal text-stone-300">Review workspace</p>
-                <h2 className="mt-1 text-xl font-bold !tracking-normal !text-white">Filled form and gaps</h2>
-              </div>
-              {pdfUrl && (
-                <Button asChild type="button" variant="secondary" className="rounded-xl bg-white text-stone-950 hover:bg-stone-100">
-                  <a href={pdfUrl} download={result?.fileName || "filled-form.pdf"}>
-                    <Download className="h-4 w-4" />
-                    Download PDF
-                  </a>
-                </Button>
-              )}
-            </div>
-          </div>
+        <section className="value-card flex min-h-[680px] flex-col overflow-hidden !rounded-2xl bg-white shadow-sm">
+          <div className="flex min-h-14 items-center justify-between gap-3 border-b border-slate-100 px-4 py-3">
+            <h2 className="text-lg font-bold !tracking-normal !text-slate-950">Filled PDF</h2>
 
-          <div className="grid grid-cols-2 gap-2 border-b border-stone-200 bg-white p-4 sm:grid-cols-4">
-            <MetricTile label="Fields" value={fieldCount || "—"} tone="stone" />
-            <MetricTile label="Filled" value={filledCount || "—"} tone="emerald" />
-            <MetricTile label="Matched" value={attemptedCount || "—"} tone="sky" />
-            <MetricTile label="Rate" value={fieldCount ? `${fillRate}%` : "—"} tone="amber" />
+            {pdfUrl && result && (
+              <div className="flex items-center gap-3 text-sm">
+                <span className="inline-flex items-center gap-1.5 font-semibold text-emerald-700">
+                  <Check className="h-4 w-4" />
+                  {filledCount} / {fieldCount || "?"} filled
+                </span>
+                <span className="hidden text-slate-300 sm:inline">·</span>
+                <a
+                  href={pdfUrl}
+                  download={result.fileName || "filled-form.pdf"}
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white transition hover:bg-emerald-700"
+                >
+                  <Download className="h-3.5 w-3.5" />
+                  Download
+                </a>
+              </div>
+            )}
           </div>
 
           {!result && (
-            <div className="grid gap-4 p-4 lg:grid-cols-[0.92fr_1.08fr]">
-              <div className="rounded-2xl border border-stone-200 bg-stone-50 p-4">
-                <div className="mb-3 flex items-center gap-2">
-                  <Layers className="h-4 w-4 text-stone-600" />
-                  <h3 className="text-sm font-bold !tracking-normal !text-stone-900">Workflow</h3>
-                </div>
-                <div className="relative overflow-hidden rounded-2xl border border-stone-200 bg-white">
-                  <div className="absolute left-[2.125rem] top-6 bottom-6 w-px bg-stone-200" aria-hidden="true" />
-                  {workflow.map((step) => (
-                    <WorkflowStep key={step.title} {...step} />
-                  ))}
-                </div>
-              </div>
-
-              <div className="flex min-h-[360px] items-center justify-center rounded-2xl border border-dashed border-stone-300 bg-stone-50 p-8 text-center">
-                <div>
-                  {isSubmitting ? (
-                    <Loader2 className="mx-auto mb-4 h-10 w-10 animate-spin text-amber-600" />
-                  ) : (
-                    <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-white text-stone-300 shadow-sm">
-                      <FileText className="h-8 w-8" />
-                    </div>
-                  )}
-                  <p className="text-sm font-bold text-stone-800">
-                    {isSubmitting ? "Building the filled PDF..." : "Waiting for a case packet"}
-                  </p>
-                  <p className="mx-auto mt-1 max-w-xs text-xs leading-relaxed text-stone-500">
-                    {isSubmitting
-                      ? "The agent is inspecting fields, extracting evidence, and leaving risky fields blank."
-                      : "Upload a fillable PDF, add source material, then generate the editable output."}
-                  </p>
-                </div>
-              </div>
+            <div className="flex flex-1 items-center justify-center bg-[#fbf7ef]/70 p-10">
+              {isSubmitting ? (
+                <Loader2 className="h-10 w-10 animate-spin text-amber-600" />
+              ) : (
+                <EmptyPdfGhost />
+              )}
             </div>
           )}
 
           {result && !pdfUrl && <ResultNotice result={result} />}
 
           {pdfUrl && result && (
-            <div>
+            <>
               <iframe
                 src={pdfUrl}
                 title="Filled PDF preview"
-                className="h-[52vh] min-h-[420px] w-full border-b border-stone-200 bg-stone-100"
+                className="min-h-[560px] flex-1 border-0 bg-slate-100"
               />
 
-              <div className="grid grid-cols-1 gap-3 bg-stone-50 p-4 lg:grid-cols-2">
-                {result.summary?.warnings && result.summary.warnings.length > 0 && (
-                  <FieldAuditList
-                    title="Warnings"
-                    icon={AlertTriangle}
-                    tone="amber"
-                    empty="No warnings."
-                    items={result.summary.warnings.slice(0, 6).map((warning) => ({
-                      key: warning,
-                      primary: warning,
-                    }))}
-                  />
+              <div className="border-t border-slate-100 bg-white">
+                <button
+                  type="button"
+                  onClick={() => setDetailsOpen((open) => !open)}
+                  className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left transition hover:bg-slate-50"
+                >
+                  <span className="min-w-0">
+                    <span className="block text-sm font-bold text-slate-900">Field details</span>
+                    <span className="block truncate text-xs text-slate-500">
+                      {appliedFields.length} filled · {unfilledFields.length} unfilled · {warnings.length} warnings
+                    </span>
+                  </span>
+                  <ChevronDown className={cn("h-4 w-4 shrink-0 text-slate-400 transition", detailsOpen && "rotate-180")} />
+                </button>
+
+                {detailsOpen && (
+                  <div className="grid max-h-72 grid-cols-1 gap-3 overflow-y-auto border-t border-slate-100 bg-[#fbf7ef] p-4 md:grid-cols-3">
+                    <DetailSection
+                      title="Filled in"
+                      icon={CheckCircle2}
+                      tone="emerald"
+                      empty="No fields were filled."
+                      items={appliedFields.slice(0, 14).map((field) => ({
+                        key: `${field.fieldName}-${field.value}`,
+                        primary: field.fieldName,
+                        secondary: field.value,
+                      }))}
+                    />
+                    <DetailSection
+                      title="Needs input"
+                      icon={FileText}
+                      tone="stone"
+                      empty="No missing fields were reported."
+                      items={unfilledFields.slice(0, 14).map((field) => ({
+                        key: field.fieldName,
+                        primary: field.fieldName,
+                        secondary: field.followUpQuestion || field.reason,
+                      }))}
+                    />
+                    <DetailSection
+                      title="Warnings"
+                      icon={AlertTriangle}
+                      tone="amber"
+                      empty="No warnings."
+                      items={warnings.slice(0, 10).map((warning) => ({
+                        key: warning,
+                        primary: warning,
+                      }))}
+                    />
+                  </div>
                 )}
-
-                <FieldAuditList
-                  title="Applied fields"
-                  icon={CheckCircle2}
-                  tone="emerald"
-                  empty="No fields were applied."
-                  items={(result.appliedFields || []).slice(0, 12).map((field) => ({
-                    key: `${field.fieldName}-${field.value}`,
-                    primary: field.fieldName,
-                    secondary: field.value,
-                  }))}
-                />
-
-                <FieldAuditList
-                  title="Remaining gaps"
-                  icon={AlertTriangle}
-                  tone="stone"
-                  empty="No remaining gaps were reported."
-                  items={(result.unfilledFields || []).slice(0, 12).map((field) => ({
-                    key: field.fieldName,
-                    primary: field.fieldName,
-                    secondary: field.followUpQuestion || field.reason,
-                  }))}
-                />
               </div>
-            </div>
+            </>
           )}
         </section>
       </div>

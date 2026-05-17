@@ -1,6 +1,12 @@
 import { NextResponse } from "next/server";
 import OpenAI, { toFile } from "openai";
-import { fillPdfForm, inspectPdfForm, type FieldFillInput, type PdfFieldDescriptor } from "@/lib/insurance/pdf-autofill";
+import {
+  extractPdfTextPreview,
+  fillPdfForm,
+  inspectPdfForm,
+  type FieldFillInput,
+  type PdfFieldDescriptor,
+} from "@/lib/insurance/pdf-autofill";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -109,6 +115,16 @@ async function readSupportingFiles(files: File[]): Promise<{ contextBlocks: stri
       continue;
     }
 
+    if (isPdf(file)) {
+      const text = await extractPdfTextPreview(new Uint8Array(await file.arrayBuffer()));
+      if (text.trim()) {
+        contextBlocks.push(`<pdf_source name="${file.name}">\n${limitText(text, 7000)}\n</pdf_source>`);
+      } else {
+        warnings.push(`${file.name} did not expose readable text; paste its contents into notes if needed.`);
+      }
+      continue;
+    }
+
     if (!isTextLike(file)) {
       warnings.push(`${file.name} was not parsed; upload text, markdown, CSV, JSON, EML, or paste its contents into notes.`);
       continue;
@@ -130,6 +146,14 @@ function fieldListForModel(fields: PdfFieldDescriptor[]): PdfFieldDescriptor[] {
       type: field.type,
       options: field.options,
       readOnly: field.readOnly,
+      visualOrder: field.visualOrder,
+      nameHints: field.nameHints,
+      isMessyName: field.isMessyName,
+      pageIndex: field.pageIndex,
+      position: field.position,
+      rect: field.rect,
+      widgets: field.widgets,
+      nearbyText: field.nearbyText,
     }));
 }
 
@@ -160,7 +184,7 @@ export async function POST(request: Request) {
     if (descriptor.fieldCount === 0) {
       return NextResponse.json({
         status: "no_fillable_fields",
-        message: "This PDF does not expose fillable AcroForm fields.",
+        message: "This PDF exposes readable text but no fillable AcroForm fields. To write values into flat or scanned PDFs, this needs an overlay/OCR fill path rather than field-based filling.",
         document: descriptor,
       });
     }
@@ -215,13 +239,15 @@ export async function POST(request: Request) {
       messages: [
         {
           role: "system",
-          content: `You are a careful insurance-brokerage PDF form filling agent.
+          content: `You are a careful PDF form filling agent.
 
 Map user-provided evidence into the exact PDF field names supplied by the application.
 
 Rules:
 - Use only fieldName values from the supplied PDF field list.
-- Do not invent facts, policy numbers, tax IDs, signatures, initials, or legal attestations.
+- Field names may be generated, cryptic, or nested. Use visualOrder, pageIndex, position, rect, widgets, nameHints, options, and PDF page text to infer what each field represents.
+- For cryptic names such as f1_01, c1_1, or topmostSubform paths, prefer visual reading order and nearby page text over the literal name.
+- Do not invent facts, account numbers, tax IDs, signatures, initials, or legal attestations.
 - Fill a field only when the evidence directly supports it.
 - Use concise values that belong in a PDF field, not prose.
 - For checkbox fields, return true or false only when the evidence clearly answers the checkbox.
@@ -245,7 +271,14 @@ Rules:
         {
           role: "user",
           content: `PDF metadata:
-${JSON.stringify({ title: descriptor.title, author: descriptor.author, subject: descriptor.subject, fieldCount: descriptor.fieldCount, omittedFieldCount }, null, 2)}
+${JSON.stringify({ title: descriptor.title, author: descriptor.author, subject: descriptor.subject, fieldCount: descriptor.fieldCount, omittedFieldCount, fieldNameQuality: descriptor.fieldNameQuality }, null, 2)}
+
+PDF page text and dimensions:
+${JSON.stringify(
+  descriptor.pages.slice(0, 8).map(({ textLines: _textLines, ...page }) => page),
+  null,
+  2
+)}
 
 Fillable PDF fields:
 ${JSON.stringify(modelFields, null, 2)}
