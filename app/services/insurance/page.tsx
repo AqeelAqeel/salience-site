@@ -27,6 +27,7 @@ import {
   MessageCircle,
   Smartphone,
   Calendar,
+  WandSparkles,
 } from 'lucide-react';
 
 const QUOTE_LOGOS: WordOrbitLogo[] = [
@@ -109,6 +110,12 @@ export default function InsurancePage() {
                     <ArrowRight className="ml-2 w-5 h-5" />
                   </Button>
                 </a>
+                <Link href="/services/insurance/form-fill">
+                  <Button variant="outline" className="cta-outline px-7 py-5 text-base font-semibold rounded-xl">
+                    Try PDF autofill
+                    <WandSparkles className="ml-2 w-5 h-5" />
+                  </Button>
+                </Link>
                 <Link href="#salient-system">
                   <Button variant="outline" className="cta-outline px-7 py-5 text-base font-semibold rounded-xl">
                     See the system

@@ -1,0 +1,4 @@
+interface:
+  display_name: "PDF Form Autofill"
+  short_description: "Extract notes into uploaded PDFs"
+  default_prompt: "Use this workflow to inspect an uploaded fillable PDF, extract field values from notes or transcripts, fill safe matches, and report remaining gaps."
