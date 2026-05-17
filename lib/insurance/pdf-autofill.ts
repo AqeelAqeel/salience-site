@@ -6,6 +6,7 @@ import {
   PDFRadioGroup,
   PDFTextField,
   StandardFonts,
+  rgb,
 } from "pdf-lib";
 
 export type PdfFieldKind =
@@ -74,13 +75,45 @@ export interface FieldFillInput {
 
 export interface AppliedFieldFill {
   fieldName: string;
-  type: PdfFieldKind;
+  type: PdfFieldKind | "overlay_text" | "overlay_checkbox";
   value: string;
 }
 
 export interface SkippedFieldFill {
   fieldName: string;
   reason: string;
+}
+
+export interface PdfPageImageDescriptor {
+  pageIndex: number;
+  width: number;
+  height: number;
+  scale: number;
+  mimeType: "image/png";
+  dataUrl: string;
+}
+
+export interface PdfOverlayInput {
+  label: string;
+  value: string | number | boolean | null;
+  pageIndex: number;
+  x: number;
+  y: number;
+  width?: number;
+  height?: number;
+  fontSize?: number;
+  kind?: "text" | "checkbox";
+  confidence?: number;
+}
+
+async function loadPdfJs() {
+  const [pdfjs, worker] = await Promise.all([
+    import("pdfjs-dist/legacy/build/pdf.mjs"),
+    import("pdfjs-dist/legacy/build/pdf.worker.mjs"),
+  ]);
+
+  (globalThis as typeof globalThis & { pdfjsWorker?: typeof worker }).pdfjsWorker = worker;
+  return pdfjs;
 }
 
 function getFieldType(field: unknown): PdfFieldKind {
@@ -257,10 +290,9 @@ function getNearbyText(
 
 async function extractPdfPages(pdfBytes: Uint8Array): Promise<PdfPageDescriptor[]> {
   try {
-    const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
+    const pdfjs = await loadPdfJs();
     const loadingTask = pdfjs.getDocument({
       data: new Uint8Array(pdfBytes),
-      disableWorker: true,
       useSystemFonts: true,
     } as Parameters<typeof pdfjs.getDocument>[0]);
     const pdf = await loadingTask.promise;
@@ -324,6 +356,43 @@ export async function extractPdfTextPreview(pdfBytes: Uint8Array): Promise<strin
     .filter((page) => page.textPreview.trim())
     .map((page) => `<page index="${page.pageIndex + 1}">\n${page.textPreview}\n</page>`)
     .join("\n\n");
+}
+
+export async function renderPdfPageImages(
+  pdfBytes: Uint8Array,
+  options: { maxPages?: number; scale?: number } = {}
+): Promise<PdfPageImageDescriptor[]> {
+  const maxPages = options.maxPages ?? 4;
+  const scale = options.scale ?? 1.25;
+
+  const [{ createCanvas }, pdfjs] = await Promise.all([import("@napi-rs/canvas"), loadPdfJs()]);
+  const pdf = await pdfjs.getDocument({
+    data: new Uint8Array(pdfBytes),
+    useSystemFonts: true,
+  } as Parameters<typeof pdfjs.getDocument>[0]).promise;
+  const images: PdfPageImageDescriptor[] = [];
+
+  for (let pageNumber = 1; pageNumber <= Math.min(pdf.numPages, maxPages); pageNumber++) {
+    const page = await pdf.getPage(pageNumber);
+    const viewport = page.getViewport({ scale });
+    const canvas = createCanvas(Math.ceil(viewport.width), Math.ceil(viewport.height));
+    const context = canvas.getContext("2d");
+    await page.render({
+      canvasContext: context,
+      viewport,
+    } as unknown as Parameters<typeof page.render>[0]).promise;
+
+    images.push({
+      pageIndex: pageNumber - 1,
+      width: viewport.width,
+      height: viewport.height,
+      scale,
+      mimeType: "image/png",
+      dataUrl: `data:image/png;base64,${canvas.toBuffer("image/png").toString("base64")}`,
+    });
+  }
+
+  return images;
 }
 
 export async function inspectPdfForm(pdfBytes: Uint8Array): Promise<PdfDocumentDescriptor> {
@@ -509,6 +578,117 @@ export async function fillPdfForm(
 
   return {
     pdfBytes: savedBytes,
+    applied,
+    skipped,
+  };
+}
+
+function normalizeCoordinate(value: number): number {
+  if (!Number.isFinite(value)) return 0;
+  return Math.min(1, Math.max(0, value));
+}
+
+function wrapText(
+  text: string,
+  maxWidth: number,
+  font: Awaited<ReturnType<PDFDocument["embedFont"]>>,
+  fontSize: number
+): string[] {
+  const words = text.split(/\s+/).filter(Boolean);
+  const lines: string[] = [];
+  let current = "";
+
+  for (const word of words) {
+    const next = current ? `${current} ${word}` : word;
+    if (font.widthOfTextAtSize(next, fontSize) <= maxWidth || !current) {
+      current = next;
+    } else {
+      lines.push(current);
+      current = word;
+    }
+  }
+
+  if (current) lines.push(current);
+  return lines.slice(0, 4);
+}
+
+export async function fillPdfOverlay(
+  pdfBytes: Uint8Array,
+  requestedOverlays: PdfOverlayInput[]
+): Promise<{
+  pdfBytes: Uint8Array;
+  applied: AppliedFieldFill[];
+  skipped: SkippedFieldFill[];
+}> {
+  const pdfDoc = await PDFDocument.load(pdfBytes, { ignoreEncryption: true });
+  const pages = pdfDoc.getPages();
+  const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+  const applied: AppliedFieldFill[] = [];
+  const skipped: SkippedFieldFill[] = [];
+
+  for (const overlay of requestedOverlays) {
+    const page = pages[overlay.pageIndex];
+    const fieldName = overlay.label || `Overlay ${applied.length + skipped.length + 1}`;
+    const rawValue = stringifyValue(overlay.value);
+
+    if (!page) {
+      skipped.push({ fieldName, reason: "Page not found" });
+      continue;
+    }
+
+    if (!rawValue) {
+      skipped.push({ fieldName, reason: "No value provided" });
+      continue;
+    }
+
+    const { width: pageWidth, height: pageHeight } = page.getSize();
+    const fontSize = Math.min(14, Math.max(7, overlay.fontSize || 10));
+    const x = normalizeCoordinate(overlay.x) * pageWidth;
+    const yFromTop = normalizeCoordinate(overlay.y) * pageHeight;
+    const y = pageHeight - yFromTop - fontSize * 0.75;
+    const maxWidth = Math.max(24, normalizeCoordinate(overlay.width ?? 0.28) * pageWidth);
+    const color = rgb(0.05, 0.08, 0.14);
+
+    try {
+      if (overlay.kind === "checkbox") {
+        const mark = toBoolean(overlay.value) ? "X" : "";
+        if (!mark) {
+          skipped.push({ fieldName, reason: "Checkbox value was not affirmative" });
+          continue;
+        }
+        page.drawText(mark, {
+          x,
+          y,
+          size: fontSize + 1,
+          font,
+          color,
+        });
+        applied.push({ fieldName, type: "overlay_checkbox", value: rawValue });
+        continue;
+      }
+
+      const lines = wrapText(rawValue, maxWidth, font, fontSize);
+      lines.forEach((line, index) => {
+        page.drawText(line, {
+          x,
+          y: y - index * (fontSize + 2),
+          size: fontSize,
+          font,
+          color,
+          maxWidth,
+        });
+      });
+      applied.push({ fieldName, type: "overlay_text", value: rawValue });
+    } catch (error) {
+      skipped.push({
+        fieldName,
+        reason: error instanceof Error ? error.message : "Failed to draw overlay",
+      });
+    }
+  }
+
+  return {
+    pdfBytes: await pdfDoc.save(),
     applied,
     skipped,
   };

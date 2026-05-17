@@ -2,10 +2,13 @@ import { NextResponse } from "next/server";
 import OpenAI, { toFile } from "openai";
 import {
   extractPdfTextPreview,
+  fillPdfOverlay,
   fillPdfForm,
   inspectPdfForm,
+  renderPdfPageImages,
   type FieldFillInput,
   type PdfFieldDescriptor,
+  type PdfOverlayInput,
 } from "@/lib/insurance/pdf-autofill";
 
 export const runtime = "nodejs";
@@ -15,6 +18,7 @@ const MAX_TEMPLATE_BYTES = 12 * 1024 * 1024;
 const MAX_CONTEXT_BYTES = 3 * 1024 * 1024;
 const MAX_CONTEXT_CHARS = 18000;
 const MAX_FIELDS_FOR_MODEL = 320;
+const MAX_FLAT_OVERLAY_PAGES = 4;
 
 interface ModelFieldValue {
   fieldName: string;
@@ -33,6 +37,32 @@ interface ModelUnfilledField {
 interface ModelAutofillResponse {
   documentTitle?: string;
   fieldValues?: ModelFieldValue[];
+  unfilledFields?: ModelUnfilledField[];
+  summary?: {
+    extractedFacts?: string[];
+    assumptions?: string[];
+    warnings?: string[];
+  };
+}
+
+interface ModelOverlayValue {
+  label: string;
+  value: string | number | boolean | null;
+  pageIndex: number;
+  x: number;
+  y: number;
+  width?: number;
+  height?: number;
+  fontSize?: number;
+  kind?: "text" | "checkbox";
+  confidence: number;
+  sourceQuote?: string;
+  reasoning?: string;
+}
+
+interface ModelOverlayResponse {
+  documentTitle?: string;
+  overlays?: ModelOverlayValue[];
   unfilledFields?: ModelUnfilledField[];
   summary?: {
     extractedFacts?: string[];
@@ -79,13 +109,13 @@ function cleanJson(raw: string): string {
     .trim();
 }
 
-function parseModelJson(raw: string): ModelAutofillResponse {
+function parseModelJson<T = ModelAutofillResponse>(raw: string): T {
   try {
-    return JSON.parse(cleanJson(raw)) as ModelAutofillResponse;
+    return JSON.parse(cleanJson(raw)) as T;
   } catch {
     const match = raw.match(/\{[\s\S]*\}/);
     if (match) {
-      return JSON.parse(match[0]) as ModelAutofillResponse;
+      return JSON.parse(match[0]) as T;
     }
     throw new Error("The model did not return valid JSON.");
   }
@@ -162,6 +192,165 @@ function outputFileName(inputName: string): string {
   return `${withoutPdf || "filled-form"}-filled.pdf`;
 }
 
+function isForbiddenOverlayLabel(label: string): boolean {
+  return /\b(signature|sign here|initials?|attestation|certification|perjury)\b/i.test(label);
+}
+
+function clampUnit(value: unknown): number | null {
+  const number = typeof value === "number" ? value : Number(value);
+  if (!Number.isFinite(number)) return null;
+  return Math.min(1, Math.max(0, number));
+}
+
+async function fillFlatPdfOverlay({
+  openai,
+  templateBytes,
+  templateName,
+  descriptor,
+  contextBlocks,
+  warnings,
+}: {
+  openai: OpenAI;
+  templateBytes: Uint8Array;
+  templateName: string;
+  descriptor: Awaited<ReturnType<typeof inspectPdfForm>>;
+  contextBlocks: string[];
+  warnings: string[];
+}) {
+  const pageImages = await renderPdfPageImages(templateBytes, {
+    maxPages: MAX_FLAT_OVERLAY_PAGES,
+    scale: 1.25,
+  });
+
+  if (pageImages.length === 0) {
+    return NextResponse.json({
+      status: "no_fillable_fields",
+      message: "This PDF has no fillable fields, and its pages could not be rendered for overlay filling.",
+      document: descriptor,
+      summary: {
+        warnings,
+      },
+    });
+  }
+
+  const pageSummaries = descriptor.pages
+    .slice(0, MAX_FLAT_OVERLAY_PAGES)
+    .map(({ textLines: _textLines, ...page }) => page);
+
+  const response = await openai.chat.completions.create({
+    model: process.env.PDF_OVERLAY_MODEL || process.env.PDF_AUTOFILL_MODEL || "gpt-4o",
+    temperature: 0.05,
+    response_format: { type: "json_object" },
+    messages: [
+      {
+        role: "system",
+        content: `You are a careful PDF overlay form filling agent.
+
+The PDF has no fillable AcroForm fields. You must propose text overlays on top of the original PDF pages.
+
+Rules:
+- Use only evidence supplied by the user. Do not invent values.
+- Never overlay signatures, initials, attestations, or certification/perjury confirmations.
+- Do not overlay tax IDs, account numbers, legal identifiers, or similar sensitive identifiers unless explicitly provided.
+- Use normalized coordinates from the TOP-LEFT of the page image: x and y must be between 0 and 1.
+- Put x/y inside the blank answer area, not on top of field labels.
+- Use the page images as the source of layout truth. Use page text only as helper context when available.
+- For checkboxes, use kind "checkbox", value true, and place x/y near the center of the target box.
+- Return JSON only, with this shape:
+{
+  "documentTitle": "human readable form name",
+  "overlays": [
+    { "label": "visible field label", "value": "value to draw", "pageIndex": 0, "x": 0.1, "y": 0.2, "width": 0.3, "height": 0.03, "fontSize": 10, "kind": "text", "confidence": 0.0, "sourceQuote": "short evidence quote", "reasoning": "short placement reason" }
+  ],
+  "unfilledFields": [
+    { "fieldName": "visible field label", "reason": "why missing", "followUpQuestion": "one concise question" }
+  ],
+  "summary": {
+    "extractedFacts": ["important facts used"],
+    "assumptions": [],
+    "warnings": ["placement risks or low-confidence items"]
+  }
+}`,
+      },
+      {
+        role: "user",
+        content: [
+          {
+            type: "text",
+            text: `PDF metadata:
+${JSON.stringify({ title: descriptor.title, author: descriptor.author, subject: descriptor.subject, pageCount: descriptor.pages.length }, null, 2)}
+
+PDF page text and dimensions:
+${JSON.stringify(pageSummaries, null, 2)}
+
+Evidence:
+${contextBlocks.join("\n\n")}`,
+          },
+          ...pageImages.map((image) => ({
+            type: "image_url" as const,
+            image_url: {
+              url: image.dataUrl,
+              detail: "high" as const,
+            },
+          })),
+        ],
+      },
+    ],
+  });
+
+  const raw = response.choices[0]?.message?.content || "{}";
+  const parsed = parseModelJson<ModelOverlayResponse>(raw);
+  const requestedOverlays: PdfOverlayInput[] = [];
+
+  for (const overlay of parsed.overlays || []) {
+    if (!overlay.label || isForbiddenOverlayLabel(overlay.label)) continue;
+    if (typeof overlay.confidence === "number" && overlay.confidence < 0.5) continue;
+
+    const x = clampUnit(overlay.x);
+    const y = clampUnit(overlay.y);
+    if (x === null || y === null) continue;
+
+    requestedOverlays.push({
+      label: overlay.label,
+      value: overlay.value,
+      pageIndex: Math.max(0, Math.min(pageImages.length - 1, Math.floor(Number(overlay.pageIndex) || 0))),
+      x,
+      y,
+      width: clampUnit(overlay.width) ?? 0.28,
+      height: clampUnit(overlay.height) ?? undefined,
+      fontSize: overlay.fontSize,
+      kind: overlay.kind === "checkbox" ? "checkbox" : "text",
+      confidence: overlay.confidence,
+    });
+  }
+
+  const filled = await fillPdfOverlay(templateBytes, requestedOverlays);
+  const pdfBase64 = Buffer.from(filled.pdfBytes).toString("base64");
+
+  return NextResponse.json({
+    status: "filled",
+    mode: "flat_overlay",
+    fileName: outputFileName(templateName),
+    pdfBase64,
+    mimeType: "application/pdf",
+    document: descriptor,
+    attemptedCount: requestedOverlays.length,
+    filledCount: filled.applied.length,
+    appliedFields: filled.applied,
+    skippedFields: filled.skipped,
+    unfilledFields: parsed.unfilledFields || [],
+    summary: {
+      extractedFacts: parsed.summary?.extractedFacts || [],
+      assumptions: parsed.summary?.assumptions || [],
+      warnings: [
+        "Flat PDF overlay mode was used because this PDF has no fillable fields. Review placement before sending.",
+        ...(parsed.summary?.warnings || []),
+        ...warnings,
+      ],
+    },
+  });
+}
+
 export async function POST(request: Request) {
   try {
     const formData = await request.formData();
@@ -171,7 +360,7 @@ export async function POST(request: Request) {
     const supportingFiles = formData.getAll("supportingFiles").filter(isFile);
 
     if (!isFile(template) || !isPdf(template)) {
-      return NextResponse.json({ error: "Upload a fillable PDF template." }, { status: 400 });
+      return NextResponse.json({ error: "Upload a PDF template." }, { status: 400 });
     }
 
     if (template.size > MAX_TEMPLATE_BYTES) {
@@ -181,19 +370,11 @@ export async function POST(request: Request) {
     const templateBytes = Buffer.from(await template.arrayBuffer());
     const descriptor = await inspectPdfForm(templateBytes);
 
-    if (descriptor.fieldCount === 0) {
-      return NextResponse.json({
-        status: "no_fillable_fields",
-        message: "This PDF exposes readable text but no fillable AcroForm fields. To write values into flat or scanned PDFs, this needs an overlay/OCR fill path rather than field-based filling.",
-        document: descriptor,
-      });
-    }
-
     if (!process.env.OPENAI_API_KEY) {
       return NextResponse.json(
         {
           status: "missing_api_key",
-          message: "OPENAI_API_KEY is required to extract notes into PDF fields.",
+          message: "OPENAI_API_KEY is required to extract notes into PDF fields or flat-PDF overlays.",
           document: descriptor,
         },
         { status: 200 }
@@ -227,6 +408,17 @@ export async function POST(request: Request) {
 
     if (contextBlocks.length === 0) {
       return NextResponse.json({ error: "Add notes, a transcript, a voice note, or a text attachment." }, { status: 400 });
+    }
+
+    if (descriptor.fieldCount === 0) {
+      return fillFlatPdfOverlay({
+        openai,
+        templateBytes,
+        templateName: template.name,
+        descriptor,
+        contextBlocks,
+        warnings,
+      });
     }
 
     const modelFields = fieldListForModel(descriptor.fields);

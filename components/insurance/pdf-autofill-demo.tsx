@@ -25,6 +25,7 @@ import { cn } from "@/lib/utils";
 
 interface AutofillResult {
   status: "filled" | "no_fillable_fields" | "missing_api_key";
+  mode?: "flat_overlay" | "acroform";
   message?: string;
   fileName?: string;
   pdfBase64?: string;
@@ -513,7 +514,7 @@ export default function PdfAutofillDemo() {
               <div className="flex items-center gap-3 text-sm">
                 <span className="inline-flex items-center gap-1.5 font-semibold text-emerald-700">
                   <Check className="h-4 w-4" />
-                  {filledCount} / {fieldCount || "?"} filled
+                  {result.mode === "flat_overlay" ? `${filledCount} overlays` : `${filledCount} / ${fieldCount || "?"} filled`}
                 </span>
                 <span className="hidden text-slate-300 sm:inline">·</span>
                 <a
@@ -542,6 +543,13 @@ export default function PdfAutofillDemo() {
 
           {pdfUrl && result && (
             <>
+              {result.mode === "flat_overlay" && (
+                <div className="flex items-start gap-2 border-b border-amber-100 bg-amber-50/80 px-4 py-2 text-xs font-semibold leading-relaxed text-amber-900">
+                  <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                  <span>Flat PDF overlay mode. Review placement before sending.</span>
+                </div>
+              )}
+
               <iframe
                 src={pdfUrl}
                 title="Filled PDF preview"
@@ -557,7 +565,7 @@ export default function PdfAutofillDemo() {
                   <span className="min-w-0">
                     <span className="block text-sm font-bold text-slate-900">Field details</span>
                     <span className="block truncate text-xs text-slate-500">
-                      {appliedFields.length} filled · {unfilledFields.length} unfilled · {warnings.length} warnings
+                      {appliedFields.length} {result.mode === "flat_overlay" ? "overlays" : "filled"} · {unfilledFields.length} unfilled · {warnings.length} warnings
                     </span>
                   </span>
                   <ChevronDown className={cn("h-4 w-4 shrink-0 text-slate-400 transition", detailsOpen && "rotate-180")} />
