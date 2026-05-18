@@ -12,8 +12,11 @@ import {
   FileAudio,
   FileText,
   Loader2,
+  Maximize2,
   Mic,
+  Minimize2,
   RefreshCcw,
+  ScanSearch,
   Sparkles,
   Square,
   Upload,
@@ -34,6 +37,20 @@ interface AutofillResult {
   filledCount?: number;
   document?: {
     fieldCount: number;
+    fieldNameQuality?: "semantic" | "mixed" | "messy";
+    fields?: Array<{
+      name: string;
+      type?: string;
+      readOnly?: boolean;
+      nearbyText?: string[];
+      visualOrder?: number;
+    }>;
+    pages?: Array<{
+      pageIndex: number;
+      width: number;
+      height: number;
+      textPreview?: string;
+    }>;
   };
   appliedFields?: Array<{ fieldName: string; value: string; type: string }>;
   skippedFields?: Array<{ fieldName: string; reason: string }>;
@@ -44,6 +61,13 @@ interface AutofillResult {
     warnings?: string[];
   };
   error?: string;
+}
+
+interface PdfInspectionResult {
+  status: "inspected";
+  mode: "flat_overlay" | "acroform";
+  message?: string;
+  document: NonNullable<AutofillResult["document"]>;
 }
 
 function base64ToBlobUrl(base64: string, mimeType = "application/pdf"): string {
@@ -182,34 +206,120 @@ export default function PdfAutofillDemo() {
   const [isRecording, setIsRecording] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isInspecting, setIsInspecting] = useState(false);
   const [detailsOpen, setDetailsOpen] = useState(false);
+  const [isPreviewFullscreen, setIsPreviewFullscreen] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [inspection, setInspection] = useState<PdfInspectionResult | null>(null);
   const [result, setResult] = useState<AutofillResult | null>(null);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+  const [templatePreviewUrl, setTemplatePreviewUrl] = useState<string | null>(null);
 
   const recorderRef = useRef<MediaRecorder | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const chunksRef = useRef<Blob[]>([]);
+  const inspectionRunRef = useRef(0);
 
   const appliedFields = result?.appliedFields || [];
   const unfilledFields = result?.unfilledFields || [];
   const warnings = result?.summary?.warnings || [];
   const filledCount = result?.filledCount || 0;
-  const fieldCount = result?.document?.fieldCount || 0;
+  const currentDocument = result?.document || inspection?.document || null;
+  const fieldCount = currentDocument?.fieldCount || 0;
+  const detectedFields = currentDocument?.fields || [];
+  const previewUrl = pdfUrl || templatePreviewUrl;
+  const previewLabel = pdfUrl ? "Filled PDF" : "Uploaded PDF";
+  const previewFileName = result?.fileName || template?.name || "document.pdf";
+
+  useEffect(() => {
+    return () => {
+      streamRef.current?.getTracks().forEach((track) => track.stop());
+    };
+  }, []);
 
   useEffect(() => {
     return () => {
       if (pdfUrl) URL.revokeObjectURL(pdfUrl);
-      streamRef.current?.getTracks().forEach((track) => track.stop());
     };
   }, [pdfUrl]);
+
+  useEffect(() => {
+    return () => {
+      if (templatePreviewUrl) URL.revokeObjectURL(templatePreviewUrl);
+    };
+  }, [templatePreviewUrl]);
+
+  useEffect(() => {
+    if (!isPreviewFullscreen) return;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setIsPreviewFullscreen(false);
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [isPreviewFullscreen]);
 
   function clearOutput() {
     setResult(null);
     setDetailsOpen(false);
-    if (pdfUrl) {
-      URL.revokeObjectURL(pdfUrl);
-      setPdfUrl(null);
+    setPdfUrl((current) => {
+      if (current) URL.revokeObjectURL(current);
+      return null;
+    });
+  }
+
+  function clearTemplatePreview() {
+    setTemplatePreviewUrl((current) => {
+      if (current) URL.revokeObjectURL(current);
+      return null;
+    });
+  }
+
+  function setPreviewForTemplate(file: File) {
+    setTemplatePreviewUrl((current) => {
+      if (current) URL.revokeObjectURL(current);
+      return URL.createObjectURL(file);
+    });
+  }
+
+  async function inspectTemplate(file: File) {
+    const runId = inspectionRunRef.current + 1;
+    inspectionRunRef.current = runId;
+    setIsInspecting(true);
+    setInspection(null);
+
+    try {
+      const formData = new FormData();
+      formData.append("template", file);
+      formData.append("intent", "inspect");
+
+      const response = await fetch("/api/insurance/pdf-autofill", {
+        method: "POST",
+        body: formData,
+      });
+      const data = (await response.json()) as PdfInspectionResult & { error?: string };
+
+      if (!response.ok) {
+        throw new Error(data.error || "PDF field scan failed.");
+      }
+
+      if (inspectionRunRef.current === runId) {
+        setInspection(data);
+      }
+    } catch (err) {
+      if (inspectionRunRef.current === runId) {
+        setError(err instanceof Error ? err.message : "PDF field scan failed.");
+      }
+    } finally {
+      if (inspectionRunRef.current === runId) {
+        setIsInspecting(false);
+      }
     }
   }
 
@@ -270,7 +380,8 @@ export default function PdfAutofillDemo() {
     const nonPdfs = incoming.filter((file) => !isPdf(file));
     const audioFiles = nonPdfs.filter(isAudio);
     const sourceFiles = nonPdfs.filter((file) => !isAudio(file));
-    const nextTemplate = pdfs[0] || template;
+    const uploadedTemplate = pdfs[0] || null;
+    const nextTemplate = uploadedTemplate || template;
     const nextVoiceNote = audioFiles[0] || voiceNote;
     const nextSupportingFiles = [
       ...supportingFiles,
@@ -283,6 +394,11 @@ export default function PdfAutofillDemo() {
     setSupportingFiles(nextSupportingFiles);
     setError(null);
     clearOutput();
+
+    if (uploadedTemplate) {
+      setPreviewForTemplate(uploadedTemplate);
+      void inspectTemplate(uploadedTemplate);
+    }
 
     if (nextTemplate && hasContext(notes, nextSupportingFiles, nextVoiceNote)) {
       void runAutofill(nextTemplate, notes, nextSupportingFiles, nextVoiceNote);
@@ -340,13 +456,18 @@ export default function PdfAutofillDemo() {
   }
 
   function reset() {
+    inspectionRunRef.current += 1;
     setTemplate(null);
     setNotes("");
     setSupportingFiles([]);
     setVoiceNote(null);
+    setInspection(null);
+    setIsInspecting(false);
+    setIsPreviewFullscreen(false);
     setIsDragging(false);
     setError(null);
     clearOutput();
+    clearTemplatePreview();
   }
 
   return (
@@ -407,8 +528,13 @@ export default function PdfAutofillDemo() {
                 <button
                   type="button"
                   onClick={() => {
+                    inspectionRunRef.current += 1;
                     setTemplate(null);
+                    setInspection(null);
+                    setIsInspecting(false);
+                    setIsPreviewFullscreen(false);
                     clearOutput();
+                    clearTemplatePreview();
                   }}
                   className="rounded-full p-1 text-emerald-600 transition hover:bg-white hover:text-emerald-800"
                   aria-label="Remove PDF"
@@ -437,6 +563,34 @@ export default function PdfAutofillDemo() {
                 <p className="text-sm font-bold text-slate-950">Drop PDF, notes, or files</p>
                 <p className="mt-1 text-xs text-slate-500">PDF becomes the form; other files become context.</p>
               </label>
+            )}
+
+            {template && (
+              <div className="rounded-2xl border border-slate-100 bg-white px-3 py-2">
+                <div className="flex items-center gap-2 text-xs font-bold text-slate-700">
+                  {isInspecting ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin text-amber-600" />
+                  ) : inspection ? (
+                    <Check className="h-3.5 w-3.5 text-emerald-600" />
+                  ) : (
+                    <ScanSearch className="h-3.5 w-3.5 text-slate-400" />
+                  )}
+                  <span>
+                    {isInspecting
+                      ? "Scanning PDF fields"
+                      : inspection?.mode === "flat_overlay"
+                        ? "No embedded fields; overlay mode ready"
+                        : inspection
+                          ? `${inspection.document.fieldCount} fields detected`
+                          : "Field scan queued"}
+                  </span>
+                </div>
+                {inspection?.document.fieldNameQuality && inspection.mode === "acroform" && (
+                  <p className="mt-1 text-xs font-medium text-slate-500">
+                    Field names look {inspection.document.fieldNameQuality}; nearby page text will guide matching.
+                  </p>
+                )}
+              </div>
             )}
 
             <Textarea
@@ -508,15 +662,34 @@ export default function PdfAutofillDemo() {
 
         <section className="value-card flex min-h-[680px] flex-col overflow-hidden !rounded-2xl bg-white shadow-sm">
           <div className="flex min-h-14 items-center justify-between gap-3 border-b border-slate-100 px-4 py-3">
-            <h2 className="text-lg font-bold !tracking-normal !text-slate-950">Filled PDF</h2>
+            <h2 className="text-lg font-bold !tracking-normal !text-slate-950">{previewUrl && !pdfUrl ? "Uploaded PDF" : "Filled PDF"}</h2>
 
-            {pdfUrl && result && (
-              <div className="flex items-center gap-3 text-sm">
-                <span className="inline-flex items-center gap-1.5 font-semibold text-emerald-700">
+            <div className="flex items-center gap-2 text-sm">
+              {result && (
+                <span className="hidden items-center gap-1.5 font-semibold text-emerald-700 sm:inline-flex">
                   <Check className="h-4 w-4" />
                   {result.mode === "flat_overlay" ? `${filledCount} overlays` : `${filledCount} / ${fieldCount || "?"} filled`}
                 </span>
-                <span className="hidden text-slate-300 sm:inline">·</span>
+              )}
+              {!result && (isInspecting || inspection) && (
+                <span className="hidden items-center gap-1.5 font-semibold text-slate-600 sm:inline-flex">
+                  {isInspecting ? <Loader2 className="h-4 w-4 animate-spin text-amber-600" /> : <ScanSearch className="h-4 w-4 text-amber-700" />}
+                  {isInspecting ? "scanning" : fieldCount > 0 ? `${fieldCount} fields` : "overlay mode"}
+                </span>
+              )}
+              {previewUrl && (
+                <button
+                  type="button"
+                  onClick={() => setIsPreviewFullscreen(true)}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-bold text-slate-700 transition hover:border-amber-200 hover:bg-amber-50"
+                  title="Expand PDF"
+                  aria-label="Expand PDF"
+                >
+                  <Maximize2 className="h-3.5 w-3.5" />
+                  <span className="hidden sm:inline">Expand</span>
+                </button>
+              )}
+              {pdfUrl && result && (
                 <a
                   href={pdfUrl}
                   download={result.fileName || "filled-form.pdf"}
@@ -525,13 +698,13 @@ export default function PdfAutofillDemo() {
                   <Download className="h-3.5 w-3.5" />
                   Download
                 </a>
-              </div>
-            )}
+              )}
+            </div>
           </div>
 
-          {!result && (
+          {!previewUrl && (
             <div className="flex flex-1 items-center justify-center bg-[#fbf7ef]/70 p-10">
-              {isSubmitting ? (
+              {isSubmitting || isInspecting ? (
                 <Loader2 className="h-10 w-10 animate-spin text-amber-600" />
               ) : (
                 <EmptyPdfGhost />
@@ -541,9 +714,20 @@ export default function PdfAutofillDemo() {
 
           {result && !pdfUrl && <ResultNotice result={result} />}
 
-          {pdfUrl && result && (
+          {previewUrl && (
             <>
-              {result.mode === "flat_overlay" && (
+              {!result && (isInspecting || inspection) && (
+                <div className="flex items-start gap-2 border-b border-slate-100 bg-[#fbf7ef] px-4 py-2 text-xs font-semibold leading-relaxed text-slate-700">
+                  {isInspecting ? <Loader2 className="mt-0.5 h-3.5 w-3.5 shrink-0 animate-spin text-amber-600" /> : <ScanSearch className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-700" />}
+                  <span>
+                    {isInspecting
+                      ? "Scanning the uploaded PDF for fields."
+                      : inspection?.message || `${fieldCount} PDF fields detected.`}
+                  </span>
+                </div>
+              )}
+
+              {result?.mode === "flat_overlay" && (
                 <div className="flex items-start gap-2 border-b border-amber-100 bg-amber-50/80 px-4 py-2 text-xs font-semibold leading-relaxed text-amber-900">
                   <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                   <span>Flat PDF overlay mode. Review placement before sending.</span>
@@ -551,11 +735,12 @@ export default function PdfAutofillDemo() {
               )}
 
               <iframe
-                src={pdfUrl}
-                title="Filled PDF preview"
+                src={previewUrl}
+                title={`${previewLabel} preview`}
                 className="min-h-[560px] flex-1 border-0 bg-slate-100"
               />
 
+              {(result || inspection) && (
               <div className="border-t border-slate-100 bg-white">
                 <button
                   type="button"
@@ -563,15 +748,19 @@ export default function PdfAutofillDemo() {
                   className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left transition hover:bg-slate-50"
                 >
                   <span className="min-w-0">
-                    <span className="block text-sm font-bold text-slate-900">Field details</span>
+                    <span className="block text-sm font-bold text-slate-900">{result ? "Field details" : "Field scan"}</span>
                     <span className="block truncate text-xs text-slate-500">
-                      {appliedFields.length} {result.mode === "flat_overlay" ? "overlays" : "filled"} · {unfilledFields.length} unfilled · {warnings.length} warnings
+                      {result
+                        ? `${appliedFields.length} ${result.mode === "flat_overlay" ? "overlays" : "filled"} · ${unfilledFields.length} unfilled · ${warnings.length} warnings`
+                        : fieldCount > 0
+                          ? `${fieldCount} detected fields · ${currentDocument?.fieldNameQuality || "unknown"} names`
+                          : "No embedded fields · overlay mode ready"}
                     </span>
                   </span>
                   <ChevronDown className={cn("h-4 w-4 shrink-0 text-slate-400 transition", detailsOpen && "rotate-180")} />
                 </button>
 
-                {detailsOpen && (
+                {detailsOpen && result && (
                   <div className="grid max-h-72 grid-cols-1 gap-3 overflow-y-auto border-t border-slate-100 bg-[#fbf7ef] p-4 md:grid-cols-3">
                     <DetailSection
                       title="Filled in"
@@ -607,11 +796,94 @@ export default function PdfAutofillDemo() {
                     />
                   </div>
                 )}
+
+                {detailsOpen && inspection && !result && (
+                  <div className="grid max-h-72 grid-cols-1 gap-3 overflow-y-auto border-t border-slate-100 bg-[#fbf7ef] p-4 md:grid-cols-3">
+                    <DetailSection
+                      title="Detected fields"
+                      icon={ScanSearch}
+                      tone="stone"
+                      empty="No embedded AcroForm fields were found."
+                      items={detectedFields.slice(0, 18).map((field) => ({
+                        key: field.name,
+                        primary: field.name,
+                        secondary: [
+                          field.type,
+                          field.readOnly ? "read-only" : null,
+                          field.nearbyText?.[0] ? `near: ${field.nearbyText[0]}` : null,
+                        ]
+                          .filter(Boolean)
+                          .join(" · "),
+                      }))}
+                    />
+                    <DetailSection
+                      title="Mode"
+                      icon={FileText}
+                      tone={inspection.mode === "flat_overlay" ? "amber" : "emerald"}
+                      empty="Mode unavailable."
+                      items={[
+                        {
+                          key: inspection.mode,
+                          primary: inspection.mode === "flat_overlay" ? "Flat overlay" : "Fillable fields",
+                          secondary:
+                            inspection.mode === "flat_overlay"
+                              ? "The fill step will use visual placement because the PDF has no embedded fields."
+                              : "The fill step will map evidence into the detected PDF fields.",
+                        },
+                      ]}
+                    />
+                    <DetailSection
+                      title="Pages"
+                      icon={FileText}
+                      tone="stone"
+                      empty="No page metadata was found."
+                      items={(currentDocument?.pages || []).slice(0, 8).map((page) => ({
+                        key: `page-${page.pageIndex}`,
+                        primary: `Page ${page.pageIndex + 1}`,
+                        secondary: `${Math.round(page.width)} × ${Math.round(page.height)}${page.textPreview ? " · text found" : ""}`,
+                      }))}
+                    />
+                  </div>
+                )}
               </div>
+              )}
             </>
           )}
         </section>
       </div>
+
+      {isPreviewFullscreen && previewUrl && (
+        <div className="fixed inset-0 z-[80] flex flex-col bg-white">
+          <div className="flex min-h-14 items-center justify-between gap-3 border-b border-slate-200 bg-white px-4 py-3">
+            <div className="min-w-0">
+              <p className="text-sm font-bold text-slate-950">{previewLabel}</p>
+              <p className="truncate text-xs font-medium text-slate-500">{previewFileName}</p>
+            </div>
+            <div className="flex items-center gap-2">
+              {pdfUrl && result && (
+                <a
+                  href={pdfUrl}
+                  download={result.fileName || "filled-form.pdf"}
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white transition hover:bg-emerald-700"
+                >
+                  <Download className="h-3.5 w-3.5" />
+                  Download
+                </a>
+              )}
+              <button
+                type="button"
+                onClick={() => setIsPreviewFullscreen(false)}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 transition hover:bg-slate-50"
+                aria-label="Close expanded PDF"
+              >
+                <Minimize2 className="h-3.5 w-3.5" />
+                Close
+              </button>
+            </div>
+          </div>
+          <iframe src={previewUrl} title={`${previewLabel} fullscreen preview`} className="min-h-0 flex-1 border-0 bg-slate-100" />
+        </div>
+      )}
     </div>
   );
 }

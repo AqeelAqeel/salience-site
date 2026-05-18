@@ -356,6 +356,7 @@ export async function POST(request: Request) {
   try {
     const formData = await request.formData();
     const template = formData.get("template");
+    const intent = String(formData.get("intent") || "fill");
     const notes = String(formData.get("notes") || "").trim();
     const voiceNote = formData.get("voiceNote");
     const supportingFiles = formData.getAll("supportingFiles").filter(isFile);
@@ -370,6 +371,21 @@ export async function POST(request: Request) {
 
     const templateBytes = Buffer.from(await template.arrayBuffer());
     const descriptor = await inspectPdfForm(templateBytes);
+
+    if (intent === "inspect") {
+      return NextResponse.json({
+        status: "inspected",
+        mode: descriptor.fieldCount === 0 ? "flat_overlay" : "acroform",
+        message:
+          descriptor.fieldCount === 0
+            ? "No embedded PDF fields found. Generation will use visual overlay mode when source context is available."
+            : `${descriptor.fieldCount} PDF fields detected.`,
+        document: {
+          ...descriptor,
+          fields: descriptor.fields.slice(0, 500),
+        },
+      });
+    }
 
     if (!process.env.OPENAI_API_KEY) {
       return NextResponse.json(
