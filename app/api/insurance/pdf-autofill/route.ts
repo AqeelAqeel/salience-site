@@ -1315,7 +1315,7 @@ ${contextBlocks.join("\n\n")}`,
 function addressGroupKey(label: string): string {
   return label
     .toLowerCase()
-    .replace(/\b(full|street|mailing|physical|property|premises|site|location|address|addr|city|state|province|zip|postal|postcode|code|county)\b/g, " ")
+    .replace(/\b(full|street|mailing|physical|property|premises|site|location|address|addr|city|state|province|zip|postal|postcode|code|county|and)\b/g, " ")
     .replace(/[^a-z0-9]+/g, " ")
     .trim();
 }
@@ -1675,8 +1675,8 @@ function overlayTopFromBaseline(page: PdfPageDescriptor, baselineY: number, font
 }
 
 function clampFlatTargetFontSize(fontSize: number): number {
-  if (!Number.isFinite(fontSize)) return 8.8;
-  return Math.min(18, Math.max(6.8, fontSize));
+  if (!Number.isFinite(fontSize)) return 9;
+  return Math.min(18, Math.max(7, Math.round(fontSize)));
 }
 
 function flatTargetFontSize({
@@ -1694,7 +1694,7 @@ function flatTargetFontSize({
 }): { fontSize: number; source: FlatFieldIntent["fontSizeSource"] } {
   const sameLineFontSize = medianFontSizeForItems(neighborItems);
   if (sameLineFontSize) {
-    return { fontSize: Math.round(clampFlatTargetFontSize(sameLineFontSize * 0.96) * 10) / 10, source: "same_line" };
+    return { fontSize: clampFlatTargetFontSize(sameLineFontSize * 0.96), source: "same_line" };
   }
 
   const adjacentFontSize = medianFontSizeForItems([
@@ -1702,17 +1702,17 @@ function flatTargetFontSize({
     ...(lines[linePosition + 1]?.items || []),
   ]);
   if (adjacentFontSize) {
-    return { fontSize: Math.round(clampFlatTargetFontSize(adjacentFontSize * 0.96) * 10) / 10, source: "adjacent_lines" };
+    return { fontSize: clampFlatTargetFontSize(adjacentFontSize * 0.96), source: "adjacent_lines" };
   }
 
   const pageFontSize = pageMedianFontSize(page);
   if (pageFontSize) {
-    return { fontSize: Math.round(clampFlatTargetFontSize(pageFontSize * 0.96) * 10) / 10, source: "page_median" };
+    return { fontSize: clampFlatTargetFontSize(pageFontSize * 0.96), source: "page_median" };
   }
 
   const fallback = line.fontSize || line.height || 9;
   const fontSize = clampFlatTargetFontSize(fallback * 0.96);
-  return { fontSize: Math.round(fontSize * 10) / 10, source: "fallback" };
+  return { fontSize, source: "fallback" };
 }
 
 function isQuotedRoleLine(text: string): boolean {
@@ -1967,7 +1967,16 @@ function flatCandidateRequiresExplicitContext(intent: FlatFieldIntent): boolean 
   const hasContactOrRecipientBlank = /\b(payment|paid by|payable|payee|recipient|remit|contact|broker|agent|guarantor)\b/.test(text);
   const asksForContactDetail = /\b(name|phone|telephone|email|address|at|to)\b/.test(text);
   const isAmountBlank = /\$|\b(amount|total|budget|fee|cost|price|deposit|premium|deductible|rent)\b/.test(text);
-  return hasContactOrRecipientBlank && asksForContactDetail && !isAmountBlank;
+  return (hasContactOrRecipientBlank && asksForContactDetail && !isAmountBlank) || isBareContactDetailBlank(intent);
+}
+
+function isBareContactDetailBlank(intent: FlatFieldIntent): boolean {
+  const prompt = intent.visualPrompt.trim().toLowerCase();
+  const context = [intent.visualPrompt, ...intent.nearbyText].join(" ").toLowerCase();
+  return (
+    /^\(?\s*(name|phone|telephone|email|address)\s*\)?\s*\[blank\]/i.test(prompt) &&
+    /\b(phone|telephone|email|contact|payment|paid by|payable|payee|recipient|remit|broker|agent|guarantor|\(name\)|\(phone\)|\bat\b)/i.test(context)
+  );
 }
 
 function factExplicitlySupportsFlatContext(fact: ModelEvidenceFact, intent: FlatFieldIntent): boolean {
@@ -1975,6 +1984,11 @@ function factExplicitlySupportsFlatContext(fact: ModelEvidenceFact, intent: Flat
 
   const factText = factTextForMatching(fact).toLowerCase();
   if (isFlatSelectionControl(intent)) return hasExplicitSelectionEvidence(factText);
+  if (isBareContactDetailBlank(intent)) {
+    return /\b(payment|payee|recipient|paid to|pay to|payable to|remit|send|mail|contact|phone|telephone|email|broker|agent|guarantor)\b/i.test(
+      factText
+    );
+  }
 
   return /\b(payment|payee|recipient|paid to|pay to|payable to|remit|send|mail|contact|phone|telephone|email|address|broker|agent|guarantor)\b/i.test(
     factText
@@ -2278,7 +2292,7 @@ function overlayInputsFromFlatCandidateDecisions({
         height: intent.height,
         fontSize: intent.fontSize,
         targetFontSize: intent.targetFontSize,
-        minFontSize: 6.8,
+        minFontSize: 7,
         maxFontSize: 18,
         baselineY: intent.baselineY,
         fontSizeSource: intent.fontSizeSource,

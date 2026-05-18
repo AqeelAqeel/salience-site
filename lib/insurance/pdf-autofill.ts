@@ -915,6 +915,12 @@ function clampFontSize(fontSize: number, minFontSize: number, maxFontSize: numbe
   return Math.min(maxFontSize, Math.max(minFontSize, fontSize));
 }
 
+function snapFontSize(fontSize: number, minFontSize: number, maxFontSize: number): number {
+  const minPoint = Math.ceil(minFontSize);
+  const maxPoint = Math.floor(maxFontSize);
+  return Math.min(maxPoint, Math.max(minPoint, Math.round(clampFontSize(fontSize, minPoint, maxPoint))));
+}
+
 function fitFontSizeToWidth(
   text: string,
   maxWidth: number,
@@ -923,12 +929,16 @@ function fitFontSizeToWidth(
   minFontSize: number,
   maxFontSize: number
 ): number {
-  const preferred = clampFontSize(preferredFontSize, minFontSize, maxFontSize);
-  const width = font.widthOfTextAtSize(text, preferred);
-  if (!Number.isFinite(width) || width <= maxWidth) return Math.round(preferred * 10) / 10;
+  const preferred = snapFontSize(preferredFontSize, minFontSize, maxFontSize);
+  const preferredWidth = font.widthOfTextAtSize(text, preferred);
+  if (!Number.isFinite(preferredWidth) || preferredWidth <= maxWidth) return preferred;
 
-  const scaled = preferred * (maxWidth / Math.max(1, width)) * 0.98;
-  return Math.round(clampFontSize(scaled, minFontSize, preferred) * 10) / 10;
+  const minPoint = Math.ceil(minFontSize);
+  for (let size = preferred - 1; size >= minPoint; size -= 1) {
+    if (font.widthOfTextAtSize(text, size) <= maxWidth) return size;
+  }
+
+  return minPoint;
 }
 
 export async function fillPdfOverlay(
@@ -1028,7 +1038,7 @@ export async function fillPdfOverlay(
           width: Math.min(maxWidth, font.widthOfTextAtSize(line, fontSize) + 1.8),
           height: backingHeight,
           color: rgb(1, 1, 1),
-          opacity: 0.72,
+          opacity: 0.18,
         });
         page.drawText(line, {
           x: point.x,
@@ -1036,7 +1046,7 @@ export async function fillPdfOverlay(
           size: fontSize,
           font,
           color,
-          opacity: 0.9,
+          opacity: 0.92,
           maxWidth,
         });
       });
