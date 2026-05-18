@@ -76,12 +76,19 @@ export interface FieldFillInput {
   fieldName: string;
   value: unknown;
   confidence?: number;
+  visualLabel?: string;
+  sourceQuote?: string;
+  valueKind?: string;
 }
 
 export interface AppliedFieldFill {
   fieldName: string;
   type: PdfFieldKind | "overlay_text" | "overlay_checkbox";
   value: string;
+  visualLabel?: string;
+  confidence?: number;
+  sourceQuote?: string;
+  valueKind?: string;
 }
 
 export interface SkippedFieldFill {
@@ -598,6 +605,15 @@ function setReadableFontSize(field: unknown, rawValue: string): void {
   }
 }
 
+function fillMetadata(requestedFill: FieldFillInput): Omit<AppliedFieldFill, "fieldName" | "type" | "value"> {
+  return {
+    confidence: requestedFill.confidence,
+    visualLabel: requestedFill.visualLabel,
+    sourceQuote: requestedFill.sourceQuote,
+    valueKind: requestedFill.valueKind,
+  };
+}
+
 export async function fillPdfForm(
   pdfBytes: Uint8Array,
   requestedFills: FieldFillInput[]
@@ -639,14 +655,14 @@ export async function fillPdfForm(
       if (field instanceof PDFTextField) {
         setReadableFontSize(field, rawValue);
         field.setText(rawValue);
-        applied.push({ fieldName: requestedFill.fieldName, type, value: rawValue });
+        applied.push({ fieldName: requestedFill.fieldName, type, value: rawValue, ...fillMetadata(requestedFill) });
       } else if (field instanceof PDFCheckBox) {
         if (toBoolean(requestedFill.value)) {
           field.check();
         } else {
           field.uncheck();
         }
-        applied.push({ fieldName: requestedFill.fieldName, type, value: rawValue });
+        applied.push({ fieldName: requestedFill.fieldName, type, value: rawValue, ...fillMetadata(requestedFill) });
       } else if (field instanceof PDFDropdown || field instanceof PDFRadioGroup) {
         const match = optionMatch(getFieldOptions(field), rawValue);
         if (!match) {
@@ -655,7 +671,7 @@ export async function fillPdfForm(
         }
         if (field instanceof PDFDropdown) setReadableFontSize(field, match);
         field.select(match);
-        applied.push({ fieldName: requestedFill.fieldName, type, value: match });
+        applied.push({ fieldName: requestedFill.fieldName, type, value: match, ...fillMetadata(requestedFill) });
       } else if (field instanceof PDFOptionList) {
         const values = Array.isArray(requestedFill.value)
           ? requestedFill.value.map(stringifyValue)
@@ -671,7 +687,7 @@ export async function fillPdfForm(
 
         setReadableFontSize(field, matches.join(", "));
         field.select(matches);
-        applied.push({ fieldName: requestedFill.fieldName, type, value: matches.join(", ") });
+        applied.push({ fieldName: requestedFill.fieldName, type, value: matches.join(", "), ...fillMetadata(requestedFill) });
       } else {
         skipped.push({ fieldName: requestedFill.fieldName, reason: `Unsupported PDF field type: ${type}` });
       }

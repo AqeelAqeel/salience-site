@@ -4,7 +4,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "generate:images": "node scripts/generate-image-assets.mjs"
+    "generate:images": "node scripts/generate-image-assets.mjs",
+    "pdf:wet-test": "node scripts/pdf-autofill-wet-test.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.78.0",

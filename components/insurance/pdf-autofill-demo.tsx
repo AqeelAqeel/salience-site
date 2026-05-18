@@ -52,7 +52,15 @@ interface AutofillResult {
       textPreview?: string;
     }>;
   };
-  appliedFields?: Array<{ fieldName: string; value: string; type: string }>;
+  appliedFields?: Array<{
+    fieldName: string;
+    value: string;
+    type: string;
+    visualLabel?: string;
+    confidence?: number;
+    sourceQuote?: string;
+    valueKind?: string;
+  }>;
   skippedFields?: Array<{ fieldName: string; reason: string }>;
   unfilledFields?: Array<{ fieldName: string; reason: string; followUpQuestion?: string }>;
   summary?: {
@@ -769,8 +777,15 @@ export default function PdfAutofillDemo() {
                       empty="No fields were filled."
                       items={appliedFields.slice(0, 14).map((field) => ({
                         key: `${field.fieldName}-${field.value}`,
-                        primary: field.fieldName,
-                        secondary: field.value,
+                        primary: field.visualLabel || field.fieldName,
+                        secondary: [
+                          field.value,
+                          field.visualLabel && field.visualLabel !== field.fieldName ? field.fieldName : null,
+                          typeof field.confidence === "number" ? `${Math.round(field.confidence * 100)}%` : null,
+                          field.sourceQuote ? `"${field.sourceQuote}"` : null,
+                        ]
+                          .filter(Boolean)
+                          .join(" · "),
                       }))}
                     />
                     <DetailSection

@@ -23,6 +23,11 @@ const MAX_FIELDS_PER_MODEL_BATCH = 80;
 const MAX_FIELD_BATCHES = 16;
 const MAX_FIELD_BATCH_CONCURRENCY = 4;
 const MAX_FLAT_OVERLAY_PAGES = 4;
+const MAX_CANDIDATES_PER_FACT = 12;
+const MAX_FACTS_FOR_FIELD_MATCHING = 36;
+
+const valueKindValues = ["person", "organization", "address", "date", "money", "phone", "email", "option", "free_text", "unknown"] as const;
+type FieldValueKind = (typeof valueKindValues)[number];
 
 interface ModelFieldValue {
   fieldName: string;
@@ -30,6 +35,8 @@ interface ModelFieldValue {
   confidence: number;
   sourceQuote?: string;
   reasoning?: string;
+  visualLabel?: string;
+  valueKind?: string;
 }
 
 interface ModelUnfilledField {
@@ -52,6 +59,7 @@ interface ModelAutofillResponse {
 interface ModelEvidenceFact {
   label: string;
   value: string;
+  valueKind: FieldValueKind;
   sourceQuote: string;
 }
 
@@ -78,6 +86,53 @@ interface ModelOverlayValue {
 interface ModelOverlayResponse {
   documentTitle?: string;
   overlays?: ModelOverlayValue[];
+  unfilledFields?: ModelUnfilledField[];
+  summary?: {
+    extractedFacts?: string[];
+    assumptions?: string[];
+    warnings?: string[];
+  };
+}
+
+interface FieldIntent {
+  id: string;
+  fieldName: string;
+  type: PdfFieldDescriptor["type"];
+  pageIndex?: number;
+  rect?: PdfFieldDescriptor["rect"];
+  visualLabel: string;
+  visualPrompt: string;
+  expectedValueKind: FieldValueKind;
+  controlGroup?: string;
+  doNotFillReason?: string;
+  descriptor: PdfFieldDescriptor;
+}
+
+interface FieldCandidate {
+  fieldId: string;
+  fieldName: string;
+  type: PdfFieldDescriptor["type"];
+  visualLabel: string;
+  visualPrompt: string;
+  expectedValueKind: FieldValueKind;
+  pageIndex?: number;
+  controlGroup?: string;
+  blankRoleLabel?: string;
+  optionLabel?: string;
+  score: number;
+}
+
+interface ModelCandidateDecision {
+  factIndex: number;
+  fieldIds: string[];
+  value: string;
+  confidence: number;
+  sourceQuote: string;
+  reasoning: string;
+}
+
+interface ModelCandidateResponse {
+  decisions?: ModelCandidateDecision[];
   unfilledFields?: ModelUnfilledField[];
   summary?: {
     extractedFacts?: string[];
@@ -153,9 +208,10 @@ const evidenceResponseFormat = {
             properties: {
               label: { type: "string" },
               value: { type: "string" },
+              valueKind: { type: "string", enum: [...valueKindValues] },
               sourceQuote: { type: "string" },
             },
-            required: ["label", "value", "sourceQuote"],
+            required: ["label", "value", "valueKind", "sourceQuote"],
           },
         },
         warnings: {
@@ -227,6 +283,72 @@ const fieldMappingResponseFormat = {
         },
       },
       required: ["documentTitle", "fieldValues", "unfilledFields", "summary"],
+    },
+  },
+} as const;
+
+const candidateDecisionResponseFormat = {
+  type: "json_schema",
+  json_schema: {
+    name: "pdf_candidate_field_decisions",
+    strict: true,
+    schema: {
+      type: "object",
+      additionalProperties: false,
+      properties: {
+        decisions: {
+          type: "array",
+          items: {
+            type: "object",
+            additionalProperties: false,
+            properties: {
+              factIndex: { type: "number" },
+              fieldIds: {
+                type: "array",
+                items: { type: "string" },
+              },
+              value: { type: "string" },
+              confidence: { type: "number" },
+              sourceQuote: { type: "string" },
+              reasoning: { type: "string" },
+            },
+            required: ["factIndex", "fieldIds", "value", "confidence", "sourceQuote", "reasoning"],
+          },
+        },
+        unfilledFields: {
+          type: "array",
+          items: {
+            type: "object",
+            additionalProperties: false,
+            properties: {
+              fieldName: { type: "string" },
+              reason: { type: "string" },
+              followUpQuestion: { type: "string" },
+            },
+            required: ["fieldName", "reason", "followUpQuestion"],
+          },
+        },
+        summary: {
+          type: "object",
+          additionalProperties: false,
+          properties: {
+            extractedFacts: {
+              type: "array",
+              items: { type: "string" },
+            },
+            assumptions: {
+              type: "array",
+              items: { type: "string" },
+            },
+            warnings: {
+              type: "array",
+              items: { type: "string" },
+            },
+          },
+          required: ["extractedFacts", "assumptions", "warnings"],
+        },
+      },
+      required: ["decisions", "unfilledFields", "summary"],
     },
   },
 } as const;
@@ -463,6 +585,11 @@ function isForbiddenField(field: PdfFieldDescriptor): boolean {
 
 function isFalseValue(value: unknown): boolean {
   return ["false", "no", "n", "0", "unchecked", "off"].includes(String(value).trim().toLowerCase());
+}
+
+function cleanModelScalarValue(value: unknown): unknown {
+  if (typeof value !== "string") return value;
+  return value.trim().replace(/^['"`]\s*(?=[A-Za-z0-9$])/, "").replace(/(?<=[A-Za-z0-9])\s*['"`]$/, "");
 }
 
 function isTextValueSupportedByEvidence(value: unknown, evidenceText: string): boolean {
@@ -721,6 +848,390 @@ function isSupportedRequestedFill(
   );
 }
 
+function normalizeValueKind(value: unknown): FieldValueKind {
+  const kind = String(value || "unknown").trim();
+  return (valueKindValues as readonly string[]).includes(kind) ? (kind as FieldValueKind) : "unknown";
+}
+
+function normalizedFieldText(field: PdfFieldDescriptor): string {
+  return [field.name, field.position, ...(field.nameHints || []), ...(field.nearbyText || [])].filter(Boolean).join(" ");
+}
+
+function inferExpectedValueKind(field: PdfFieldDescriptor): FieldValueKind {
+  if (["checkbox", "dropdown", "option_list", "radio"].includes(field.type)) return "option";
+
+  const primaryText = [field.name, ...(field.nameHints || []), (field.nearbyText || [])[0]].filter(Boolean).join(" ").toLowerCase();
+  const secondaryText = (field.nearbyText || []).slice(1, 4).join(" ").toLowerCase();
+  const scores = new Map<FieldValueKind, number>();
+  const addScore = (kind: FieldValueKind, pattern: RegExp, primaryWeight: number, secondaryWeight: number) => {
+    const score = (pattern.test(primaryText) ? primaryWeight : 0) + (pattern.test(secondaryText) ? secondaryWeight : 0);
+    if (score > 0) scores.set(kind, (scores.get(kind) || 0) + score);
+  };
+
+  addScore("email", /\b(e-?mail)\b/, 8, 3);
+  addScore("phone", /\b(phone|telephone|mobile|cell|fax)\b/, 8, 3);
+  addScore("date", /\b(date|start|begin|commence|effective|end|terminate|expire|expiration|deadline|due)\b/, 7, 2);
+  addScore("money", /\b(amount|total|price|cost|budget|fee|pay|payment|paid|deposit|premium|deductible|limit|salary|compensation|\$|dollar)\b/, 7, 2);
+  addScore("person", /\b(name|person|persons|contact|client|customer|applicant|patient|employee|owner|agent|representative|recipient|payer|payee|occupant|individual|insured|claimant)\b/, 6, 1);
+  addScore("organization", /\b(company|organization|firm|business|agency|provider|carrier|employer|department|institution|entity)\b/, 6, 1);
+  addScore("address", /\b(address|street|city|state|zip|postal|location|property|premises?|site|county)\b/, 5, 1);
+
+  const best = [...scores.entries()].sort((left, right) => right[1] - left[1])[0];
+  return best && best[1] >= 2 ? best[0] : field.type === "text" ? "free_text" : "unknown";
+}
+
+function nearbyVisualText(field: PdfFieldDescriptor, maxLines = 4): string {
+  return (field.nearbyText || [])
+    .slice(0, maxLines)
+    .map((line) => line.replace(/\s+/g, " ").trim())
+    .filter(Boolean)
+    .join(" | ");
+}
+
+function visualLabelForField(field: PdfFieldDescriptor): string {
+  return nearbyVisualText(field, 1) || field.name;
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function visualBlankPhrase(field: PdfFieldDescriptor): string {
+  const firstLine = (field.nearbyText || [])[0]?.replace(/\s+/g, " ").trim();
+  if (!firstLine) return `[blank] ${field.name}`;
+
+  const exactName = field.name.replace(/\s+/g, " ").trim();
+  if (exactName && new RegExp(`\\(["']?${escapeRegExp(exactName)}["']?\\)`, "i").test(firstLine)) {
+    return `[blank] ${firstLine}`;
+  }
+  if (exactName && firstLine.toLowerCase().includes(exactName.toLowerCase())) {
+    return firstLine.replace(new RegExp(escapeRegExp(exactName), "i"), `${exactName} [blank]`);
+  }
+
+  return `[blank] ${firstLine}`;
+}
+
+function blankRoleLabel(field: PdfFieldDescriptor): string | undefined {
+  const match = visualBlankPhrase(field).match(/\[blank\]\s*\(["']?([^"')]+)["']?\)/i);
+  return match?.[1]?.trim();
+}
+
+function optionLabelForField(field: PdfFieldDescriptor): string | undefined {
+  if (!isSelectionControl(field.type)) return undefined;
+  if (field.options?.length === 1) return field.options[0];
+
+  const genericTokens = new Set(["checkbox", "radio", "select", "selected", "option", "choice", "method", "preferred", "preference", "contact"]);
+  const tokens = (field.nameHints?.length ? field.nameHints : field.name.split(/[^a-z0-9]+/gi))
+    .map((token) => token.toLowerCase())
+    .filter((token) => token.length > 1 && !genericTokens.has(token) && !/^c?\d+$/.test(token));
+
+  if (tokens.length > 0) return tokens.slice(-3).join(" ");
+  return field.name;
+}
+
+function visualPromptForField(field: PdfFieldDescriptor): string {
+  return [field.name, visualBlankPhrase(field), nearbyVisualText(field, 4)].filter(Boolean).join(" | ");
+}
+
+function doNotFillReasonForField(field: PdfFieldDescriptor): string | undefined {
+  if (field.readOnly) return "read-only field";
+
+  const text = normalizedFieldText(field);
+  const normalizedName = field.name.trim().toLowerCase();
+  const contactTokenCount = (text.match(/\b(date|address|city|state|zip|postal|telephone|phone|fax|email)\b/gi) || []).length;
+  const nameTokens = matchTokens(field.name);
+  const hasSpecificNameToken = [...nameTokens].some((token) => !LOW_SIGNAL_MATCH_TOKENS.has(token));
+
+  if (/\b(signature|sign here|initials?|attestation|certification|perjury|notary|witness|reviewed by)\b/i.test(text)) {
+    return "signature, initials, or attestation field";
+  }
+  if (/\b(tax id|ssn|social security|account|routing|passport|license|driver'?s? license|policy number|claim number|legal id|identifier)\b/i.test(text)) {
+    return "sensitive identifier field";
+  }
+  if (/^(undefined(?:_\d+)?|or(?:_\d+)?|and(?:_\d+)?|at(?:_\d+)?|am|pm|\d+(?:_\d+)?)$/.test(normalizedName)) {
+    return "ambiguous generated field name";
+  }
+  if (hasTrailingOrdinal(field.name) && nameTokens.size <= 2) {
+    return "ambiguous repeated field";
+  }
+  if (contactTokenCount >= 4 && !hasSpecificNameToken && field.type === "text") {
+    return "ambiguous repeated contact block";
+  }
+
+  return undefined;
+}
+
+function buildFieldIntents(descriptor: Awaited<ReturnType<typeof inspectPdfForm>>): FieldIntent[] {
+  return descriptor.fields.slice(0, MAX_FIELDS_FOR_MODEL).map((field, index) => {
+    const visualLabel = visualLabelForField(field);
+    const visualPrompt = visualPromptForField(field);
+    const expectedValueKind = inferExpectedValueKind(field);
+
+    return {
+      id: `field_${index}`,
+      fieldName: field.name,
+      type: field.type,
+      pageIndex: field.pageIndex,
+      rect: field.rect,
+      visualLabel,
+      visualPrompt,
+      expectedValueKind,
+      controlGroup: ["checkbox", "dropdown", "option_list", "radio"].includes(field.type)
+        ? `${field.pageIndex ?? "unknown"}:${matchTokens(visualPrompt).values().next().value || field.name}`
+        : undefined,
+      doNotFillReason: doNotFillReasonForField(field),
+      descriptor: field,
+    };
+  });
+}
+
+function isKindCompatible(factKind: FieldValueKind, expectedKind: FieldValueKind): boolean {
+  if (factKind === expectedKind) return true;
+  if (expectedKind === "free_text" || expectedKind === "unknown") return factKind !== "option";
+  if (factKind === "free_text" || factKind === "unknown") return true;
+  if (expectedKind === "organization" && factKind === "person") return true;
+  return false;
+}
+
+function isSelectionControl(type: PdfFieldDescriptor["type"]): boolean {
+  return type === "checkbox" || type === "radio" || type === "dropdown" || type === "option_list";
+}
+
+function hasExplicitSelectionEvidence(text: string): boolean {
+  return /\b(yes|no|checked|unchecked|check|select|selected|choose|chosen|mark|marked|option|preference|preferred|method is|use this|use the)\b/i.test(text);
+}
+
+function selectionOptionMatchesFact(fact: ModelEvidenceFact, intent: FieldIntent): boolean {
+  const optionLabel = optionLabelForField(intent.descriptor);
+  if (!optionLabel) return true;
+
+  const optionCompact = compactEvidence(optionLabel);
+  const factValueCompact = compactEvidence(fact.value);
+  const quoteCompact = compactEvidence(fact.sourceQuote);
+  if (!optionCompact || !factValueCompact) return false;
+
+  return factValueCompact.includes(optionCompact) || optionCompact.includes(factValueCompact) || quoteCompact.includes(optionCompact);
+}
+
+function factTextForMatching(fact: ModelEvidenceFact): string {
+  return [fact.label, fact.value, fact.sourceQuote].join(" ");
+}
+
+function primaryIntentText(field: PdfFieldDescriptor): string {
+  return [field.name, visualBlankPhrase(field), (field.nearbyText || [])[0]].filter(Boolean).join(" ");
+}
+
+function secondaryIntentText(field: PdfFieldDescriptor): string {
+  return (field.nearbyText || []).slice(1, 4).join(" ");
+}
+
+function hasQuotedRoleBlank(field: PdfFieldDescriptor): boolean {
+  return /\[blank\]\s*\(["'][^)]+["']\)/i.test(visualBlankPhrase(field));
+}
+
+function scoreCandidateForFact(fact: ModelEvidenceFact, intent: FieldIntent): number {
+  if (intent.doNotFillReason) return 0;
+  if (intent.descriptor.readOnly) return 0;
+
+  const factKind = normalizeValueKind(fact.valueKind);
+  const factTokens = matchTokens(factTextForMatching(fact));
+  const factLabelTokens = matchTokens(fact.label);
+  const factQuoteTokens = matchTokens(fact.sourceQuote);
+  const primaryTokens = matchTokens(primaryIntentText(intent.descriptor));
+  const secondaryTokens = matchTokens(secondaryIntentText(intent.descriptor));
+  const fieldNameTokens = matchTokens(intent.fieldName);
+  const roleLabelTokens = matchTokens(blankRoleLabel(intent.descriptor) || "");
+  const optionLabelTokens = matchTokens(optionLabelForField(intent.descriptor) || "");
+
+  if (isSelectionControl(intent.type)) {
+    if (factKind !== "option" && !hasExplicitSelectionEvidence(fact.sourceQuote)) return 0;
+  } else if (factKind === "option") {
+    return 0;
+  }
+
+  const kindScore = isKindCompatible(factKind, intent.expectedValueKind) ? 5 : 0;
+  const labelScore = countStrongOverlap(factLabelTokens, primaryTokens) * 6 + countStrongOverlap(factLabelTokens, secondaryTokens);
+  const quoteScore = Math.min(countStrongOverlap(factQuoteTokens, primaryTokens), 4) * 2.5 + Math.min(countStrongOverlap(factQuoteTokens, secondaryTokens), 2) * 0.5;
+  const valueScore = Math.min(countStrongOverlap(matchTokens(fact.value), primaryTokens), 3) * 2;
+  const nameScore = countStrongOverlap(factTokens, fieldNameTokens) * 2;
+  const roleLabelScore = countStrongOverlap(factLabelTokens, roleLabelTokens) * 8;
+  const optionLabelScore = isSelectionControl(intent.type)
+    ? countStrongOverlap(matchTokens(fact.value), optionLabelTokens) * 12 + countStrongOverlap(factQuoteTokens, optionLabelTokens) * 4
+    : 0;
+  const roleBlankScore = hasQuotedRoleBlank(intent.descriptor) && (factKind === "person" || factKind === "organization") ? 6 : 0;
+  const lowSignalScore = Math.min(countOverlap(factTokens, primaryTokens), 4) * 0.5;
+  const geometryScore = typeof intent.pageIndex === "number" ? 0.25 : 0;
+
+  const score =
+    kindScore + labelScore + quoteScore + valueScore + nameScore + roleLabelScore + optionLabelScore + roleBlankScore + lowSignalScore + geometryScore;
+  return score >= 4 ? score : 0;
+}
+
+function candidatesForFact(fact: ModelEvidenceFact, intents: FieldIntent[]): FieldCandidate[] {
+  return intents
+    .map((intent) => ({
+      fieldId: intent.id,
+      fieldName: intent.fieldName,
+      type: intent.type,
+      visualLabel: intent.visualLabel,
+      visualPrompt: intent.visualPrompt,
+      expectedValueKind: intent.expectedValueKind,
+      pageIndex: intent.pageIndex,
+      controlGroup: intent.controlGroup,
+      blankRoleLabel: blankRoleLabel(intent.descriptor),
+      optionLabel: optionLabelForField(intent.descriptor),
+      score: scoreCandidateForFact(fact, intent),
+    }))
+    .filter((candidate) => candidate.score > 0)
+    .sort((left, right) => right.score - left.score)
+    .slice(0, MAX_CANDIDATES_PER_FACT);
+}
+
+function fieldValueFromDecision(
+  decision: ModelCandidateDecision,
+  fact: ModelEvidenceFact,
+  intent: FieldIntent
+): string | boolean {
+  if (intent.type === "checkbox") return true;
+  if (intent.type === "radio" || intent.type === "dropdown" || intent.type === "option_list") {
+    return cleanModelScalarValue(decision.value || fact.value) as string;
+  }
+  return cleanModelScalarValue(decision.value || fact.value) as string;
+}
+
+function decisionSourceQuote(decision: ModelCandidateDecision, fact: ModelEvidenceFact): string {
+  return decision.sourceQuote?.trim() || fact.sourceQuote;
+}
+
+function shouldReplaceAcceptedFill(
+  previous: { fill: FieldFillInput; confidence: number } | undefined,
+  nextFill: FieldFillInput,
+  nextConfidence: number
+): boolean {
+  if (!previous) return true;
+  if (nextConfidence > previous.confidence) return true;
+
+  const previousValue = compactEvidence(String(previous.fill.value || ""));
+  const nextValue = compactEvidence(String(nextFill.value || ""));
+  const nextIsMoreComplete = nextValue.length > previousValue.length && nextValue.includes(previousValue);
+  return nextIsMoreComplete && nextConfidence >= previous.confidence - 0.08;
+}
+
+function fillInputsFromCandidateDecisions({
+  parsed,
+  facts,
+  intents,
+  candidatesByFact,
+  evidenceText,
+}: {
+  parsed: ModelCandidateResponse;
+  facts: ModelEvidenceFact[];
+  intents: FieldIntent[];
+  candidatesByFact: Map<number, Set<string>>;
+  evidenceText: string;
+}): { requestedFills: FieldFillInput[]; decisionTrace: Array<Record<string, unknown>>; warnings: string[] } {
+  const intentById = new Map(intents.map((intent) => [intent.id, intent]));
+  const bestByFieldName = new Map<string, { fill: FieldFillInput; confidence: number }>();
+  const decisionTrace: Array<Record<string, unknown>> = [];
+  const warnings: string[] = [];
+
+  for (const decision of parsed.decisions || []) {
+    const factIndex = Math.floor(Number(decision.factIndex));
+    const fact = facts[factIndex];
+    if (!fact) continue;
+
+    const allowedCandidates = candidatesByFact.get(factIndex) || new Set<string>();
+    const confidence = typeof decision.confidence === "number" ? decision.confidence : 0;
+    const sourceQuote = decisionSourceQuote(decision, fact);
+
+    for (const fieldId of decision.fieldIds || []) {
+      const intent = intentById.get(fieldId);
+      const trace = {
+        factIndex,
+        factLabel: fact.label,
+        factValue: fact.value,
+        factKind: normalizeValueKind(fact.valueKind),
+        fieldId,
+        fieldName: intent?.fieldName,
+        expectedKind: intent?.expectedValueKind,
+        visualPrompt: intent?.visualPrompt,
+        decision: decision.reasoning,
+        confidence,
+        accepted: false,
+        rejectedReason: "",
+      };
+
+      if (!intent || !allowedCandidates.has(fieldId)) {
+        trace.rejectedReason = "field was not in the candidate set";
+        decisionTrace.push(trace);
+        continue;
+      }
+      if (intent.doNotFillReason) {
+        trace.rejectedReason = intent.doNotFillReason;
+        decisionTrace.push(trace);
+        continue;
+      }
+      if (confidence < 0.45) {
+        trace.rejectedReason = "confidence below fill threshold";
+        decisionTrace.push(trace);
+        continue;
+      }
+      if (!isKindCompatible(normalizeValueKind(fact.valueKind), intent.expectedValueKind)) {
+        trace.rejectedReason = "value kind conflicted with field intent";
+        decisionTrace.push(trace);
+        continue;
+      }
+      if (isSelectionControl(intent.type) && !hasExplicitSelectionEvidence(sourceQuote)) {
+        trace.rejectedReason = "selection control lacked explicit selection evidence";
+        decisionTrace.push(trace);
+        continue;
+      }
+      if (isSelectionControl(intent.type) && !selectionOptionMatchesFact(fact, intent)) {
+        trace.rejectedReason = "selection value did not match the option label";
+        decisionTrace.push(trace);
+        continue;
+      }
+
+      const value = fieldValueFromDecision(decision, fact, intent);
+      if (isSelectionControl(intent.type)) {
+        if (isFalseValue(value)) {
+          trace.rejectedReason = "false selection controls are not applied";
+          decisionTrace.push(trace);
+          continue;
+        }
+      } else if (!isTextValueSupportedByEvidence(value, evidenceText)) {
+        trace.rejectedReason = "value was not directly supported by evidence text";
+        decisionTrace.push(trace);
+        continue;
+      }
+
+      const fill: FieldFillInput = {
+        fieldName: intent.fieldName,
+        value,
+        confidence,
+        visualLabel: intent.visualLabel,
+        sourceQuote,
+        valueKind: normalizeValueKind(fact.valueKind),
+      };
+      const previous = bestByFieldName.get(intent.fieldName);
+      if (shouldReplaceAcceptedFill(previous, fill, confidence)) {
+        bestByFieldName.set(intent.fieldName, { fill, confidence });
+      }
+      if (confidence < 0.75) {
+        warnings.push(`Medium-confidence fill for ${intent.visualLabel || intent.fieldName}: ${sourceQuote}`);
+      }
+      trace.accepted = true;
+      decisionTrace.push(trace);
+    }
+  }
+
+  return {
+    requestedFills: [...bestByFieldName.values()].map((entry) => entry.fill),
+    decisionTrace,
+    warnings: Array.from(new Set(warnings)),
+  };
+}
+
 async function extractEvidenceFacts(openai: OpenAI, contextBlocks: string[]): Promise<ModelEvidenceResponse> {
   const response = await openai.chat.completions.create({
     model: process.env.PDF_FACT_MODEL || process.env.PDF_AUTOFILL_MODEL || DEFAULT_OPENAI_CHAT_MODEL,
@@ -734,6 +1245,9 @@ async function extractEvidenceFacts(openai: OpenAI, contextBlocks: string[]): Pr
 Rules:
 - Preserve names, organizations, addresses, dates, money amounts, time periods, contact info, selected options, and yes/no facts.
 - Split combined descriptions into separate facts. Each person, organization, address, date, amount, option, and term should be separate when possible.
+- Also include a grouped fact when several people or several organizations belong to the same visible role and the form may have one shared blank.
+- Classify every fact using exactly one valueKind: ${valueKindValues.join(", ")}.
+- Only create option facts when the source explicitly selects, chooses, marks, checks, or names a preferred option. Topical overlap is not an option selection.
 - Keep values concise and form-ready.
 - Use only supplied evidence. Do not infer signatures, initials, attestations, legal IDs, or account numbers.
 - Return structured JSON only.`,
@@ -747,6 +1261,107 @@ ${contextBlocks.join("\n\n")}`,
   });
 
   return parseModelJson<ModelEvidenceResponse>(response.choices[0]?.message?.content || "{}");
+}
+
+async function mapFactCandidatesWithModel({
+  openai,
+  descriptor,
+  facts,
+  intents,
+  contextBlocks,
+}: {
+  openai: OpenAI;
+  descriptor: Awaited<ReturnType<typeof inspectPdfForm>>;
+  facts: ModelEvidenceFact[];
+  intents: FieldIntent[];
+  contextBlocks: string[];
+}): Promise<{
+  parsed: ModelCandidateResponse;
+  candidatesByFact: Map<number, Set<string>>;
+  candidatePayload: Array<{ factIndex: number; fact: ModelEvidenceFact; candidates: FieldCandidate[] }>;
+}> {
+  const mappingFacts = facts.slice(0, MAX_FACTS_FOR_FIELD_MATCHING);
+  const candidatePayload = mappingFacts
+    .map((fact, factIndex) => ({
+      factIndex,
+      fact,
+      candidates: candidatesForFact(fact, intents),
+    }))
+    .filter((entry) => entry.candidates.length > 0);
+  const candidatesByFact = new Map(candidatePayload.map((entry) => [entry.factIndex, new Set(entry.candidates.map((candidate) => candidate.fieldId))]));
+  const pagesWithCandidates = Array.from(
+    new Set(
+      candidatePayload
+        .flatMap((entry) => entry.candidates.map((candidate) => candidate.pageIndex))
+        .filter((pageIndex): pageIndex is number => pageIndex !== undefined)
+    )
+  )
+    .sort((left, right) => left - right)
+    .slice(0, 8)
+    .map((pageIndex) => descriptor.pages[pageIndex])
+    .filter(Boolean);
+
+  if (candidatePayload.length === 0) {
+    return {
+      parsed: {
+        decisions: [],
+        unfilledFields: [],
+        summary: {
+          extractedFacts: mappingFacts.map((fact) => `${fact.label}: ${fact.value}`),
+          assumptions: [],
+          warnings: ["No candidate PDF fields matched the extracted facts."],
+        },
+      },
+      candidatesByFact,
+      candidatePayload,
+    };
+  }
+
+  const response = await openai.chat.completions.create({
+    model: process.env.PDF_AUTOFILL_MODEL || DEFAULT_OPENAI_CHAT_MODEL,
+    temperature: 0,
+    response_format: candidateDecisionResponseFormat,
+    messages: [
+      {
+        role: "system",
+        content: `You are a careful document field matching agent.
+
+The application already extracted facts from user evidence and generated top PDF field candidates for each fact. Your job is to choose which candidate field IDs should receive each fact.
+
+Rules:
+- Return only fieldIds from the supplied candidate lists. Return an empty fieldIds array when no candidate is clearly correct.
+- Prefer the candidate whose visualPrompt describes the same intent as the fact. Field names can be cryptic, incomplete, or text adjacent to the blank; visualPrompt marks the inferred blank location with [blank] when possible and is usually more important.
+- A candidate with blankRoleLabel means the blank is immediately followed by a quoted role/noun, such as [blank] ("Customer"). When the fact label/value matches that role, treat it as a strong entity-name field, not as unrelated boilerplate.
+- For checkbox/radio/dropdown/option candidates, compare the fact value to optionLabel. If the fact says "phone", choose only the candidate whose optionLabel is phone, not neighboring options in the same group.
+- It is valid to choose multiple field IDs for one fact only when the same fact should appear in repeated matching blanks.
+- Never choose a signature, initials, attestation, legal identifier, or unrelated contact-detail field.
+- Never choose a checkbox, radio, dropdown, option list, printed option, or choice field from topical overlap alone. Selection controls require sourceQuote evidence that explicitly selects, checks, chooses, marks, prefers, or names the option as the selected method/choice.
+- For text fields, choose high-confidence and medium-confidence matches when the value kind and visualPrompt agree. Leave role-conflicting or low-confidence fields blank.
+- Keep values concise and copied from the fact unless a shorter form-ready value is needed.
+- Return structured JSON only.`,
+      },
+      {
+        role: "user",
+        content: `PDF metadata:
+${JSON.stringify({ title: descriptor.title, author: descriptor.author, subject: descriptor.subject, fieldCount: descriptor.fieldCount, fieldNameQuality: descriptor.fieldNameQuality }, null, 2)}
+
+Relevant PDF page text:
+${JSON.stringify(pagesWithCandidates, null, 2)}
+
+Facts and candidate fields:
+${JSON.stringify(candidatePayload, null, 2)}
+
+Original evidence:
+${contextBlocks.join("\n\n")}`,
+      },
+    ],
+  });
+
+  return {
+    parsed: parseModelJson<ModelCandidateResponse>(response.choices[0]?.message?.content || "{}"),
+    candidatesByFact,
+    candidatePayload,
+  };
 }
 
 async function mapFieldsForBatch({
@@ -978,6 +1593,7 @@ ${contextBlocks.join("\n\n")}`,
   for (const overlay of parsed.overlays || []) {
     if (!overlay.label || isForbiddenOverlayLabel(overlay.label)) continue;
     if (typeof overlay.confidence === "number" && overlay.confidence < 0.5) continue;
+    if (overlay.kind === "checkbox" && !hasExplicitSelectionEvidence(overlay.sourceQuote || "")) continue;
 
     const x = clampUnit(overlay.x);
     const y = clampUnit(overlay.y);
@@ -987,7 +1603,7 @@ ${contextBlocks.join("\n\n")}`,
 
     requestedOverlays.push({
       label: overlay.label,
-      value: overlay.value,
+      value: cleanModelScalarValue(overlay.value) as PdfOverlayInput["value"],
       pageIndex,
       x,
       y,
@@ -1042,6 +1658,7 @@ export async function POST(request: Request) {
     const notes = String(formData.get("notes") || "").trim();
     const voiceNote = formData.get("voiceNote");
     const supportingFiles = formData.getAll("supportingFiles").filter(isFile);
+    const includeDecisionTrace = process.env.NODE_ENV !== "production" || String(formData.get("debug") || "") === "1";
 
     if (!isFile(template) || !isPdf(template)) {
       return NextResponse.json({ error: "Upload a PDF template." }, { status: 400 });
@@ -1120,47 +1737,34 @@ export async function POST(request: Request) {
       });
     }
 
-    const modelBatches = fieldBatchesForModel(descriptor.fields);
-    const modelFieldCount = modelBatches.reduce((count, batch) => count + batch.length, 0);
-    const omittedFieldCount = Math.max(0, descriptor.fields.filter((field) => !field.readOnly).length - modelFieldCount);
     const evidence = await extractEvidenceFacts(openai, contextBlocks);
     warnings.push(...(evidence.warnings || []));
-
-    const batchResponses = await mapWithConcurrency(
-      modelBatches,
-      MAX_FIELD_BATCH_CONCURRENCY,
-      (batch, batchIndex) =>
-        mapFieldsForBatch({
-          openai,
-          descriptor,
-          fields: batch,
-          contextBlocks,
-          evidenceFacts: evidence.facts || [],
-          batchIndex,
-          batchCount: modelBatches.length,
-          omittedFieldCount,
-        })
-    );
-
-    const parsed = mergeAutofillResponses(batchResponses);
-    const fieldByName = new Map(descriptor.fields.map((field) => [field.name, field]));
-    const fieldNames = new Set(fieldByName.keys());
+    const facts = evidence.facts || [];
+    const intents = buildFieldIntents(descriptor);
+    const omittedFieldCount = Math.max(0, descriptor.fields.length - intents.length);
     const evidenceText = contextBlocks.join("\n\n");
-    const requestedFills: FieldFillInput[] = (parsed.fieldValues || [])
-      .filter((field) => field.fieldName && fieldNames.has(field.fieldName))
-      .filter((field) => isSupportedRequestedFill(field, fieldByName.get(field.fieldName), evidenceText, evidence.facts || []))
-      .filter((field) => typeof field.confidence !== "number" || field.confidence >= 0.45)
-      .map((field) => ({
-        fieldName: field.fieldName,
-        value: field.value,
-        confidence: field.confidence,
-      }));
+    const { parsed, candidatesByFact, candidatePayload } = await mapFactCandidatesWithModel({
+      openai,
+      descriptor,
+      facts,
+      intents,
+      contextBlocks,
+    });
+    const { requestedFills, decisionTrace, warnings: decisionWarnings } = fillInputsFromCandidateDecisions({
+      parsed,
+      facts,
+      intents,
+      candidatesByFact,
+      evidenceText,
+    });
+    warnings.push(...decisionWarnings);
 
     const filled = await fillPdfForm(templateBytes, requestedFills);
     const pdfBase64 = Buffer.from(filled.pdfBytes).toString("base64");
 
     return NextResponse.json({
       status: "filled",
+      mode: "acroform",
       fileName: outputFileName(template.name),
       pdfBase64,
       mimeType: "application/pdf",
@@ -1175,16 +1779,39 @@ export async function POST(request: Request) {
       unfilledFields: parsed.unfilledFields || [],
       summary: {
         extractedFacts: [
-          ...(evidence.facts || []).map((fact) => `${fact.label}: ${fact.value}`),
+          ...facts.map((fact) => `${fact.label}: ${fact.value}`),
           ...(parsed.summary?.extractedFacts || []),
         ],
         assumptions: parsed.summary?.assumptions || [],
         warnings: [
-          ...(omittedFieldCount > 0 ? [`${omittedFieldCount} fields were omitted from AI mapping due to field-count limits.`] : []),
+          ...(omittedFieldCount > 0 ? [`${omittedFieldCount} fields were omitted from field-intent matching due to field-count limits.`] : []),
+          ...(facts.length > MAX_FACTS_FOR_FIELD_MATCHING ? [`${facts.length - MAX_FACTS_FOR_FIELD_MATCHING} extracted facts were omitted from field matching due to fact-count limits.`] : []),
+          ...(candidatePayload.length === 0 ? ["No field candidates matched the extracted evidence facts."] : []),
           ...(parsed.summary?.warnings || []),
           ...warnings,
         ],
       },
+      ...(includeDecisionTrace
+        ? {
+            decisionTrace,
+            fieldCandidateTrace: candidatePayload.map((entry) => ({
+              factIndex: entry.factIndex,
+              factLabel: entry.fact.label,
+              factValue: entry.fact.value,
+              factKind: entry.fact.valueKind,
+              candidates: entry.candidates.map((candidate) => ({
+                fieldId: candidate.fieldId,
+                fieldName: candidate.fieldName,
+                visualPrompt: candidate.visualPrompt,
+                expectedValueKind: candidate.expectedValueKind,
+                blankRoleLabel: candidate.blankRoleLabel,
+                optionLabel: candidate.optionLabel,
+                type: candidate.type,
+                score: candidate.score,
+              })),
+            })),
+          }
+        : {}),
     });
   } catch (error) {
     console.error("PDF autofill error:", error);
