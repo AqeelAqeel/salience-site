@@ -857,7 +857,7 @@ export async function fillPdfOverlay(
       normalizeCoordinate(overlay.width ?? 0.28) *
         ((overlay.coordinateSpace?.width ?? pageWidth) / (overlay.coordinateSpace?.scale || 1))
     );
-    const color = rgb(0.05, 0.08, 0.14);
+    const color = rgb(0.07, 0.08, 0.11);
 
     try {
       if (overlay.kind === "checkbox") {
@@ -896,12 +896,15 @@ export async function fillPdfOverlay(
           pageHeight,
           fontSize * 0.75 + index * (fontSize + 2)
         );
+        const backingY = point.y - fontSize * 0.16;
+        const backingHeight = fontSize * 0.92;
         page.drawRectangle({
-          x: point.x - 1,
-          y: point.y - 1,
-          width: Math.min(maxWidth, font.widthOfTextAtSize(line, fontSize) + 3),
-          height: fontSize + 3,
+          x: point.x - 0.6,
+          y: backingY,
+          width: Math.min(maxWidth, font.widthOfTextAtSize(line, fontSize) + 1.8),
+          height: backingHeight,
           color: rgb(1, 1, 1),
+          opacity: 0.72,
         });
         page.drawText(line, {
           x: point.x,
@@ -909,6 +912,7 @@ export async function fillPdfOverlay(
           size: fontSize,
           font,
           color,
+          opacity: 0.9,
           maxWidth,
         });
       });

@@ -1646,7 +1646,7 @@ function overlayTopFromBaseline(page: PdfPageDescriptor, baselineY: number, font
 
 function flatFontSizeForLine(line: FlatTextLine, height?: number): number {
   const lineHeight = height || line.height || 9;
-  const fontSize = Math.max(9.5, Math.min(12, lineHeight * 1.18));
+  const fontSize = Math.max(8.2, Math.min(10.2, lineHeight * 1.04));
   return Math.round(fontSize * 10) / 10;
 }
 
