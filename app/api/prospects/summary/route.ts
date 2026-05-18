@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import OpenAI from "openai";
+import { DEFAULT_OPENAI_CHAT_MODEL } from "@/lib/openai-models";
 import {
   SUMMARY_EXTRACTION_PROMPT,
   type IntakeTurn,
@@ -37,12 +38,12 @@ export async function POST(request: Request) {
     const openai = getOpenAI();
 
     const response = await openai.chat.completions.create({
-      model: "gpt-4o",
+      model: DEFAULT_OPENAI_CHAT_MODEL,
       messages: [
         { role: "system", content: SUMMARY_EXTRACTION_PROMPT },
         { role: "user", content: transcript },
       ],
-      max_tokens: 1000,
+      max_completion_tokens: 1000,
       temperature: 0.3,
     });
 

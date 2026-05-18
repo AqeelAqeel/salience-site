@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import OpenAI from 'openai'
+import { DEFAULT_OPENAI_CHAT_MODEL } from '@/lib/openai-models'
 
 // Lazy initialization to avoid build-time errors when OPENAI_API_KEY is not set
 const getOpenAI = () => new OpenAI({
@@ -29,7 +30,7 @@ Return a JSON object with:
 The user has indicated their formality preference as ${formality}/100 (0=very casual, 100=very formal).`
 
     const completion = await openai.chat.completions.create({
-      model: 'gpt-4-turbo-preview',
+      model: DEFAULT_OPENAI_CHAT_MODEL,
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: `Analyze these messages:\n\n${messages}` }

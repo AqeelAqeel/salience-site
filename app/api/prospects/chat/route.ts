@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import OpenAI from "openai";
 import { getSupabase } from "@/lib/supabase";
+import { DEFAULT_OPENAI_CHAT_MODEL } from "@/lib/openai-models";
 import { assembleIntakePrompt } from "@/lib/types/prospects";
 import type { IntakeTurn, Prospect } from "@/lib/types/prospects";
 
@@ -63,9 +64,9 @@ export async function POST(request: Request) {
     ];
 
     const response = await openai.chat.completions.create({
-      model: "gpt-4o",
+      model: DEFAULT_OPENAI_CHAT_MODEL,
       messages,
-      max_tokens: 300,
+      max_completion_tokens: 300,
       temperature: 0.8,
     });
 

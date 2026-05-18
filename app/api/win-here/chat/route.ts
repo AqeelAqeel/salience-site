@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import OpenAI from "openai";
 import { getSupabase } from "@/lib/supabase";
+import { DEFAULT_OPENAI_CHAT_MODEL } from "@/lib/openai-models";
 import {
   WIN_HERE_TOOLS,
   assembleWinHereSystemPrompt,
@@ -9,7 +10,7 @@ import {
   type WinHereMessage,
 } from "@/lib/types/win-here";
 
-const MODEL = "gpt-5.4-mini-2026-03-17";
+const MODEL = DEFAULT_OPENAI_CHAT_MODEL;
 const MAX_TOOL_ROUNDS = 4;
 
 const getOpenAI = () => new OpenAI({ apiKey: process.env.OPENAI_API_KEY });

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import OpenAI, { toFile } from "openai";
+import { DEFAULT_OPENAI_CHAT_MODEL } from "@/lib/openai-models";
 import {
   extractPdfTextPreview,
   fillPdfOverlay,
@@ -19,7 +20,6 @@ const MAX_CONTEXT_BYTES = 3 * 1024 * 1024;
 const MAX_CONTEXT_CHARS = 18000;
 const MAX_FIELDS_FOR_MODEL = 320;
 const MAX_FLAT_OVERLAY_PAGES = 4;
-const DEFAULT_PDF_MODEL = "gpt-5.4-mini";
 
 interface ModelFieldValue {
   fieldName: string;
@@ -239,7 +239,7 @@ async function fillFlatPdfOverlay({
     .map(({ textLines: _textLines, ...page }) => page);
 
   const response = await openai.chat.completions.create({
-    model: process.env.PDF_OVERLAY_MODEL || process.env.PDF_AUTOFILL_MODEL || DEFAULT_PDF_MODEL,
+    model: process.env.PDF_OVERLAY_MODEL || process.env.PDF_AUTOFILL_MODEL || DEFAULT_OPENAI_CHAT_MODEL,
     temperature: 0.05,
     response_format: { type: "json_object" },
     messages: [
@@ -426,7 +426,7 @@ export async function POST(request: Request) {
     const omittedFieldCount = Math.max(0, descriptor.fields.filter((field) => !field.readOnly).length - modelFields.length);
 
     const response = await openai.chat.completions.create({
-      model: process.env.PDF_AUTOFILL_MODEL || DEFAULT_PDF_MODEL,
+      model: process.env.PDF_AUTOFILL_MODEL || DEFAULT_OPENAI_CHAT_MODEL,
       temperature: 0.1,
       response_format: { type: "json_object" },
       messages: [

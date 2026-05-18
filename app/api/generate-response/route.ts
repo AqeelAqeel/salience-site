@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import OpenAI from 'openai'
+import { DEFAULT_OPENAI_CHAT_MODEL } from '@/lib/openai-models'
 
 // Lazy initialization to avoid build-time errors when OPENAI_API_KEY is not set
 const getOpenAI = () => new OpenAI({
@@ -37,7 +38,7 @@ Generate a response that:
 The response should feel like something they would actually write.`
 
     const completion = await openai.chat.completions.create({
-      model: 'gpt-4-turbo-preview',
+      model: DEFAULT_OPENAI_CHAT_MODEL,
       messages: [
         { role: 'system', content: systemPrompt },
         ...previousMessages.map((msg: any) => ({
@@ -50,7 +51,7 @@ The response should feel like something they would actually write.`
         }
       ],
       temperature: 0.8,
-      max_tokens: 100,
+      max_completion_tokens: 100,
     })
 
     const suggestion = completion.choices[0].message.content

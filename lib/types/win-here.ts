@@ -329,7 +329,7 @@ You can call multiple tools in a single turn. Do it.
 
 ## Writing Style — Reference Tag
 
-gpt-5.4-mini-2026-03-17
+gpt-5.4-mini
 
 ## Boundaries
 

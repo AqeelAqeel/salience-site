@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import OpenAI from "openai";
+import { DEFAULT_OPENAI_CHAT_MODEL } from "@/lib/openai-models";
 
 // Lazy initialization to avoid build-time errors when OPENAI_API_KEY is not set
 const getOpenAI = () => new OpenAI({
@@ -50,7 +51,7 @@ Provide your analysis in a structured JSON format.`;
 
     const openai = getOpenAI();
     const completion = await openai.chat.completions.create({
-      model: "gpt-4-turbo-preview",
+      model: DEFAULT_OPENAI_CHAT_MODEL,
       messages: [
         {
           role: "system",
@@ -62,7 +63,7 @@ Provide your analysis in a structured JSON format.`;
         },
       ],
       temperature: 0.7,
-      max_tokens: 1500,
+      max_completion_tokens: 1500,
       response_format: { type: "json_object" },
     });
 

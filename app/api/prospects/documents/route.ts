@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSupabase } from "@/lib/supabase";
+import { DEFAULT_OPENAI_CHAT_MODEL } from "@/lib/openai-models";
 import OpenAI from "openai";
 import type { IntakeTurn, ProspectSummary } from "@/lib/types/prospects";
 
@@ -51,7 +52,7 @@ export async function POST(request: Request) {
 
     // Generate structured summary + readable document
     const response = await openai.chat.completions.create({
-      model: "gpt-4o",
+      model: DEFAULT_OPENAI_CHAT_MODEL,
       messages: [
         {
           role: "system",
@@ -87,7 +88,7 @@ Return ONLY valid JSON, no markdown wrapping.`,
           content: `Prospect: ${prospect?.full_name || "Unknown"}\nCompany: ${prospect?.company_name || "Unknown"}\nIndustry: ${prospect?.industry || "Unknown"}\n\nTranscript:\n${transcript}`,
         },
       ],
-      max_tokens: 4000,
+      max_completion_tokens: 4000,
       temperature: 0.4,
     });
 

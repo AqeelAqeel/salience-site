@@ -1,4 +1,5 @@
 import OpenAI from "openai";
+import { DEFAULT_OPENAI_CHAT_MODEL } from "@/lib/openai-models";
 import type {
   AIThreadInterpretation,
   FriendSurface,
@@ -75,7 +76,7 @@ export async function interpretThread(args: {
   });
 
   const res = await client.chat.completions.create({
-    model: "gpt-4o-mini",
+    model: DEFAULT_OPENAI_CHAT_MODEL,
     temperature: 0.4,
     messages: [
       { role: "system", content: system },
@@ -133,7 +134,7 @@ export async function extractStyleSummary(
   if (!sentBodies.length) return { style: "", signoff: "", commonPhrases: [] };
   const client = openai();
   const res = await client.chat.completions.create({
-    model: "gpt-4o-mini",
+    model: DEFAULT_OPENAI_CHAT_MODEL,
     temperature: 0.2,
     messages: [
       {

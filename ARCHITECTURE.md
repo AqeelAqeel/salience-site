@@ -80,7 +80,7 @@ hooks/
   use-voice-recorder.ts      # MediaRecorder wrapper
 lib/
   friends/
-    ai.ts                    # OpenAI gpt-4o-mini thread interpretation (strict JSON schema)
+    ai.ts                    # OpenAI default chat model thread interpretation (strict JSON schema)
     db.ts                    # getFriendBySlug, getCockpitSnapshot
     gmail.ts                 # Gmail threads fetch + body parsing + draft creation + token refresh
     prompts.ts               # buildInterpretationSystemPrompt, buildThreadUserPrompt
@@ -182,9 +182,9 @@ supabase/
 **Data flow**:
 1. User taps orb → `useVoiceRecorder` begins capture via MediaRecorder
 2. `useAudioAnalyzer` feeds FFT data to `ProspectIntakeOrb` for pulsing visual
-3. Audio blob → `POST /api/prospects/transcribe` (OpenAI Whisper / gpt-4o)
+3. Audio blob → `POST /api/prospects/transcribe` (OpenAI Whisper)
 4. First turn creates prospect + session (`POST /api/prospects/sessions`)
-5. Transcribed turn → `POST /api/prospects/chat` (OpenAI gpt-4o) with `assembleIntakePrompt(prospect)` from `lib/types/prospects.ts`
+5. Transcribed turn → `POST /api/prospects/chat` (OpenAI default chat model) with `assembleIntakePrompt(prospect)` from `lib/types/prospects.ts`
 6. Assistant reply → `POST /api/prospects/synthesize` (OpenAI `/audio/speech`) for TTS
 7. Audio is published into the Atlas avatar via `AvatarSessionHandle.publishAudio()` over LiveKit
 8. `POST /api/prospects/summary` extracts a structured `ProspectSummary` at wrap-up
@@ -202,7 +202,7 @@ supabase/
 - `/i-want-my-time-and-energy-back` renders `components/win-here/chat-view.tsx` full-page
 - The home page embeds `components/mini-chat.tsx`, which posts to the same `/api/win-here/*` endpoints
 
-**Model**: OpenAI `gpt-5.4-mini-2026-03-17` with function calling. Uses `max_completion_tokens` (not `max_tokens`) and no custom temperature — reasoning-era model constraints.
+**Model**: OpenAI default chat model (`gpt-5.4-mini` unless `OPENAI_CHAT_MODEL` overrides) with function calling. Uses `max_completion_tokens` (not `max_tokens`) and no custom temperature.
 
 **Tool loop** (max 4 rounds before forcing final response):
 - `set_website(url, display_name)`
@@ -231,10 +231,10 @@ supabase/
 2. **Token linking.** Client posts to `POST /api/friends/[slug]/link-tokens`, which takes the Supabase auth session, extracts the Google provider tokens, and upserts them into `friend_gmail_tokens` (keyed on `(prospect_id, supabase_user_id)`). Also stamps `prospects.friend_supabase_user_id` so subsequent snapshots know who signed in.
 3. **Sync.** Client opens `GET /api/friends/[slug]/stream` as an SSE connection. Server invokes `lib/friends/sync.ts` → `runSync({ friend, token, emit })`:
    - Refreshes the OAuth token if expired (POSTs to `oauth2.googleapis.com/token` with `GOOGLE_OAUTH_CLIENT_ID` / `GOOGLE_OAUTH_CLIENT_SECRET`; updates `friend_gmail_tokens`)
-   - **Learns the user's voice and sign-off**: fetches up to 20 recent sent emails via `fetchSentBodies()` (Gmail query `in:sent`), passes bodies to `extractStyleSummary()` (OpenAI `gpt-4o-mini` with strict `json_schema`) which returns `{style, signoff}`. Upserts `style` into `friend_ai_state.communication_style` (unique on `prospect_id`), emits `user_state_updated`. The observed `signoff` is passed into every `interpretThread()` call and **takes precedence over `friend_signoff`** from the seed row. Non-fatal on failure — sync continues with the seed cues.
+   - **Learns the user's voice and sign-off**: fetches up to 20 recent sent emails via `fetchSentBodies()` (Gmail query `in:sent`), passes bodies to `extractStyleSummary()` (OpenAI default chat model with strict `json_schema`) which returns `{style, signoff}`. Upserts `style` into `friend_ai_state.communication_style` (unique on `prospect_id`), emits `user_state_updated`. The observed `signoff` is passed into every `interpretThread()` call and **takes precedence over `friend_signoff`** from the seed row. Non-fatal on failure — sync continues with the seed cues.
    - Lists recent inbox threads via `gmail.users.threads.list` (default 40, query `in:inbox -category:promotions -category:social`)
    - For each thread: fetches full messages, upserts into `friend_email_threads` (status `processing`) and `friend_email_messages`, upserts sender addresses into `friend_recipient_profiles`
-   - Calls `interpretThread({friend, learnedStyle, learnedSignoff, ...})` → `lib/friends/ai.ts` → OpenAI `gpt-4o-mini` with a strict `json_schema` response format. Returns `{summary, senderIntent, requiredAction, urgency, shouldReply, suggestedTone, relationshipContext, risks, opportunities, draftReply}`. `learnedStyle` and `learnedSignoff` (from the step above) are injected into the system prompt; the model is instructed to prefer them over the seed `friend_tone_hints` / `friend_signoff`.
+   - Calls `interpretThread({friend, learnedStyle, learnedSignoff, ...})` → `lib/friends/ai.ts` → OpenAI default chat model with a strict `json_schema` response format. Returns `{summary, senderIntent, requiredAction, urgency, shouldReply, suggestedTone, relationshipContext, risks, opportunities, draftReply}`. `learnedStyle` and `learnedSignoff` (from the step above) are injected into the system prompt; the model is instructed to prefer them over the seed `friend_tone_hints` / `friend_signoff`.
    - Inserts into `friend_thread_interpretations`; flips the thread status to `needs_reply` or `analyzed`; sets `priority_score` from urgency (low=20, medium=60, high=100)
    - If `shouldReply`, writes a draft into `friend_reply_drafts` with `status='generated'`. **Resync-safe**: checks for an existing latest draft on the thread. If none, inserts `version=1`. If the latest is still `generated` (untouched by the user) and the body changed, updates in place and bumps `version`. If the user has `edited`/`approved`/`sent_to_gmail`/`discarded` it, leaves their work alone.
    - Emits `StreamEvent`s throughout: `sync_started` → `email_loaded` → `analysis_started` → `analysis_completed` → `draft_created` → `sync_completed` (or `error`)
@@ -260,25 +260,25 @@ supabase/
 | `/api/prospects/[id]` | GET, PATCH | — | Read/update prospect | `prospects` | IntakeConversation |
 | `/api/prospects/sessions` | POST, GET | — | Create/list intake sessions | `prospect_sessions` | IntakeConversation |
 | `/api/prospects/sessions/[id]` | GET, PATCH | — | Session detail | `prospect_sessions`, `prospect_turns` | IntakeConversation |
-| `/api/prospects/chat` | POST | OpenAI `gpt-4o` | Assistant turn during intake | `prospect_turns` | IntakeConversation |
-| `/api/prospects/transcribe` | POST | OpenAI Whisper / `gpt-4o` | Audio → text | — | useVoiceRecorder |
+| `/api/prospects/chat` | POST | OpenAI default chat model | Assistant turn during intake | `prospect_turns` | IntakeConversation |
+| `/api/prospects/transcribe` | POST | OpenAI Whisper | Audio → text | — | useVoiceRecorder |
 | `/api/prospects/synthesize` | POST | OpenAI `/audio/speech` | Text → audio | — | useIntakeSession |
-| `/api/prospects/summary` | POST | OpenAI `gpt-4o` | Structured `ProspectSummary` extraction | `prospect_sessions.summary_json` | IntakeSummary |
-| `/api/prospects/documents` | POST, GET | OpenAI `gpt-4o` | Render summary doc | `prospect_documents` | IntakeSummary |
+| `/api/prospects/summary` | POST | OpenAI default chat model | Structured `ProspectSummary` extraction | `prospect_sessions.summary_json` | IntakeSummary |
+| `/api/prospects/documents` | POST, GET | OpenAI default chat model | Render summary doc | `prospect_documents` | IntakeSummary |
 | `/api/prospects/documents/[token]` | GET | — | Public shareable summary lookup | `prospect_documents` | Anyone with token |
 | `/api/win-here/session` | POST | — | Create prospect + session stub | `prospects`, `prospect_sessions` (type=`win_here`) | MiniChat, WinHereChatView |
-| `/api/win-here/chat` | POST | OpenAI `gpt-5.4-mini-2026-03-17` | Tool-loop chat turn | `prospect_turns`, `prospects` | MiniChat, WinHereChatView |
+| `/api/win-here/chat` | POST | OpenAI default chat model | Tool-loop chat turn | `prospect_turns`, `prospects` | MiniChat, WinHereChatView |
 | `/api/atlas/session` | POST | Atlas v1 (proxy) | Create avatar session | — | AvatarSession component |
 | `/api/atlas/session/[id]` | DELETE | Atlas v1 (proxy) | Tear down avatar session | — | AvatarSession component |
 | `/api/friends/[slug]/snapshot` | GET | — | Refresh `CockpitSnapshot` | reads all `friend_*` + `prospects` | Cockpit |
-| `/api/friends/[slug]/stream` | GET (SSE) | OpenAI `gpt-4o-mini` (via `interpretThread`) | Run full Gmail sync + interpretation + draft loop; emit `StreamEvent`s | `friend_email_threads`, `friend_email_messages`, `friend_recipient_profiles`, `friend_thread_interpretations`, `friend_reply_drafts`, `friend_gmail_tokens` | Cockpit |
+| `/api/friends/[slug]/stream` | GET (SSE) | OpenAI default chat model (via `interpretThread`) | Run full Gmail sync + interpretation + draft loop; emit `StreamEvent`s | `friend_email_threads`, `friend_email_messages`, `friend_recipient_profiles`, `friend_thread_interpretations`, `friend_reply_drafts`, `friend_gmail_tokens` | Cockpit |
 | `/api/friends/[slug]/link-tokens` | POST | Google OAuth | Link Supabase-auth Google tokens → `friend_gmail_tokens` | `friend_gmail_tokens`, `prospects.friend_supabase_user_id` | SignInHero |
 | `/api/friends/[slug]/drafts/[draftId]` | PATCH, POST | Gmail API (POST only) | PATCH: edit/approve/discard draft. POST: push draft to Gmail via `createGmailDraft` | `friend_reply_drafts`, `friend_gmail_tokens` | Cockpit / ThreadCard |
 | `/api/friends/[slug]/threads/[threadId]/status` | PATCH | — | Change thread status (e.g. `done`, `ignored`) | `friend_email_threads` | Cockpit / ThreadCard |
-| `/api/chat` | POST | OpenAI `gpt-4-turbo-preview` | Generic empathetic chatbot | — | **orphan** |
-| `/api/analyze` | POST | OpenAI `gpt-4-turbo-preview` | Psychological conversation analysis | — | **orphan** |
-| `/api/analyze-messages` | POST | OpenAI `gpt-4-turbo-preview` | Extract profile from message dump | — | `/skeleton-filled-closet/chat-analysis` |
-| `/api/generate-response` | POST | OpenAI `gpt-4-turbo-preview` | Suggest next message in user's voice | — | `/skeleton-filled-closet/chat-analysis` |
+| `/api/chat` | POST | OpenAI default chat model | Generic empathetic chatbot | — | **orphan** |
+| `/api/analyze` | POST | OpenAI default chat model | Psychological conversation analysis | — | **orphan** |
+| `/api/analyze-messages` | POST | OpenAI default chat model | Extract profile from message dump | — | `/skeleton-filled-closet/chat-analysis` |
+| `/api/generate-response` | POST | OpenAI default chat model | Suggest next message in user's voice | — | `/skeleton-filled-closet/chat-analysis` |
 
 **Orphan routes** (no live caller): `/api/chat`, `/api/analyze`. Candidates for removal.
 
@@ -313,7 +313,7 @@ All tables have RLS enabled with fully open `for all using (true) with check (tr
 | Service | Used by | Auth | Notes |
 |---|---|---|---|
 | **Anthropic** | Charton chat | `ANTHROPIC_API_KEY` | `claude-sonnet-4-20250514` |
-| **OpenAI** | Prospects (`gpt-4o` + Whisper + TTS), Win-Here (`gpt-5.4-mini-2026-03-17`), Friends interpretation (`gpt-4o-mini` with strict JSON schema), orphan routes (`gpt-4-turbo-preview`) | `OPENAI_API_KEY` | Mix of reasoning-era and classic models |
+| **OpenAI** | Default chat model (`gpt-5.4-mini` unless `OPENAI_CHAT_MODEL` overrides), Whisper, TTS | `OPENAI_API_KEY` | Chat routes share `lib/openai-models.ts`; audio routes keep dedicated models |
 | **Supabase** | All persistence | `NEXT_PUBLIC_SUPABASE_URL` + `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (browser); `NEXT_SECRET_SUPABASE_SERVICE_ROLE_KEY` (server, Friends only) | Open RLS; service role required for Friends cockpit |
 | **Atlas (northmodellabs)** | Voice avatar | `NEXT_NORTHMODELLABS_API_KEY` | Proxied via `/api/atlas/session`; returns LiveKit creds |
 | **LiveKit** | Avatar audio transport | token from Atlas | Client joins room, publishes synthesized TTS audio |
@@ -404,6 +404,6 @@ All in `scripts/*.mjs`, invoked via `node scripts/<file>.mjs [args]`.
 - **`IntakeConversation` path is misleading.** Lives under `components/prospects/` but is only mounted on `/charton-financial`.
 - **Open RLS on every table.** Acceptable for demo surfaces and for the Friends cockpit when accessed via service role, but it means the browser-side publishable key can read/write every prospect, every thread, every draft. Tighten before any auth-gated use outside the Friends flow.
 - **Win-Here persistence silent-fails.** Supabase errors are caught; chat continues without storing turns. If prospect records seem missing, check server logs.
-- **Friends voice extraction cost.** Every resync calls `extractStyleSummary` (1 extra `gpt-4o-mini` call) and fetches 20 sent emails. If the user hammers Resync, there's no caching — consider checking `friend_ai_state.updated_at` and skipping if recent.
+- **Friends voice extraction cost.** Every resync calls `extractStyleSummary` (1 extra OpenAI chat call) and fetches 20 sent emails. If the user hammers Resync, there's no caching — consider checking `friend_ai_state.updated_at` and skipping if recent.
 - **Friends skill doc staleness.** `.claude/skills/friend-new-prospect/SKILL.md` references `003_friend_drafter.sql` which has been archived — the content is in the fresh-init migration now.
 - **Fresh-init migration is destructive.** `20260423000000_fresh_init.sql` begins with `drop schema if exists public cascade;`. Only run against disposable DBs.
