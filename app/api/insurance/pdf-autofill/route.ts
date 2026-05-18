@@ -448,15 +448,14 @@ function descriptorText(field: PdfFieldDescriptor): string {
 function isForbiddenField(field: PdfFieldDescriptor): boolean {
   const text = descriptorText(field);
   const normalizedName = field.name.trim().toLowerCase();
+  const nearbyText = (field.nearbyText || []).slice(0, 2).join(" ");
+  const isBareSingleLabel = matchTokens(field.name).size === 1 && !LOW_SIGNAL_MATCH_TOKENS.has([...matchTokens(field.name)][0]);
 
   return (
     /\b(signature|sign here|initials?|attestation|certification|perjury|reviewed by)\b/i.test(text) ||
-    /\b(tenant|landlord|guarantor|agent)\s+date\b/i.test(text) ||
-    /\bdate\s+(tenant|landlord|guarantor|agent)\b/i.test(text) ||
-    (/^date(?:_\d+)?$/.test(normalizedName) && /\bpremises:\s*date\b/i.test(text)) ||
-    (/^(landlord|tenant)(?:[_\s-]?\d+)?$/.test(normalizedName) &&
-      !/\bagree as follows\b/i.test(text) &&
-      !/\bnamed person/i.test(text)) ||
+    /\b(signed|signer|reviewed|approved|authorized|witnessed)\s+date\b/i.test(text) ||
+    /\bdate\s+(signed|signer|reviewed|approved|authorized|witnessed)\b/i.test(text) ||
+    (isBareSingleLabel && /\b(date|address|city|state|zip|postal|telephone|phone|fax|email)\b/i.test(nearbyText)) ||
     /^(undefined(?:_\d+)?|or(?:_\d+)?|and(?:_\d+)?|at(?:_\d+)?|am|pm|\d+(?:_\d+)?)$/.test(normalizedName) ||
     (/^name(?:_\d+)?$/.test(normalizedName) && /\bphone\b|\baddress\b|\bpayment\b|\bpaid\b/i.test(text))
   );
@@ -475,41 +474,7 @@ function isTextValueSupportedByEvidence(value: unknown, evidenceText: string): b
   return compactSource.includes(compactValue);
 }
 
-function isFieldTopicSupported(field: PdfFieldDescriptor, evidenceText: string): boolean {
-  const text = [field.name, ...(field.nearbyText || []).slice(0, 1)].join(" ");
-  const topicRequirements: Array<{ field: RegExp; evidence: RegExp }> = [
-    { field: /\bsecurity deposit\b/i, evidence: /\bsecurity deposit\b|\bdeposit\b/i },
-    { field: /\bpersonal property\b/i, evidence: /\bpersonal property\b|\bappliance|furniture|fixture/i },
-    { field: /\bparking\b/i, evidence: /\bparking\b/i },
-    { field: /\bstorage\b/i, evidence: /\bstorage\b/i },
-    { field: /\butilities\b/i, evidence: /\butilities?\b/i },
-    { field: /\bcommencement date falls\b|\bpaid one full month/i, evidence: /\bprorat|\badvance\b|\bsecond calendar\b|\brent payable day\b/i },
-    { field: /\badditional sum\b|\bshall pay to landlord respectively\b/i, evidence: /\badditional sum\b|\badditional rent\b|\bprorat|\badvance\b|\bpayment schedule\b/i },
-    { field: /\bneighborhood\b/i, evidence: /\bneighborhood\b/i },
-    { field: /\bkeys?\b|\blocks?\b|\brekey/i, evidence: /\bkeys?\b|\blocks?\b|\brekey/i },
-    { field: /\blate charge\b|\bnsf\b|\breturned check\b/i, evidence: /\blate charge\b|\bnsf\b|\breturned check\b/i },
-    { field: /\bpets?\b/i, evidence: /\bpets?\b|animal/i },
-    { field: /\bhoa\b|\bhomeowners/i, evidence: /\bhoa\b|\bhomeowners/i },
-    { field: /\bagency relationships?\b|\bdisclosure\b/i, evidence: /\bagency relationships?\b|\bdisclosure\b/i },
-    { field: /\bbroker\b|\bleasing firm\b|\blisting firm\b|\bleasing agent\b|\blisting agent\b|\bagent print firm\b/i, evidence: /\bbroker\b|\bleasing firm\b|\blisting firm\b|\bleasing agent\b|\blisting agent\b|\bagent firm\b/i },
-    { field: /\bguarantor\b|\bguarantee\b/i, evidence: /\bguarantor\b|\bguarantee\b/i },
-    { field: /\bmove-?in\b/i, evidence: /\bmove-?in\b/i },
-    { field: /\bD\.\s*PAYMENT\b|\bpaid by\b|\bpayee\b|\bpersonal check\b|\bmoney order\b|\bcashier/i, evidence: /\bpayee\b|\bpayment\b|\bpaid by\b|\bpersonal check\b|\bmoney order\b|\bcashier/i },
-  ];
-
-  return topicRequirements.every((requirement) => !requirement.field.test(text) || requirement.evidence.test(evidenceText));
-}
-
-function isExplicitCheckboxSupported(field: PdfFieldDescriptor, evidenceText: string): boolean {
-  if (
-    field.name.trim().toLowerCase() === "b" &&
-    /\blease\b/i.test(descriptorText(field)) &&
-    /\blease\b|\bterm\b|\bstarts?\b|\bends?\b/i.test(evidenceText)
-  ) {
-    return true;
-  }
-
-  const stopWords = new Set([
+const MATCH_STOP_WORDS = new Set([
     "the",
     "and",
     "or",
@@ -523,23 +488,26 @@ function isExplicitCheckboxSupported(field: PdfFieldDescriptor, evidenceText: st
     "for",
     "with",
     "date",
-    "tenant",
-    "landlord",
-    "premises",
-    "agreement",
     "shall",
     "will",
-    "rent",
-    "month",
-    "property",
-    "personal",
+    "agreement",
+    "document",
+    "form",
+    "field",
+    "line",
+    "blank",
+    "section",
+    "page",
+    "print",
+    "enter",
+    "write",
+    "select",
+    "check",
     "right",
     "rights",
     "included",
     "provided",
     "other",
-    "form",
-    "check",
     "from",
     "under",
     "paragraph",
@@ -548,117 +516,209 @@ function isExplicitCheckboxSupported(field: PdfFieldDescriptor, evidenceText: st
     "supplements",
     "terms",
     "conditions",
-    "lease",
     "term",
     "year",
-    "real",
-    "estate",
-  ]);
-  const evidence = new Set(
-    evidenceText
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, " ")
-      .split(/\s+/)
-      .filter(Boolean)
-  );
-  const tokens = descriptorText(field)
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, " ")
-    .split(/\s+/)
-    .filter((token) => token.length > 3)
-    .filter((token) => !stopWords.has(token));
+    "true",
+    "false",
+]);
 
-  return tokens.filter((token) => evidence.has(token)).length >= 2;
+const LOW_SIGNAL_MATCH_TOKENS = new Set([
+  "name",
+  "address",
+  "city",
+  "state",
+  "zip",
+  "postal",
+  "phone",
+  "telephone",
+  "fax",
+  "email",
+  "date",
+  "amount",
+  "money",
+  "total",
+  "location",
+]);
+
+function baseMatchToken(token: string): string {
+  let normalized = token.toLowerCase().replace(/[^a-z0-9]+/g, "");
+  if (normalized.endsWith("ies") && normalized.length > 4) normalized = `${normalized.slice(0, -3)}y`;
+  if (normalized.endsWith("ing") && normalized.length > 5) normalized = normalized.slice(0, -3);
+  if (normalized.endsWith("ed") && normalized.length > 4) normalized = normalized.slice(0, -2);
+  if (normalized.endsWith("ly") && normalized.length > 5) normalized = normalized.slice(0, -2);
+  if (normalized.endsWith("s") && normalized.length > 4) normalized = normalized.slice(0, -1);
+  return normalized;
+}
+
+function tokenAliases(token: string): string[] {
+  const aliases: Record<string, string[]> = {
+    begin: ["start"],
+    commence: ["start"],
+    commencement: ["start"],
+    effective: ["start"],
+    terminate: ["end"],
+    termination: ["end"],
+    expire: ["end"],
+    expiration: ["end"],
+    end: ["terminate"],
+    amount: ["money"],
+    total: ["amount", "money"],
+    fee: ["amount", "money"],
+    cost: ["amount", "money"],
+    price: ["amount", "money"],
+    payment: ["pay", "amount", "money"],
+    paid: ["pay", "amount", "money"],
+    deposit: ["amount", "money"],
+    dollar: ["amount", "money"],
+    address: ["location"],
+    property: ["location"],
+    premise: ["location"],
+    residence: ["location"],
+    organization: ["company", "firm"],
+    business: ["company", "organization"],
+    firm: ["company", "organization"],
+    person: ["name"],
+    people: ["person", "name"],
+    individual: ["person", "name"],
+    occupant: ["person", "name"],
+    applicant: ["person", "name"],
+    client: ["person", "name"],
+    customer: ["person", "name"],
+    patient: ["person", "name"],
+  };
+
+  return aliases[token] || [];
+}
+
+function matchTokens(text: string): Set<string> {
+  const tokens = new Set<string>();
+
+  for (const rawToken of text.toLowerCase().split(/[^a-z0-9]+/g)) {
+    const token = baseMatchToken(rawToken);
+    if (token.length < 3 || MATCH_STOP_WORDS.has(token)) continue;
+    tokens.add(token);
+    for (const alias of tokenAliases(token)) {
+      if (!MATCH_STOP_WORDS.has(alias)) tokens.add(alias);
+    }
+  }
+
+  return tokens;
+}
+
+function countOverlap(left: Set<string>, right: Set<string>): number {
+  let count = 0;
+  for (const token of left) {
+    if (right.has(token)) count += 1;
+  }
+  return count;
+}
+
+function countStrongOverlap(left: Set<string>, right: Set<string>): number {
+  let count = 0;
+  for (const token of left) {
+    if (!LOW_SIGNAL_MATCH_TOKENS.has(token) && right.has(token)) count += 1;
+  }
+  return count;
+}
+
+function hasStrongContext(field: PdfFieldDescriptor): boolean {
+  const fieldTokens = matchTokens(field.name);
+  const contextTokens = matchTokens((field.nearbyText || []).slice(0, 2).join(" "));
+  for (const token of contextTokens) {
+    if (!fieldTokens.has(token) && !LOW_SIGNAL_MATCH_TOKENS.has(token)) return true;
+  }
+  return false;
+}
+
+function hasTrailingOrdinal(name: string): boolean {
+  return /(?:^|[\s_-])\d+$/.test(name.trim());
+}
+
+function isAmbiguousRepeatedField(field: PdfFieldDescriptor, sourceQuote?: string): boolean {
+  if (!hasTrailingOrdinal(field.name)) return false;
+  if (sourceQuote && compactEvidence(sourceQuote).includes(compactEvidence(field.name))) return false;
+  return matchTokens(field.name).size <= 2;
+}
+
+function valueMatchesFact(value: unknown, fact: ModelEvidenceFact): boolean {
+  const compactValue = compactEvidence(String(value || ""));
+  const compactFactValue = compactEvidence(fact.value || "");
+  if (!compactValue || !compactFactValue) return false;
+  return compactValue === compactFactValue || compactValue.includes(compactFactValue) || compactFactValue.includes(compactValue);
+}
+
+function scoreFactForField(field: PdfFieldDescriptor, fact: ModelEvidenceFact): number {
+  const fieldNameTokens = matchTokens(field.name);
+  const fieldContextTokens = matchTokens((field.nearbyText || []).slice(0, 2).join(" "));
+  const factLabelTokens = matchTokens(fact.label);
+  const factQuoteTokens = matchTokens(fact.sourceQuote);
+  const nameLabelOverlap = countStrongOverlap(fieldNameTokens, factLabelTokens);
+  const nameQuoteOverlap = countStrongOverlap(fieldNameTokens, factQuoteTokens);
+  const contextLabelOverlap = countStrongOverlap(fieldContextTokens, factLabelTokens);
+  const lowSignalNameLabelOverlap = countOverlap(fieldNameTokens, factLabelTokens) - nameLabelOverlap;
+  const fieldNameHasStrongToken = [...fieldNameTokens].some((token) => !LOW_SIGNAL_MATCH_TOKENS.has(token));
+  const lowSignalScore =
+    fieldNameHasStrongToken || hasStrongContext(field) ? 0 : Math.min(lowSignalNameLabelOverlap, 1) * 3;
+
+  return nameLabelOverlap * 4 + Math.min(nameQuoteOverlap, 2) + Math.min(contextLabelOverlap, 2) + lowSignalScore;
+}
+
+function isFieldValueAlignedWithEvidence(
+  field: PdfFieldDescriptor,
+  value: unknown,
+  facts: ModelEvidenceFact[],
+  sourceQuote?: string
+): boolean {
+  if (isAmbiguousRepeatedField(field, sourceQuote)) return false;
+
+  const matchingFacts = facts.filter((fact) => valueMatchesFact(value, fact));
+  if (matchingFacts.some((fact) => scoreFactForField(field, fact) >= 3)) return true;
+
+  if (sourceQuote) {
+    const fieldTokens = matchTokens(field.name);
+    const quoteTokens = matchTokens(sourceQuote);
+    if (countStrongOverlap(fieldTokens, quoteTokens) >= 1) return true;
+  }
+
+  return false;
+}
+
+function isExplicitControlSupported(
+  field: ModelFieldValue,
+  descriptor: PdfFieldDescriptor,
+  facts: ModelEvidenceFact[]
+): boolean {
+  const selectionEvidence = field.sourceQuote || "";
+  if (!/\b(yes|checked|check|selected|select|choose|chosen|mark|marked)\b/i.test(selectionEvidence)) {
+    return false;
+  }
+
+  if (isAmbiguousRepeatedField(descriptor, field.sourceQuote)) return false;
+
+  if (field.sourceQuote && countStrongOverlap(matchTokens(descriptor.name), matchTokens(field.sourceQuote)) >= 1) {
+    return true;
+  }
+
+  return facts.some((fact) => scoreFactForField(descriptor, fact) >= 3);
 }
 
 function isSupportedRequestedFill(
   field: ModelFieldValue,
   descriptor: PdfFieldDescriptor | undefined,
-  evidenceText: string
+  evidenceText: string,
+  evidenceFacts: ModelEvidenceFact[]
 ): boolean {
   if (!descriptor || isForbiddenField(descriptor)) return false;
 
   if (descriptor.type === "checkbox" || descriptor.type === "radio") {
     if (isFalseValue(field.value)) return false;
-    return isExplicitCheckboxSupported(descriptor, evidenceText);
+    return isExplicitControlSupported(field, descriptor, evidenceFacts);
   }
 
-  return isFieldTopicSupported(descriptor, evidenceText) && isTextValueSupportedByEvidence(field.value, evidenceText);
-}
-
-function findFactValue(facts: ModelEvidenceFact[], labelPattern: RegExp, valuePattern?: RegExp): string | undefined {
-  return facts.find((fact) => labelPattern.test(fact.label) && (!valuePattern || valuePattern.test(fact.value)))?.value;
-}
-
-function buildHeuristicLeaseFills(
-  descriptor: Awaited<ReturnType<typeof inspectPdfForm>>,
-  facts: ModelEvidenceFact[],
-  evidenceText: string
-): ModelFieldValue[] {
-  const landlord = findFactValue(facts, /\b(landlord|lessor|owner)\b/i);
-  const tenants =
-    findFactValue(facts, /\b(tenants|lessees|renters)\b/i) ||
-    facts
-      .filter((fact) => /\b(tenant|lessee|renter)\b/i.test(fact.label))
-      .map((fact) => fact.value)
-      .filter(Boolean)
-      .join(" and ");
-  const premises = findFactValue(facts, /\b(premises|property|address)\b/i);
-  const startDate = findFactValue(facts, /\b(start|commencement|begin|term begins)\b/i);
-  const endDate = findFactValue(facts, /\b(end|terminate|termination|expires?)\b/i);
-  const monthlyRent =
-    findFactValue(facts, /\b(monthly rent|rent)\b/i, /\d/) ||
-    evidenceText.match(/\b(?:monthly\s+)?rent\s+(?:is|of|equals|=)?\s*\$?\s*([0-9][0-9,]*(?:\.\d{2})?)/i)?.[1];
-  const fills: ModelFieldValue[] = [];
-
-  function push(fieldName: string, value: string, reason: string) {
-    fills.push({
-      fieldName,
-      value,
-      confidence: 2,
-      sourceQuote: value,
-      reasoning: reason,
-    });
-  }
-
-  for (const field of descriptor.fields) {
-    if (field.readOnly || isForbiddenField(field)) continue;
-    const text = descriptorText(field);
-    const fieldName = field.name.toLowerCase();
-
-    if (field.type === "checkbox") {
-      if (endDate && /\blease\b/i.test(text) && /\bterminate\b/i.test(text)) {
-        push(field.name, "true", "Fixed lease term includes an end date.");
-      }
-      continue;
-    }
-
-    if (field.type !== "text") continue;
-    if (landlord && /^landlord\b/i.test(field.name) && /\bagree as follows\b/i.test(text)) {
-      push(field.name, landlord, "Party line asks for landlord.");
-    } else if (tenants && /^tenant\b/i.test(field.name) && /\bagree as follows\b/i.test(text)) {
-      push(field.name, tenants, "Party line asks for tenant.");
-    } else if (premises && /^premises(?:_\d+)?$/i.test(field.name)) {
-      push(field.name, premises, "Premises field asks for property address.");
-    } else if (tenants && /\bnamed person/i.test(field.name) && /sole use|named persons|following named/i.test(fieldName)) {
-      push(field.name, tenants, "Occupant line asks for named persons.");
-    } else if (premises && /\breal property\b/i.test(text)) {
-      push(field.name, premises, "Premises field asks for property address.");
-    } else if (startDate && /\bterm begins\b/i.test(text)) {
-      push(field.name, startDate, "Term field asks for commencement date.");
-    } else if (endDate && /\blease\b/i.test(text) && /\bterminate\b/i.test(text)) {
-      push(field.name, endDate, "Lease field asks for termination date.");
-    } else if (
-      monthlyRent &&
-      /\btenant agrees to pay\b/i.test(text) &&
-      /\b(per month|rent)\b/i.test(text) &&
-      !/\bsecurity deposit\b/i.test([field.name, field.nearbyText?.[0] || ""].join(" "))
-    ) {
-      push(field.name, monthlyRent, "Rent clause asks for monthly rent.");
-    }
-  }
-
-  return fills;
+  return (
+    isTextValueSupportedByEvidence(field.value, evidenceText) &&
+    isFieldValueAlignedWithEvidence(descriptor, field.value, evidenceFacts, field.sourceQuote)
+  );
 }
 
 async function extractEvidenceFacts(openai: OpenAI, contextBlocks: string[]): Promise<ModelEvidenceResponse> {
@@ -672,8 +732,8 @@ async function extractEvidenceFacts(openai: OpenAI, contextBlocks: string[]): Pr
         content: `Extract every atomic fact that may help fill a PDF form.
 
 Rules:
-- Preserve names, organizations, addresses, dates, money amounts, lease/rent terms, contact info, options, and yes/no facts.
-- Split combined descriptions into separate facts. Example: landlord, tenant, start date, end date, rent, and security deposit should be separate facts.
+- Preserve names, organizations, addresses, dates, money amounts, time periods, contact info, selected options, and yes/no facts.
+- Split combined descriptions into separate facts. Each person, organization, address, date, amount, option, and term should be separate when possible.
 - Keep values concise and form-ready.
 - Use only supplied evidence. Do not infer signatures, initials, attestations, legal IDs, or account numbers.
 - Return structured JSON only.`,
@@ -723,8 +783,8 @@ Rules:
 - Use only fieldName values from the supplied batch.
 - This is batch ${batchIndex + 1} of ${batchCount}. Treat it independently and fill every supported field in this batch.
 - Field names may be generated, cryptic, duplicated, or partial text from the document. Use visualOrder, pageIndex, rect, nearbyText, position, and page text to infer what each blank means.
-- For clauses split across adjacent blanks, fill each blank by local reading order. Example: a line reading "(Landlord) and (Tenant) agree..." usually has separate landlord and tenant fields.
-- Common lease aliases: landlord/owner/lessor, tenant/lessee/renter, commencement/start date, termination/end date, rent/monthly rent, security deposit.
+- For clauses split across adjacent blanks, fill each blank by local reading order and visible labels around that blank.
+- Use ordinary label synonyms across domains: start/begin/effective, end/terminate/expire, organization/company/firm, amount/total/payment, address/location/property, person/name/contact.
 - Do not invent facts, account numbers, tax IDs, signatures, initials, legal attestations, or certification/perjury answers.
 - Fill a field only when evidence or extracted facts directly support it.
 - Use concise values that belong in a PDF field, not prose.
@@ -1082,25 +1142,13 @@ export async function POST(request: Request) {
         })
     );
 
-    const heuristicFills = buildHeuristicLeaseFills(descriptor, evidence.facts || [], contextBlocks.join("\n\n"));
-    const parsed = mergeAutofillResponses([
-      {
-        fieldValues: heuristicFills,
-        unfilledFields: [],
-        summary: {
-          extractedFacts: [],
-          assumptions: [],
-          warnings: [],
-        },
-      },
-      ...batchResponses,
-    ]);
+    const parsed = mergeAutofillResponses(batchResponses);
     const fieldByName = new Map(descriptor.fields.map((field) => [field.name, field]));
     const fieldNames = new Set(fieldByName.keys());
     const evidenceText = contextBlocks.join("\n\n");
     const requestedFills: FieldFillInput[] = (parsed.fieldValues || [])
       .filter((field) => field.fieldName && fieldNames.has(field.fieldName))
-      .filter((field) => isSupportedRequestedFill(field, fieldByName.get(field.fieldName), evidenceText))
+      .filter((field) => isSupportedRequestedFill(field, fieldByName.get(field.fieldName), evidenceText, evidence.facts || []))
       .filter((field) => typeof field.confidence !== "number" || field.confidence >= 0.45)
       .map((field) => ({
         fieldName: field.fieldName,
