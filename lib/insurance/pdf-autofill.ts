@@ -9,6 +9,8 @@ import {
   rgb,
 } from "pdf-lib";
 
+type PdfTransform = [number, number, number, number, number, number];
+
 export type PdfFieldKind =
   | "text"
   | "checkbox"
@@ -62,7 +64,10 @@ export interface PdfPageDescriptor {
   height: number;
   textPreview: string;
   textLines?: Array<{
+    x?: number;
     y: number;
+    width?: number;
+    height?: number;
     text: string;
   }>;
 }
@@ -89,6 +94,7 @@ export interface PdfPageImageDescriptor {
   width: number;
   height: number;
   scale: number;
+  transform: PdfTransform;
   mimeType: "image/png";
   dataUrl: string;
 }
@@ -104,6 +110,12 @@ export interface PdfOverlayInput {
   fontSize?: number;
   kind?: "text" | "checkbox";
   confidence?: number;
+  coordinateSpace?: {
+    width: number;
+    height: number;
+    scale: number;
+    transform: PdfTransform;
+  };
 }
 
 async function loadPdfJs() {
@@ -258,7 +270,7 @@ function summarizeFieldNameQuality(fields: PdfFieldDescriptor[]): PdfDocumentDes
   return "semantic";
 }
 
-function getLineText(items: Array<{ str: string; x: number; y: number }>): string {
+function getLineText(items: Array<{ str: string; x: number; y: number; width?: number }>): string {
   return items
     .sort((a, b) => a.x - b.x)
     .map((item) => item.str.trim())
@@ -310,11 +322,18 @@ async function extractPdfPages(pdfBytes: Uint8Array): Promise<PdfPageDescriptor[
             str: item.str,
             x: Array.isArray(transform) ? Number(transform[4]) || 0 : 0,
             y: Array.isArray(transform) ? Number(transform[5]) || 0 : 0,
+            width: "width" in item ? Number(item.width) || 0 : 0,
+            height: "height" in item ? Number(item.height) || 0 : 0,
           };
         })
-        .filter((item): item is { str: string; x: number; y: number } => Boolean(item));
+        .filter((item): item is { str: string; x: number; y: number; width: number; height: number } =>
+          Boolean(item)
+        );
 
-      const lines: Array<{ y: number; items: Array<{ str: string; x: number; y: number }> }> = [];
+      const lines: Array<{
+        y: number;
+        items: Array<{ str: string; x: number; y: number; width: number; height: number }>;
+      }> = [];
       for (const item of rawItems.sort((a, b) => b.y - a.y || a.x - b.x)) {
         const line = lines.find((candidate) => Math.abs(candidate.y - item.y) < 3);
         if (line) {
@@ -325,10 +344,19 @@ async function extractPdfPages(pdfBytes: Uint8Array): Promise<PdfPageDescriptor[
       }
 
       const textLines = lines
-        .map((line) => ({
-          y: line.y,
-          text: getLineText(line.items),
-        }))
+        .map((line) => {
+          const left = Math.min(...line.items.map((item) => item.x));
+          const right = Math.max(...line.items.map((item) => item.x + item.width));
+          const itemHeights = line.items.map((item) => item.height).filter(Boolean);
+
+          return {
+            x: left,
+            y: line.y,
+            width: right - left,
+            height: itemHeights.length ? Math.max(...itemHeights) : undefined,
+            text: getLineText(line.items),
+          };
+        })
         .filter((line) => line.text);
 
       pages.push({
@@ -360,12 +388,20 @@ export async function extractPdfTextPreview(pdfBytes: Uint8Array): Promise<strin
 
 export async function renderPdfPageImages(
   pdfBytes: Uint8Array,
-  options: { maxPages?: number; scale?: number } = {}
+  options: { maxPages?: number; scale?: number; includeCoordinateGrid?: boolean } = {}
 ): Promise<PdfPageImageDescriptor[]> {
   const maxPages = options.maxPages ?? 4;
   const scale = options.scale ?? 1.25;
 
-  const [{ createCanvas }, pdfjs] = await Promise.all([import("@napi-rs/canvas"), loadPdfJs()]);
+  const [{ createCanvas, DOMMatrix, ImageData, Path2D }, pdfjs] = await Promise.all([
+    import("@napi-rs/canvas"),
+    loadPdfJs(),
+  ]);
+  Object.assign(globalThis, {
+    DOMMatrix,
+    ImageData,
+    Path2D,
+  });
   const pdf = await pdfjs.getDocument({
     data: new Uint8Array(pdfBytes),
     useSystemFonts: true,
@@ -382,17 +418,54 @@ export async function renderPdfPageImages(
       viewport,
     } as unknown as Parameters<typeof page.render>[0]).promise;
 
+    if (options.includeCoordinateGrid) {
+      drawCoordinateGrid(context, canvas.width, canvas.height);
+    }
+
     images.push({
       pageIndex: pageNumber - 1,
       width: viewport.width,
       height: viewport.height,
       scale,
+      transform: viewport.transform as PdfTransform,
       mimeType: "image/png",
       dataUrl: `data:image/png;base64,${canvas.toBuffer("image/png").toString("base64")}`,
     });
   }
 
   return images;
+}
+
+function drawCoordinateGrid(
+  context: ReturnType<ReturnType<typeof import("@napi-rs/canvas")["createCanvas"]>["getContext"]>,
+  width: number,
+  height: number
+): void {
+  context.save();
+  context.strokeStyle = "rgba(14, 116, 144, 0.28)";
+  context.fillStyle = "rgba(14, 116, 144, 0.78)";
+  context.lineWidth = 1;
+  context.font = "11px sans-serif";
+
+  for (let step = 0; step <= 20; step += 1) {
+    const x = Math.round((step / 20) * width);
+    const y = Math.round((step / 20) * height);
+    const label = (step / 20).toFixed(2);
+
+    context.beginPath();
+    context.moveTo(x, 0);
+    context.lineTo(x, height);
+    context.stroke();
+    context.fillText(label, Math.min(width - 26, x + 2), 12);
+
+    context.beginPath();
+    context.moveTo(0, y);
+    context.lineTo(width, y);
+    context.stroke();
+    context.fillText(label, 2, Math.max(12, y - 2));
+  }
+
+  context.restore();
 }
 
 export async function inspectPdfForm(pdfBytes: Uint8Array): Promise<PdfDocumentDescriptor> {
@@ -449,6 +522,7 @@ export async function inspectPdfForm(pdfBytes: Uint8Array): Promise<PdfDocumentD
     pages: fallbackPages.map((page) => ({
       ...page,
       textPreview: pages.find((textPage) => textPage.pageIndex === page.pageIndex)?.textPreview || "",
+      textLines: pages.find((textPage) => textPage.pageIndex === page.pageIndex)?.textLines,
     })),
     fieldNameQuality: summarizeFieldNameQuality(fields),
   };
@@ -629,6 +703,57 @@ function normalizeCoordinate(value: number): number {
   return Math.min(1, Math.max(0, value));
 }
 
+function invertTransform(transform: PdfTransform): PdfTransform | null {
+  const [a, b, c, d, e, f] = transform;
+  const determinant = a * d - b * c;
+  if (!Number.isFinite(determinant) || Math.abs(determinant) < 0.000001) return null;
+
+  return [
+    d / determinant,
+    -b / determinant,
+    -c / determinant,
+    a / determinant,
+    (c * f - d * e) / determinant,
+    (b * e - a * f) / determinant,
+  ];
+}
+
+function applyTransform(transform: PdfTransform, x: number, y: number): { x: number; y: number } {
+  const [a, b, c, d, e, f] = transform;
+  return {
+    x: a * x + c * y + e,
+    y: b * x + d * y + f,
+  };
+}
+
+function getOverlayPoint(
+  overlay: PdfOverlayInput,
+  pageWidth: number,
+  pageHeight: number,
+  yOffset = 0,
+  xOffset = 0
+): { x: number; y: number } {
+  const coordinateSpace = overlay.coordinateSpace;
+  if (coordinateSpace) {
+    const inverse = invertTransform(coordinateSpace.transform);
+    if (inverse) {
+      const scale = Number.isFinite(coordinateSpace.scale) && coordinateSpace.scale > 0 ? coordinateSpace.scale : 1;
+      return applyTransform(
+        inverse,
+        normalizeCoordinate(overlay.x) * coordinateSpace.width + xOffset * scale,
+        normalizeCoordinate(overlay.y) * coordinateSpace.height + yOffset * scale
+      );
+    }
+  }
+
+  const x = normalizeCoordinate(overlay.x) * pageWidth + xOffset;
+  const yFromTop = normalizeCoordinate(overlay.y) * pageHeight + yOffset;
+  return {
+    x,
+    y: pageHeight - yFromTop,
+  };
+}
+
 function wrapText(
   text: string,
   maxWidth: number,
@@ -684,10 +809,11 @@ export async function fillPdfOverlay(
 
     const { width: pageWidth, height: pageHeight } = page.getSize();
     const fontSize = Math.min(14, Math.max(7, overlay.fontSize || 10));
-    const x = normalizeCoordinate(overlay.x) * pageWidth;
-    const yFromTop = normalizeCoordinate(overlay.y) * pageHeight;
-    const y = pageHeight - yFromTop - fontSize * 0.75;
-    const maxWidth = Math.max(24, normalizeCoordinate(overlay.width ?? 0.28) * pageWidth);
+    const maxWidth = Math.max(
+      24,
+      normalizeCoordinate(overlay.width ?? 0.28) *
+        ((overlay.coordinateSpace?.width ?? pageWidth) / (overlay.coordinateSpace?.scale || 1))
+    );
     const color = rgb(0.05, 0.08, 0.14);
 
     try {
@@ -697,10 +823,13 @@ export async function fillPdfOverlay(
           skipped.push({ fieldName, reason: "Checkbox value was not affirmative" });
           continue;
         }
+        const markSize = fontSize + 1;
+        const markWidth = font.widthOfTextAtSize(mark, markSize);
+        const point = getOverlayPoint(overlay, pageWidth, pageHeight, markSize * 0.35, -markWidth / 2);
         page.drawText(mark, {
-          x,
-          y,
-          size: fontSize + 1,
+          x: point.x,
+          y: point.y,
+          size: markSize,
           font,
           color,
         });
@@ -710,9 +839,22 @@ export async function fillPdfOverlay(
 
       const lines = wrapText(rawValue, maxWidth, font, fontSize);
       lines.forEach((line, index) => {
+        const point = getOverlayPoint(
+          overlay,
+          pageWidth,
+          pageHeight,
+          fontSize * 0.75 + index * (fontSize + 2)
+        );
+        page.drawRectangle({
+          x: point.x - 1,
+          y: point.y - 1,
+          width: Math.min(maxWidth, font.widthOfTextAtSize(line, fontSize) + 3),
+          height: fontSize + 3,
+          color: rgb(1, 1, 1),
+        });
         page.drawText(line, {
-          x,
-          y: y - index * (fontSize + 2),
+          x: point.x,
+          y: point.y,
           size: fontSize,
           font,
           color,

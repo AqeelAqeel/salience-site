@@ -231,6 +231,89 @@ const fieldMappingResponseFormat = {
   },
 } as const;
 
+const overlayResponseFormat = {
+  type: "json_schema",
+  json_schema: {
+    name: "pdf_overlay_mapping",
+    strict: true,
+    schema: {
+      type: "object",
+      additionalProperties: false,
+      properties: {
+        documentTitle: { type: "string" },
+        overlays: {
+          type: "array",
+          items: {
+            type: "object",
+            additionalProperties: false,
+            properties: {
+              label: { type: "string" },
+              value: { type: "string" },
+              pageIndex: { type: "number" },
+              x: { type: "number" },
+              y: { type: "number" },
+              width: { type: "number" },
+              height: { type: "number" },
+              fontSize: { type: "number" },
+              kind: { type: "string", enum: ["text", "checkbox"] },
+              confidence: { type: "number" },
+              sourceQuote: { type: "string" },
+              reasoning: { type: "string" },
+            },
+            required: [
+              "label",
+              "value",
+              "pageIndex",
+              "x",
+              "y",
+              "width",
+              "height",
+              "fontSize",
+              "kind",
+              "confidence",
+              "sourceQuote",
+              "reasoning",
+            ],
+          },
+        },
+        unfilledFields: {
+          type: "array",
+          items: {
+            type: "object",
+            additionalProperties: false,
+            properties: {
+              fieldName: { type: "string" },
+              reason: { type: "string" },
+              followUpQuestion: { type: "string" },
+            },
+            required: ["fieldName", "reason", "followUpQuestion"],
+          },
+        },
+        summary: {
+          type: "object",
+          additionalProperties: false,
+          properties: {
+            extractedFacts: {
+              type: "array",
+              items: { type: "string" },
+            },
+            assumptions: {
+              type: "array",
+              items: { type: "string" },
+            },
+            warnings: {
+              type: "array",
+              items: { type: "string" },
+            },
+          },
+          required: ["extractedFacts", "assumptions", "warnings"],
+        },
+      },
+      required: ["documentTitle", "overlays", "unfilledFields", "summary"],
+    },
+  },
+} as const;
+
 async function transcribeVoiceNote(openai: OpenAI, file: File): Promise<string> {
   const buffer = Buffer.from(await file.arrayBuffer());
   const upload = await toFile(buffer, file.name || "voice-note.webm", {
@@ -401,13 +484,14 @@ function isFieldTopicSupported(field: PdfFieldDescriptor, evidenceText: string):
     { field: /\bstorage\b/i, evidence: /\bstorage\b/i },
     { field: /\butilities\b/i, evidence: /\butilities?\b/i },
     { field: /\bcommencement date falls\b|\bpaid one full month/i, evidence: /\bprorat|\badvance\b|\bsecond calendar\b|\brent payable day\b/i },
+    { field: /\badditional sum\b|\bshall pay to landlord respectively\b/i, evidence: /\badditional sum\b|\badditional rent\b|\bprorat|\badvance\b|\bpayment schedule\b/i },
     { field: /\bneighborhood\b/i, evidence: /\bneighborhood\b/i },
     { field: /\bkeys?\b|\blocks?\b|\brekey/i, evidence: /\bkeys?\b|\blocks?\b|\brekey/i },
     { field: /\blate charge\b|\bnsf\b|\breturned check\b/i, evidence: /\blate charge\b|\bnsf\b|\breturned check\b/i },
     { field: /\bpets?\b/i, evidence: /\bpets?\b|animal/i },
     { field: /\bhoa\b|\bhomeowners/i, evidence: /\bhoa\b|\bhomeowners/i },
     { field: /\bagency relationships?\b|\bdisclosure\b/i, evidence: /\bagency relationships?\b|\bdisclosure\b/i },
-    { field: /\bbroker\b|\bleasing firm\b|\blisting firm\b/i, evidence: /\bbroker\b|\bleasing firm\b|\blisting firm\b/i },
+    { field: /\bbroker\b|\bleasing firm\b|\blisting firm\b|\bleasing agent\b|\blisting agent\b|\bagent print firm\b/i, evidence: /\bbroker\b|\bleasing firm\b|\blisting firm\b|\bleasing agent\b|\blisting agent\b|\bagent firm\b/i },
     { field: /\bguarantor\b|\bguarantee\b/i, evidence: /\bguarantor\b|\bguarantee\b/i },
     { field: /\bmove-?in\b/i, evidence: /\bmove-?in\b/i },
     { field: /\bD\.\s*PAYMENT\b|\bpaid by\b|\bpayee\b|\bpersonal check\b|\bmoney order\b|\bcashier/i, evidence: /\bpayee\b|\bpayment\b|\bpaid by\b|\bpersonal check\b|\bmoney order\b|\bcashier/i },
@@ -706,6 +790,10 @@ function clampUnit(value: unknown): number | null {
   return Math.min(1, Math.max(0, number));
 }
 
+function roundUnit(value: number): number {
+  return Math.round(value * 1000) / 1000;
+}
+
 async function fillFlatPdfOverlay({
   openai,
   templateBytes,
@@ -723,7 +811,8 @@ async function fillFlatPdfOverlay({
 }) {
   const pageImages = await renderPdfPageImages(templateBytes, {
     maxPages: MAX_FLAT_OVERLAY_PAGES,
-    scale: 1.25,
+    scale: 1.5,
+    includeCoordinateGrid: true,
   });
 
   if (pageImages.length === 0) {
@@ -737,14 +826,25 @@ async function fillFlatPdfOverlay({
     });
   }
 
-  const pageSummaries = descriptor.pages
-    .slice(0, MAX_FLAT_OVERLAY_PAGES)
-    .map(({ textLines: _textLines, ...page }) => page);
+  const pageSummaries = descriptor.pages.slice(0, MAX_FLAT_OVERLAY_PAGES).map((page) => ({
+    pageIndex: page.pageIndex,
+    width: page.width,
+    height: page.height,
+    textPreview: page.textPreview,
+    textLines: (page.textLines || []).slice(0, 140).map((line) => ({
+      text: line.text,
+      x: line.x === undefined ? undefined : roundUnit(line.x / page.width),
+      y: roundUnit(1 - line.y / page.height),
+      width: line.width === undefined ? undefined : roundUnit(line.width / page.width),
+      height: line.height === undefined ? undefined : roundUnit(line.height / page.height),
+    })),
+  }));
+  const imageSummaries = pageImages.map(({ dataUrl: _dataUrl, mimeType: _mimeType, ...image }) => image);
 
   const response = await openai.chat.completions.create({
     model: process.env.PDF_OVERLAY_MODEL || process.env.PDF_AUTOFILL_MODEL || DEFAULT_OPENAI_CHAT_MODEL,
     temperature: 0.05,
-    response_format: { type: "json_object" },
+    response_format: overlayResponseFormat,
     messages: [
       {
         role: "system",
@@ -756,10 +856,16 @@ Rules:
 - Use only evidence supplied by the user. Do not invent values.
 - Never overlay signatures, initials, attestations, or certification/perjury confirmations.
 - Do not overlay tax IDs, account numbers, legal identifiers, or similar sensitive identifiers unless explicitly provided.
-- Use normalized coordinates from the TOP-LEFT of the page image: x and y must be between 0 and 1.
-- Put x/y inside the blank answer area, not on top of field labels.
-- Use the page images as the source of layout truth. Use page text only as helper context when available.
-- For checkboxes, use kind "checkbox", value true, and place x/y near the center of the target box.
+- Only place overlays in visible blank answer areas: underlines, empty boxes, empty table cells, or open form spaces meant to receive user input.
+- Do not draw on top of existing completed prose, instructions, sample values, boilerplate clauses, headings, labels, or signatures.
+- If a fact has no visible blank answer area, return it as unfilled instead of forcing a placement.
+- The page images include a light coordinate grid labeled from 0.00 to 1.00 on both axes.
+- Use normalized coordinates from the TOP-LEFT of the full page image, including margins: x and y must be between 0 and 1.
+- For text overlays, put x/y at the top-left of the blank answer area, just inside the line or box.
+- Use the grid labels to estimate placement. Page text is helper context only; the page image is the layout source of truth.
+- When page textLines are available, their x/y/width/height are also normalized from the TOP-LEFT and can be used to align overlays near labels.
+- For checkboxes, use kind "checkbox", value "true", and place x/y near the center of the target box.
+- For printed choice tables or rating scales, do not write the selected printed option as text; use kind "checkbox" with value "true" at the center of the selected option cell.
 - Return JSON only, with this shape:
 {
   "documentTitle": "human readable form name",
@@ -787,6 +893,9 @@ ${JSON.stringify({ title: descriptor.title, author: descriptor.author, subject: 
 PDF page text and dimensions:
 ${JSON.stringify(pageSummaries, null, 2)}
 
+Rendered page image coordinate spaces:
+${JSON.stringify(imageSummaries, null, 2)}
+
 Evidence:
 ${contextBlocks.join("\n\n")}`,
           },
@@ -813,11 +922,13 @@ ${contextBlocks.join("\n\n")}`,
     const x = clampUnit(overlay.x);
     const y = clampUnit(overlay.y);
     if (x === null || y === null) continue;
+    const pageIndex = Math.max(0, Math.min(pageImages.length - 1, Math.floor(Number(overlay.pageIndex) || 0)));
+    const pageImage = pageImages[pageIndex];
 
     requestedOverlays.push({
       label: overlay.label,
       value: overlay.value,
-      pageIndex: Math.max(0, Math.min(pageImages.length - 1, Math.floor(Number(overlay.pageIndex) || 0))),
+      pageIndex,
       x,
       y,
       width: clampUnit(overlay.width) ?? 0.28,
@@ -825,6 +936,14 @@ ${contextBlocks.join("\n\n")}`,
       fontSize: overlay.fontSize,
       kind: overlay.kind === "checkbox" ? "checkbox" : "text",
       confidence: overlay.confidence,
+      coordinateSpace: pageImage
+        ? {
+            width: pageImage.width,
+            height: pageImage.height,
+            scale: pageImage.scale,
+            transform: pageImage.transform,
+          }
+        : undefined,
     });
   }
 
