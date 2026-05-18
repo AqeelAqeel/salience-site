@@ -135,6 +135,9 @@ interface FlatFieldIntent {
   width: number;
   height?: number;
   fontSize: number;
+  targetFontSize: number;
+  fontSizeSource: "same_line" | "adjacent_lines" | "page_median" | "fallback";
+  baselineY: number;
   visualLabel: string;
   visualPrompt: string;
   expectedValueKind: FieldValueKind;
@@ -153,6 +156,8 @@ interface FlatFieldCandidate {
   expectedValueKind: FieldValueKind;
   pageIndex: number;
   optionLabel?: string;
+  targetFontSize?: number;
+  fontSizeSource?: FlatFieldIntent["fontSizeSource"];
   score: number;
 }
 
@@ -1583,8 +1588,31 @@ interface FlatTextLine {
   x: number;
   width: number;
   height?: number;
+  fontSize?: number;
   text: string;
   items: PdfTextItem[];
+}
+
+function medianNumber(values: number[]): number | undefined {
+  const sorted = values.filter((value) => Number.isFinite(value) && value > 0).sort((left, right) => left - right);
+  if (sorted.length === 0) return undefined;
+  const middle = Math.floor(sorted.length / 2);
+  if (sorted.length % 2 === 1) return sorted[middle];
+  return (sorted[middle - 1] + sorted[middle]) / 2;
+}
+
+function usableTextFontSize(item: PdfTextItem): number | undefined {
+  const fontSize = item.fontSize || item.height;
+  if (!fontSize || !Number.isFinite(fontSize) || fontSize < 3 || fontSize > 72) return undefined;
+  return fontSize;
+}
+
+function medianFontSizeForItems(items: PdfTextItem[]): number | undefined {
+  return medianNumber(items.map(usableTextFontSize).filter((value): value is number => value !== undefined));
+}
+
+function pageMedianFontSize(page: PdfPageDescriptor): number | undefined {
+  return medianFontSizeForItems(page.textItems || []);
 }
 
 function getFlatTextLines(page: PdfPageDescriptor): FlatTextLine[] {
@@ -1600,6 +1628,7 @@ function getFlatTextLines(page: PdfPageDescriptor): FlatTextLine[] {
       const left = Math.min(...sortedItems.map((item) => item.x));
       const right = Math.max(...sortedItems.map((item) => item.x + item.width));
       const heights = sortedItems.map((item) => item.height || 0).filter(Boolean);
+      const fontSize = medianFontSizeForItems(sortedItems);
 
       return {
         lineIndex,
@@ -1607,6 +1636,7 @@ function getFlatTextLines(page: PdfPageDescriptor): FlatTextLine[] {
         x: left,
         width: right - left,
         height: heights.length ? Math.max(...heights) : undefined,
+        fontSize,
         text: sortedItems.map((item) => item.text).join(" ").replace(/\s+/g, " ").trim(),
         items: sortedItems,
       };
@@ -1644,10 +1674,45 @@ function overlayTopFromBaseline(page: PdfPageDescriptor, baselineY: number, font
   return roundUnit((page.height - baselineY - fontSize * 0.75) / page.height);
 }
 
-function flatFontSizeForLine(line: FlatTextLine, height?: number): number {
-  const lineHeight = height || line.height || 9;
-  const fontSize = Math.max(8.2, Math.min(10.2, lineHeight * 1.04));
-  return Math.round(fontSize * 10) / 10;
+function clampFlatTargetFontSize(fontSize: number): number {
+  if (!Number.isFinite(fontSize)) return 8.8;
+  return Math.min(18, Math.max(6.8, fontSize));
+}
+
+function flatTargetFontSize({
+  page,
+  line,
+  lines,
+  linePosition,
+  neighborItems,
+}: {
+  page: PdfPageDescriptor;
+  line: FlatTextLine;
+  lines: FlatTextLine[];
+  linePosition: number;
+  neighborItems: PdfTextItem[];
+}): { fontSize: number; source: FlatFieldIntent["fontSizeSource"] } {
+  const sameLineFontSize = medianFontSizeForItems(neighborItems);
+  if (sameLineFontSize) {
+    return { fontSize: Math.round(clampFlatTargetFontSize(sameLineFontSize * 0.96) * 10) / 10, source: "same_line" };
+  }
+
+  const adjacentFontSize = medianFontSizeForItems([
+    ...(lines[linePosition - 1]?.items || []),
+    ...(lines[linePosition + 1]?.items || []),
+  ]);
+  if (adjacentFontSize) {
+    return { fontSize: Math.round(clampFlatTargetFontSize(adjacentFontSize * 0.96) * 10) / 10, source: "adjacent_lines" };
+  }
+
+  const pageFontSize = pageMedianFontSize(page);
+  if (pageFontSize) {
+    return { fontSize: Math.round(clampFlatTargetFontSize(pageFontSize * 0.96) * 10) / 10, source: "page_median" };
+  }
+
+  const fallback = line.fontSize || line.height || 9;
+  const fontSize = clampFlatTargetFontSize(fallback * 0.96);
+  return { fontSize: Math.round(fontSize * 10) / 10, source: "fallback" };
 }
 
 function isQuotedRoleLine(text: string): boolean {
@@ -1677,11 +1742,47 @@ function flatFieldName(pageIndex: number, x: number, y: number, label: string): 
   return `flat_p${pageIndex + 1}_${Math.round(x)}_${Math.round(y)}_${compactLabel || "blank"}`;
 }
 
+function lineAdjustedBlankBounds(
+  page: PdfPageDescriptor,
+  x: number,
+  y: number,
+  width: number
+): { x: number; width: number } {
+  const lines = page.horizontalLines || [];
+  const matches = lines
+    .map((line) => {
+      const lineEnd = line.x + line.width;
+      const yDistance = Math.abs(line.y - (y - 3));
+      const startsNearBlank = line.x <= x + 44 && lineEnd >= x + MIN_FLAT_TEXT_GAP;
+      if (yDistance > 8 || !startsNearBlank) return null;
+      return {
+        line,
+        score: yDistance + Math.max(0, line.x - x) * 0.08 + Math.max(0, x - lineEnd) * 0.2,
+      };
+    })
+    .filter((match): match is { line: NonNullable<PdfPageDescriptor["horizontalLines"]>[number]; score: number } =>
+      Boolean(match)
+    )
+    .sort((left, right) => left.score - right.score);
+
+  const match = matches[0]?.line;
+  if (!match) return { x, width };
+
+  const adjustedX = Math.max(x, match.x + 2);
+  const lineEnd = match.x + match.width - 2;
+  const adjustedWidth = lineEnd - adjustedX;
+  if (adjustedWidth < MIN_FLAT_TEXT_GAP) return { x, width };
+  return { x: adjustedX, width: adjustedWidth };
+}
+
 function makeFlatTextIntent({
   id,
   page,
   pageIndex,
   line,
+  lines,
+  linePosition,
+  neighborItems,
   x,
   y,
   width,
@@ -1692,6 +1793,9 @@ function makeFlatTextIntent({
   page: PdfPageDescriptor;
   pageIndex: number;
   line: FlatTextLine;
+  lines: FlatTextLine[];
+  linePosition: number;
+  neighborItems: PdfTextItem[];
   x: number;
   y: number;
   width: number;
@@ -1700,7 +1804,13 @@ function makeFlatTextIntent({
 }): FlatFieldIntent | null {
   if (width < MIN_FLAT_TEXT_GAP || x < 0 || x >= page.width - 8) return null;
 
-  const fontSize = flatFontSizeForLine(line);
+  const adjusted = lineAdjustedBlankBounds(page, x, y, width);
+  x = adjusted.x;
+  width = adjusted.width;
+  if (width < MIN_FLAT_TEXT_GAP || x < 0 || x >= page.width - 8) return null;
+
+  const sizing = flatTargetFontSize({ page, line, lines, linePosition, neighborItems });
+  const fontSize = sizing.fontSize;
   const visualPrompt = cleanVisualPrompt(prompt);
   if (!visualPrompt || visualPrompt === "[blank]") return null;
 
@@ -1714,8 +1824,11 @@ function makeFlatTextIntent({
     x: roundUnit(x / page.width),
     y: overlayTopFromBaseline(page, y, fontSize),
     width: roundUnit(Math.min(width, page.width - x - 12) / page.width),
-    height: roundUnit((fontSize + 3) / page.height),
+    height: roundUnit((fontSize + 2) / page.height),
     fontSize,
+    targetFontSize: fontSize,
+    fontSizeSource: sizing.source,
+    baselineY: y,
     visualLabel,
     visualPrompt,
     expectedValueKind,
@@ -1766,6 +1879,9 @@ function buildFlatTextFieldIntents(descriptor: Awaited<ReturnType<typeof inspect
             page,
             pageIndex: page.pageIndex,
             line,
+            lines,
+            linePosition: lineIndex,
+            neighborItems: [first],
             x: answerLeft,
             y: line.y,
             width: first.x - answerLeft - 3,
@@ -1795,6 +1911,9 @@ function buildFlatTextFieldIntents(descriptor: Awaited<ReturnType<typeof inspect
             page,
             pageIndex: page.pageIndex,
             line,
+            lines,
+            linePosition: lineIndex,
+            neighborItems: [left, right],
             x: gapStart + 2,
             y: line.y,
             width: gapWidth - 4,
@@ -1819,6 +1938,9 @@ function buildFlatTextFieldIntents(descriptor: Awaited<ReturnType<typeof inspect
             page,
             pageIndex: page.pageIndex,
             line,
+            lines,
+            linePosition: lineIndex,
+            neighborItems: [last],
             x: last.x + last.width + 2,
             y: line.y,
             width: afterLastWidth - 4,
@@ -1841,7 +1963,7 @@ function isFlatSelectionControl(intent: FlatFieldIntent): boolean {
 
 function flatCandidateRequiresExplicitContext(intent: FlatFieldIntent): boolean {
   if (isFlatSelectionControl(intent)) return true;
-  const text = intent.visualPrompt.toLowerCase();
+  const text = [intent.visualPrompt, ...intent.nearbyText].join(" ").toLowerCase();
   const hasContactOrRecipientBlank = /\b(payment|paid by|payable|payee|recipient|remit|contact|broker|agent|guarantor)\b/.test(text);
   const asksForContactDetail = /\b(name|phone|telephone|email|address|at|to)\b/.test(text);
   const isAmountBlank = /\$|\b(amount|total|budget|fee|cost|price|deposit|premium|deductible|rent)\b/.test(text);
@@ -1925,6 +2047,8 @@ function flatCandidatesForFact(fact: ModelEvidenceFact, intents: FlatFieldIntent
       expectedValueKind: intent.expectedValueKind,
       pageIndex: intent.pageIndex,
       optionLabel: optionLabelForFlatIntent(intent),
+      targetFontSize: intent.targetFontSize,
+      fontSizeSource: intent.fontSizeSource,
       score: scoreFlatCandidateForFact(fact, intent),
     }))
     .filter((candidate) => candidate.score > 0)
@@ -2035,7 +2159,25 @@ ${contextBlocks.join("\n\n")}`,
 
 function overlayValueFromDecision(decision: ModelCandidateDecision, fact: ModelEvidenceFact, intent: FlatFieldIntent): string | boolean {
   if (intent.type === "checkbox") return true;
-  return cleanModelScalarValue(decision.value || fact.value) as string;
+  const value = cleanModelScalarValue(decision.value || fact.value) as string;
+  if (/\$\s*\[blank\]|\$\s*$|\bpay\s+\$\b/i.test(intent.visualPrompt)) {
+    return value.replace(/^\s*\$\s*/, "");
+  }
+  return value;
+}
+
+function shouldReplaceFlatOverlay(
+  previous: { overlay: PdfOverlayInput; confidence: number } | undefined,
+  nextOverlay: PdfOverlayInput,
+  nextConfidence: number
+): boolean {
+  if (!previous) return true;
+  if (nextConfidence > previous.confidence) return true;
+
+  const previousValue = compactEvidence(String(previous.overlay.value || ""));
+  const nextValue = compactEvidence(String(nextOverlay.value || ""));
+  const nextIsMoreComplete = nextValue.length > previousValue.length && nextValue.includes(previousValue);
+  return nextIsMoreComplete && nextConfidence >= previous.confidence - 0.08;
 }
 
 function overlayInputsFromFlatCandidateDecisions({
@@ -2135,6 +2277,11 @@ function overlayInputsFromFlatCandidateDecisions({
         width: intent.width,
         height: intent.height,
         fontSize: intent.fontSize,
+        targetFontSize: intent.targetFontSize,
+        minFontSize: 6.8,
+        maxFontSize: 18,
+        baselineY: intent.baselineY,
+        fontSizeSource: intent.fontSizeSource,
         kind: intent.type,
         confidence,
         visualLabel: intent.visualLabel,
@@ -2142,7 +2289,7 @@ function overlayInputsFromFlatCandidateDecisions({
         valueKind: normalizeValueKind(fact.valueKind),
       };
       const previous = bestByFieldName.get(intent.fieldName);
-      if (!previous || confidence > previous.confidence) {
+      if (shouldReplaceFlatOverlay(previous, overlay, confidence)) {
         bestByFieldName.set(intent.fieldName, { overlay, confidence });
       }
       if (confidence < 0.75) {
@@ -2256,6 +2403,8 @@ async function fillFlatPdfOverlay({
               visualPrompt: candidate.visualPrompt,
               expectedValueKind: candidate.expectedValueKind,
               optionLabel: candidate.optionLabel,
+              targetFontSize: candidate.targetFontSize,
+              fontSizeSource: candidate.fontSizeSource,
               type: candidate.type,
               pageIndex: candidate.pageIndex,
               score: candidate.score,

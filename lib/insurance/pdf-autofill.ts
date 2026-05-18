@@ -68,6 +68,7 @@ export interface PdfPageDescriptor {
     y: number;
     width?: number;
     height?: number;
+    fontSize?: number;
     text: string;
   }>;
   textItems?: Array<{
@@ -76,7 +77,15 @@ export interface PdfPageDescriptor {
     y: number;
     width: number;
     height?: number;
+    fontSize?: number;
+    fontFamily?: string;
     lineIndex?: number;
+  }>;
+  horizontalLines?: Array<{
+    x: number;
+    y: number;
+    width: number;
+    height?: number;
   }>;
 }
 
@@ -123,6 +132,11 @@ export interface PdfOverlayInput {
   width?: number;
   height?: number;
   fontSize?: number;
+  targetFontSize?: number;
+  minFontSize?: number;
+  maxFontSize?: number;
+  baselineY?: number;
+  fontSizeSource?: string;
   kind?: "text" | "checkbox";
   confidence?: number;
   visualLabel?: string;
@@ -318,6 +332,44 @@ function getNearbyText(
   return Array.from(new Set(lines)).slice(0, 5);
 }
 
+function extractHorizontalLinesFromOperatorList(
+  opList: { fnArray: number[]; argsArray: unknown[] },
+  constructPathOp: number | undefined
+): NonNullable<PdfPageDescriptor["horizontalLines"]> {
+  if (constructPathOp === undefined) return [];
+
+  const lines: NonNullable<PdfPageDescriptor["horizontalLines"]> = [];
+  for (let index = 0; index < opList.fnArray.length; index += 1) {
+    if (opList.fnArray[index] !== constructPathOp) continue;
+    const args = opList.argsArray[index];
+    if (!Array.isArray(args) || args.length < 3) continue;
+
+    const bounds = args[2] as ArrayLike<number> | undefined;
+    if (!bounds || bounds.length < 4) continue;
+
+    const minX = Number(bounds[0]);
+    const minY = Number(bounds[1]);
+    const maxX = Number(bounds[2]);
+    const maxY = Number(bounds[3]);
+    if (![minX, minY, maxX, maxY].every(Number.isFinite)) continue;
+
+    const width = Math.abs(maxX - minX);
+    const height = Math.abs(maxY - minY);
+    if (width < 24 || height > 2.5) continue;
+
+    lines.push({
+      x: Math.min(minX, maxX),
+      y: (minY + maxY) / 2,
+      width,
+      height: height || undefined,
+    });
+  }
+
+  return lines
+    .sort((left, right) => right.y - left.y || left.x - right.x)
+    .slice(0, 500);
+}
+
 async function extractPdfPages(pdfBytes: Uint8Array): Promise<PdfPageDescriptor[]> {
   try {
     const pdfjs = await loadPdfJs();
@@ -332,25 +384,56 @@ async function extractPdfPages(pdfBytes: Uint8Array): Promise<PdfPageDescriptor[
       const page = await pdf.getPage(pageNumber);
       const viewport = page.getViewport({ scale: 1 });
       const content = await page.getTextContent();
+      const opList = await page.getOperatorList();
+      const horizontalLines = extractHorizontalLinesFromOperatorList(opList, pdfjs.OPS?.constructPath);
+      const styles = (content as { styles?: Record<string, { fontFamily?: string }> }).styles || {};
       const rawItems = content.items
         .map((item) => {
           if (!("str" in item) || !item.str.trim()) return null;
           const transform = "transform" in item ? item.transform : undefined;
+          const fontName = "fontName" in item ? String(item.fontName || "") : "";
+          const transformFontSize = Array.isArray(transform)
+            ? Math.max(
+                Math.hypot(Number(transform[0]) || 0, Number(transform[1]) || 0),
+                Math.hypot(Number(transform[2]) || 0, Number(transform[3]) || 0)
+              )
+            : 0;
+          const height = "height" in item ? Number(item.height) || 0 : 0;
           return {
             str: item.str,
             x: Array.isArray(transform) ? Number(transform[4]) || 0 : 0,
             y: Array.isArray(transform) ? Number(transform[5]) || 0 : 0,
             width: "width" in item ? Number(item.width) || 0 : 0,
-            height: "height" in item ? Number(item.height) || 0 : 0,
+            height,
+            fontSize: transformFontSize || height || 0,
+            fontFamily: fontName ? styles[fontName]?.fontFamily : undefined,
           };
         })
-        .filter((item): item is { str: string; x: number; y: number; width: number; height: number } =>
-          Boolean(item)
+        .filter(
+          (
+            item
+          ): item is {
+            str: string;
+            x: number;
+            y: number;
+            width: number;
+            height: number;
+            fontSize: number;
+            fontFamily: string | undefined;
+          } => Boolean(item)
         );
 
       const lines: Array<{
         y: number;
-        items: Array<{ str: string; x: number; y: number; width: number; height: number }>;
+        items: Array<{
+          str: string;
+          x: number;
+          y: number;
+          width: number;
+          height: number;
+          fontSize: number;
+          fontFamily: string | undefined;
+        }>;
       }> = [];
       for (const item of rawItems.sort((a, b) => b.y - a.y || a.x - b.x)) {
         const line = lines.find((candidate) => Math.abs(candidate.y - item.y) < 3);
@@ -367,12 +450,14 @@ async function extractPdfPages(pdfBytes: Uint8Array): Promise<PdfPageDescriptor[
           const left = Math.min(...line.items.map((item) => item.x));
           const right = Math.max(...line.items.map((item) => item.x + item.width));
           const itemHeights = line.items.map((item) => item.height).filter(Boolean);
+          const itemFontSizes = line.items.map((item) => item.fontSize).filter(Boolean).sort((a, b) => a - b);
 
           return {
             x: left,
             y: line.y,
             width: right - left,
             height: itemHeights.length ? Math.max(...itemHeights) : undefined,
+            fontSize: itemFontSizes.length ? itemFontSizes[Math.floor(itemFontSizes.length / 2)] : undefined,
             text: getLineText(line.items),
           };
         })
@@ -386,6 +471,8 @@ async function extractPdfPages(pdfBytes: Uint8Array): Promise<PdfPageDescriptor[
             y: item.y,
             width: item.width,
             height: item.height || undefined,
+            fontSize: item.fontSize || undefined,
+            fontFamily: item.fontFamily,
             lineIndex,
           }))
           .filter((item) => item.text)
@@ -397,6 +484,7 @@ async function extractPdfPages(pdfBytes: Uint8Array): Promise<PdfPageDescriptor[
         height: viewport.height,
         textLines: textLines.slice(0, 180),
         textItems: textItems.slice(0, 1200),
+        horizontalLines,
         textPreview: textLines
           .map((line) => line.text)
           .slice(0, 90)
@@ -557,6 +645,7 @@ export async function inspectPdfForm(pdfBytes: Uint8Array): Promise<PdfDocumentD
       textPreview: pages.find((textPage) => textPage.pageIndex === page.pageIndex)?.textPreview || "",
       textLines: pages.find((textPage) => textPage.pageIndex === page.pageIndex)?.textLines,
       textItems: pages.find((textPage) => textPage.pageIndex === page.pageIndex)?.textItems,
+      horizontalLines: pages.find((textPage) => textPage.pageIndex === page.pageIndex)?.horizontalLines,
     })),
     fieldNameQuality: summarizeFieldNameQuality(fields),
   };
@@ -821,6 +910,27 @@ function wrapText(
   return lines.slice(0, 4);
 }
 
+function clampFontSize(fontSize: number, minFontSize: number, maxFontSize: number): number {
+  if (!Number.isFinite(fontSize)) return minFontSize;
+  return Math.min(maxFontSize, Math.max(minFontSize, fontSize));
+}
+
+function fitFontSizeToWidth(
+  text: string,
+  maxWidth: number,
+  font: Awaited<ReturnType<PDFDocument["embedFont"]>>,
+  preferredFontSize: number,
+  minFontSize: number,
+  maxFontSize: number
+): number {
+  const preferred = clampFontSize(preferredFontSize, minFontSize, maxFontSize);
+  const width = font.widthOfTextAtSize(text, preferred);
+  if (!Number.isFinite(width) || width <= maxWidth) return Math.round(preferred * 10) / 10;
+
+  const scaled = preferred * (maxWidth / Math.max(1, width)) * 0.98;
+  return Math.round(clampFontSize(scaled, minFontSize, preferred) * 10) / 10;
+}
+
 export async function fillPdfOverlay(
   pdfBytes: Uint8Array,
   requestedOverlays: PdfOverlayInput[]
@@ -851,12 +961,15 @@ export async function fillPdfOverlay(
     }
 
     const { width: pageWidth, height: pageHeight } = page.getSize();
-    const fontSize = Math.min(14, Math.max(7, overlay.fontSize || 10));
     const maxWidth = Math.max(
       24,
       normalizeCoordinate(overlay.width ?? 0.28) *
         ((overlay.coordinateSpace?.width ?? pageWidth) / (overlay.coordinateSpace?.scale || 1))
     );
+    const preferredFontSize = overlay.targetFontSize || overlay.fontSize || 10;
+    const minFontSize = overlay.minFontSize || 7;
+    const maxFontSize = overlay.maxFontSize || 14;
+    const fontSize = fitFontSizeToWidth(rawValue, maxWidth, font, preferredFontSize, minFontSize, maxFontSize);
     const color = rgb(0.07, 0.08, 0.11);
 
     try {
@@ -890,12 +1003,23 @@ export async function fillPdfOverlay(
 
       const lines = wrapText(rawValue, maxWidth, font, fontSize);
       lines.forEach((line, index) => {
-        const point = getOverlayPoint(
+        const fallbackPoint = getOverlayPoint(
           overlay,
           pageWidth,
           pageHeight,
           fontSize * 0.75 + index * (fontSize + 2)
         );
+        const topLeftPoint = getOverlayPoint(overlay, pageWidth, pageHeight);
+        const point = {
+          x: fallbackPoint.x,
+          y:
+            typeof overlay.baselineY === "number" && Number.isFinite(overlay.baselineY)
+              ? overlay.baselineY - index * (fontSize + 2)
+              : fallbackPoint.y,
+        };
+        if (typeof overlay.baselineY === "number" && Number.isFinite(overlay.baselineY)) {
+          point.x = topLeftPoint.x;
+        }
         const backingY = point.y - fontSize * 0.16;
         const backingHeight = fontSize * 0.92;
         page.drawRectangle({
