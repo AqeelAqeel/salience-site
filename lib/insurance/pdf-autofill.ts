@@ -486,6 +486,44 @@ function toBoolean(value: unknown): boolean {
   return ["true", "yes", "y", "1", "x", "checked", "check", "on", "selected"].includes(normalized);
 }
 
+function getFieldRectangles(field: unknown): Array<{ width: number; height: number }> {
+  const acroField = (field as { acroField?: { getWidgets?: () => unknown[] } }).acroField;
+  const widgets = acroField?.getWidgets?.() || [];
+
+  return widgets
+    .map((widget) => (widget as { getRectangle?: () => { width: number; height: number } }).getRectangle?.())
+    .filter((rect): rect is { width: number; height: number } => Boolean(rect));
+}
+
+function getReadableFontSize(field: unknown, rawValue: string): number {
+  const rects = getFieldRectangles(field);
+  const shortestHeight = Math.min(...rects.map((rect) => Math.abs(rect.height)).filter(Boolean));
+  const narrowestWidth = Math.min(...rects.map((rect) => Math.abs(rect.width)).filter(Boolean));
+
+  if (!Number.isFinite(shortestHeight)) return 9;
+
+  let fontSize = Math.min(10.5, Math.max(7.2, shortestHeight * 0.82));
+
+  if (Number.isFinite(narrowestWidth) && rawValue.length > 0) {
+    const density = rawValue.length / Math.max(1, narrowestWidth);
+    if (density > 0.32) fontSize -= 0.8;
+    if (density > 0.45) fontSize -= 0.8;
+  }
+
+  return Math.round(Math.max(6.8, fontSize) * 10) / 10;
+}
+
+function setReadableFontSize(field: unknown, rawValue: string): void {
+  const fontSize = getReadableFontSize(field, rawValue);
+  const maybeTextField = field as { setFontSize?: (fontSize: number) => void };
+
+  try {
+    maybeTextField.setFontSize?.(fontSize);
+  } catch {
+    // Some third-party PDFs have malformed /DA entries. Keep the value fill.
+  }
+}
+
 export async function fillPdfForm(
   pdfBytes: Uint8Array,
   requestedFills: FieldFillInput[]
@@ -525,6 +563,7 @@ export async function fillPdfForm(
 
     try {
       if (field instanceof PDFTextField) {
+        setReadableFontSize(field, rawValue);
         field.setText(rawValue);
         applied.push({ fieldName: requestedFill.fieldName, type, value: rawValue });
       } else if (field instanceof PDFCheckBox) {
@@ -540,6 +579,7 @@ export async function fillPdfForm(
           skipped.push({ fieldName: requestedFill.fieldName, reason: "No matching option" });
           continue;
         }
+        if (field instanceof PDFDropdown) setReadableFontSize(field, match);
         field.select(match);
         applied.push({ fieldName: requestedFill.fieldName, type, value: match });
       } else if (field instanceof PDFOptionList) {
@@ -555,6 +595,7 @@ export async function fillPdfForm(
           continue;
         }
 
+        setReadableFontSize(field, matches.join(", "));
         field.select(matches);
         applied.push({ fieldName: requestedFill.fieldName, type, value: matches.join(", ") });
       } else {
