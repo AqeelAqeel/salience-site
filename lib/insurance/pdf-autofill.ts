@@ -70,6 +70,14 @@ export interface PdfPageDescriptor {
     height?: number;
     text: string;
   }>;
+  textItems?: Array<{
+    text: string;
+    x: number;
+    y: number;
+    width: number;
+    height?: number;
+    lineIndex?: number;
+  }>;
 }
 
 export interface FieldFillInput {
@@ -117,6 +125,9 @@ export interface PdfOverlayInput {
   fontSize?: number;
   kind?: "text" | "checkbox";
   confidence?: number;
+  visualLabel?: string;
+  sourceQuote?: string;
+  valueKind?: string;
   coordinateSpace?: {
     width: number;
     height: number;
@@ -350,7 +361,8 @@ async function extractPdfPages(pdfBytes: Uint8Array): Promise<PdfPageDescriptor[
         }
       }
 
-      const textLines = lines
+      const sortedLines = lines.sort((a, b) => b.y - a.y || Math.min(...a.items.map((item) => item.x)) - Math.min(...b.items.map((item) => item.x)));
+      const textLines = sortedLines
         .map((line) => {
           const left = Math.min(...line.items.map((item) => item.x));
           const right = Math.max(...line.items.map((item) => item.x + item.width));
@@ -365,12 +377,26 @@ async function extractPdfPages(pdfBytes: Uint8Array): Promise<PdfPageDescriptor[
           };
         })
         .filter((line) => line.text);
+      const textItems = sortedLines.flatMap((line, lineIndex) =>
+        line.items
+          .sort((a, b) => a.x - b.x)
+          .map((item) => ({
+            text: item.str.replace(/\s+/g, " ").trim(),
+            x: item.x,
+            y: item.y,
+            width: item.width,
+            height: item.height || undefined,
+            lineIndex,
+          }))
+          .filter((item) => item.text)
+      );
 
       pages.push({
         pageIndex: pageNumber - 1,
         width: viewport.width,
         height: viewport.height,
         textLines: textLines.slice(0, 180),
+        textItems: textItems.slice(0, 1200),
         textPreview: textLines
           .map((line) => line.text)
           .slice(0, 90)
@@ -530,6 +556,7 @@ export async function inspectPdfForm(pdfBytes: Uint8Array): Promise<PdfDocumentD
       ...page,
       textPreview: pages.find((textPage) => textPage.pageIndex === page.pageIndex)?.textPreview || "",
       textLines: pages.find((textPage) => textPage.pageIndex === page.pageIndex)?.textLines,
+      textItems: pages.find((textPage) => textPage.pageIndex === page.pageIndex)?.textItems,
     })),
     fieldNameQuality: summarizeFieldNameQuality(fields),
   };
@@ -849,7 +876,15 @@ export async function fillPdfOverlay(
           font,
           color,
         });
-        applied.push({ fieldName, type: "overlay_checkbox", value: rawValue });
+        applied.push({
+          fieldName,
+          type: "overlay_checkbox",
+          value: rawValue,
+          confidence: overlay.confidence,
+          visualLabel: overlay.visualLabel || overlay.label,
+          sourceQuote: overlay.sourceQuote,
+          valueKind: overlay.valueKind,
+        });
         continue;
       }
 
@@ -877,7 +912,15 @@ export async function fillPdfOverlay(
           maxWidth,
         });
       });
-      applied.push({ fieldName, type: "overlay_text", value: rawValue });
+      applied.push({
+        fieldName,
+        type: "overlay_text",
+        value: rawValue,
+        confidence: overlay.confidence,
+        visualLabel: overlay.visualLabel || overlay.label,
+        sourceQuote: overlay.sourceQuote,
+        valueKind: overlay.valueKind,
+      });
     } catch (error) {
       skipped.push({
         fieldName,

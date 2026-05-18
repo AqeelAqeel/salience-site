@@ -9,6 +9,7 @@ import {
   renderPdfPageImages,
   type FieldFillInput,
   type PdfFieldDescriptor,
+  type PdfPageDescriptor,
   type PdfOverlayInput,
 } from "@/lib/insurance/pdf-autofill";
 
@@ -23,6 +24,8 @@ const MAX_FIELDS_PER_MODEL_BATCH = 80;
 const MAX_FIELD_BATCHES = 16;
 const MAX_FIELD_BATCH_CONCURRENCY = 4;
 const MAX_FLAT_OVERLAY_PAGES = 4;
+const MAX_FLAT_FIELD_CANDIDATES = 220;
+const MIN_FLAT_TEXT_GAP = 32;
 const MAX_CANDIDATES_PER_FACT = 12;
 const MAX_FACTS_FOR_FIELD_MATCHING = 36;
 
@@ -118,6 +121,37 @@ interface FieldCandidate {
   pageIndex?: number;
   controlGroup?: string;
   blankRoleLabel?: string;
+  optionLabel?: string;
+  score: number;
+}
+
+interface FlatFieldIntent {
+  id: string;
+  fieldName: string;
+  type: "text" | "checkbox";
+  pageIndex: number;
+  x: number;
+  y: number;
+  width: number;
+  height?: number;
+  fontSize: number;
+  visualLabel: string;
+  visualPrompt: string;
+  expectedValueKind: FieldValueKind;
+  nearbyText: string[];
+  controlGroup?: string;
+  optionLabel?: string;
+  doNotFillReason?: string;
+}
+
+interface FlatFieldCandidate {
+  fieldId: string;
+  fieldName: string;
+  type: "text" | "checkbox";
+  visualLabel: string;
+  visualPrompt: string;
+  expectedValueKind: FieldValueKind;
+  pageIndex: number;
   optionLabel?: string;
   score: number;
 }
@@ -857,11 +891,13 @@ function normalizedFieldText(field: PdfFieldDescriptor): string {
   return [field.name, field.position, ...(field.nameHints || []), ...(field.nearbyText || [])].filter(Boolean).join(" ");
 }
 
-function inferExpectedValueKind(field: PdfFieldDescriptor): FieldValueKind {
-  if (["checkbox", "dropdown", "option_list", "radio"].includes(field.type)) return "option";
-
-  const primaryText = [field.name, ...(field.nameHints || []), (field.nearbyText || [])[0]].filter(Boolean).join(" ").toLowerCase();
-  const secondaryText = (field.nearbyText || []).slice(1, 4).join(" ").toLowerCase();
+function inferExpectedValueKindFromText(
+  primaryTextRaw: string,
+  secondaryTextRaw = "",
+  fallback: FieldValueKind = "unknown"
+): FieldValueKind {
+  const primaryText = primaryTextRaw.toLowerCase();
+  const secondaryText = secondaryTextRaw.toLowerCase();
   const scores = new Map<FieldValueKind, number>();
   const addScore = (kind: FieldValueKind, pattern: RegExp, primaryWeight: number, secondaryWeight: number) => {
     const score = (pattern.test(primaryText) ? primaryWeight : 0) + (pattern.test(secondaryText) ? secondaryWeight : 0);
@@ -877,7 +913,15 @@ function inferExpectedValueKind(field: PdfFieldDescriptor): FieldValueKind {
   addScore("address", /\b(address|street|city|state|zip|postal|location|property|premises?|site|county)\b/, 5, 1);
 
   const best = [...scores.entries()].sort((left, right) => right[1] - left[1])[0];
-  return best && best[1] >= 2 ? best[0] : field.type === "text" ? "free_text" : "unknown";
+  return best && best[1] >= 2 ? best[0] : fallback;
+}
+
+function inferExpectedValueKind(field: PdfFieldDescriptor): FieldValueKind {
+  if (["checkbox", "dropdown", "option_list", "radio"].includes(field.type)) return "option";
+
+  const primaryText = [field.name, ...(field.nameHints || []), (field.nearbyText || [])[0]].filter(Boolean).join(" ");
+  const secondaryText = (field.nearbyText || []).slice(1, 4).join(" ");
+  return inferExpectedValueKindFromText(primaryText, secondaryText, field.type === "text" ? "free_text" : "unknown");
 }
 
 function nearbyVisualText(field: PdfFieldDescriptor, maxLines = 4): string {
@@ -1263,6 +1307,68 @@ ${contextBlocks.join("\n\n")}`,
   return parseModelJson<ModelEvidenceResponse>(response.choices[0]?.message?.content || "{}");
 }
 
+function addressGroupKey(label: string): string {
+  return label
+    .toLowerCase()
+    .replace(/\b(full|street|mailing|physical|property|premises|site|location|address|addr|city|state|province|zip|postal|postcode|code|county)\b/g, " ")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
+function addressPartRank(fact: ModelEvidenceFact): number {
+  const label = fact.label.toLowerCase();
+  if (/\b(street|address|premises|property|site|location)\b/.test(label)) return 0;
+  if (/\bcity\b/.test(label)) return 1;
+  if (/\b(state|province)\b/.test(label)) return 2;
+  if (/\b(zip|postal|postcode)\b/.test(label)) return 3;
+  if (/\bcounty\b/.test(label)) return 4;
+  return 5;
+}
+
+function expandEvidenceFacts(facts: ModelEvidenceFact[]): ModelEvidenceFact[] {
+  const expanded = [...facts];
+  const seen = new Set(facts.map((fact) => `${fact.label.toLowerCase()}::${compactEvidence(fact.value)}`));
+  const groups = new Map<string, ModelEvidenceFact[]>();
+
+  for (const fact of facts) {
+    if (normalizeValueKind(fact.valueKind) !== "address") continue;
+    const key = addressGroupKey(fact.label) || compactEvidence(fact.sourceQuote).slice(0, 48);
+    groups.set(key, [...(groups.get(key) || []), fact]);
+  }
+
+  for (const [key, group] of groups) {
+    const uniqueParts = Array.from(new Map(group.map((fact) => [compactEvidence(fact.value), fact])).values());
+    if (uniqueParts.length < 2) continue;
+    const sortedParts = uniqueParts.sort((left, right) => addressPartRank(left) - addressPartRank(right));
+    const value = sortedParts.map((fact) => fact.value.trim()).filter(Boolean).join(", ");
+    const compactValue = compactEvidence(value);
+    if (!compactValue) continue;
+    const duplicate = expanded.some(
+      (fact) => normalizeValueKind(fact.valueKind) === "address" && compactEvidence(fact.value) === compactValue
+    );
+    if (duplicate) continue;
+
+    const sourceQuote =
+      sortedParts
+        .map((fact) => fact.sourceQuote)
+        .filter(Boolean)
+        .sort((left, right) => right.length - left.length)[0] || sortedParts[0].sourceQuote;
+    const labelBase = key ? `${key} full address` : "Full address";
+    const label = labelBase.replace(/\b\w/g, (char) => char.toUpperCase());
+    const factKey = `${label.toLowerCase()}::${compactValue}`;
+    if (seen.has(factKey)) continue;
+    seen.add(factKey);
+    expanded.push({
+      label,
+      value,
+      valueKind: "address",
+      sourceQuote,
+    });
+  }
+
+  return expanded;
+}
+
 async function mapFactCandidatesWithModel({
   openai,
   descriptor,
@@ -1469,6 +1575,591 @@ function roundUnit(value: number): number {
   return Math.round(value * 1000) / 1000;
 }
 
+type PdfTextItem = NonNullable<PdfPageDescriptor["textItems"]>[number];
+
+interface FlatTextLine {
+  lineIndex: number;
+  y: number;
+  x: number;
+  width: number;
+  height?: number;
+  text: string;
+  items: PdfTextItem[];
+}
+
+function getFlatTextLines(page: PdfPageDescriptor): FlatTextLine[] {
+  const byLine = new Map<number, PdfTextItem[]>();
+  for (const item of page.textItems || []) {
+    const lineIndex = typeof item.lineIndex === "number" ? item.lineIndex : Math.round(item.y * 10);
+    byLine.set(lineIndex, [...(byLine.get(lineIndex) || []), item]);
+  }
+
+  return [...byLine.entries()]
+    .map(([lineIndex, items]) => {
+      const sortedItems = items.slice().sort((left, right) => left.x - right.x);
+      const left = Math.min(...sortedItems.map((item) => item.x));
+      const right = Math.max(...sortedItems.map((item) => item.x + item.width));
+      const heights = sortedItems.map((item) => item.height || 0).filter(Boolean);
+
+      return {
+        lineIndex,
+        y: sortedItems[0]?.y || 0,
+        x: left,
+        width: right - left,
+        height: heights.length ? Math.max(...heights) : undefined,
+        text: sortedItems.map((item) => item.text).join(" ").replace(/\s+/g, " ").trim(),
+        items: sortedItems,
+      };
+    })
+    .filter((line) => line.text)
+    .sort((left, right) => right.y - left.y || left.x - right.x);
+}
+
+function cleanVisualPrompt(text: string): string {
+  return text.replace(/\s+/g, " ").replace(/\s+([,.;:])/g, "$1").trim();
+}
+
+function textAroundGap(items: PdfTextItem[], gapIndex: number, side: "left" | "right"): string {
+  const slice = side === "left" ? items.slice(Math.max(0, gapIndex - 3), gapIndex + 1) : items.slice(gapIndex + 1, gapIndex + 5);
+  return cleanVisualPrompt(slice.map((item) => item.text).join(" "));
+}
+
+function defaultFlatAnswerLeft(page: PdfPageDescriptor): number {
+  const xs = (page.textItems || [])
+    .map((item) => item.x)
+    .filter((x) => Number.isFinite(x) && x > 35 && x < page.width * 0.35)
+    .sort((left, right) => left - right);
+  if (xs.length === 0) return Math.max(36, page.width * 0.08);
+
+  const buckets = new Map<number, number>();
+  for (const x of xs) {
+    const bucket = Math.round(x / 4) * 4;
+    buckets.set(bucket, (buckets.get(bucket) || 0) + 1);
+  }
+  const best = [...buckets.entries()].sort((left, right) => right[1] - left[1])[0]?.[0];
+  return best ? Math.max(36, best) : Math.max(36, xs[0]);
+}
+
+function overlayTopFromBaseline(page: PdfPageDescriptor, baselineY: number, fontSize: number): number {
+  return roundUnit((page.height - baselineY - fontSize * 0.75) / page.height);
+}
+
+function flatFontSizeForLine(line: FlatTextLine, height?: number): number {
+  const lineHeight = height || line.height || 9;
+  const fontSize = Math.max(9.5, Math.min(12, lineHeight * 1.18));
+  return Math.round(fontSize * 10) / 10;
+}
+
+function isQuotedRoleLine(text: string): boolean {
+  return /^\(?["“][^"”]+["”]\)?/i.test(text.trim());
+}
+
+function isMostlyPunctuationLine(text: string): boolean {
+  return /^[,.;:)\]]+$/.test(text.trim());
+}
+
+function flatDoNotFillReason(text: string): string | undefined {
+  if (/\b(signature|sign here|initials?|attestation|certification|perjury|notary|witness|reviewed by)\b/i.test(text)) {
+    return "signature, initials, or attestation area";
+  }
+  if (/\b(tax id|ssn|social security|account|routing|passport|license|driver'?s? license|policy number|claim number|legal id|identifier)\b/i.test(text)) {
+    return "sensitive identifier area";
+  }
+  return undefined;
+}
+
+function flatFieldName(pageIndex: number, x: number, y: number, label: string): string {
+  const compactLabel = label
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "")
+    .slice(0, 48);
+  return `flat_p${pageIndex + 1}_${Math.round(x)}_${Math.round(y)}_${compactLabel || "blank"}`;
+}
+
+function makeFlatTextIntent({
+  id,
+  page,
+  pageIndex,
+  line,
+  x,
+  y,
+  width,
+  prompt,
+  nearbyText,
+}: {
+  id: string;
+  page: PdfPageDescriptor;
+  pageIndex: number;
+  line: FlatTextLine;
+  x: number;
+  y: number;
+  width: number;
+  prompt: string;
+  nearbyText: string[];
+}): FlatFieldIntent | null {
+  if (width < MIN_FLAT_TEXT_GAP || x < 0 || x >= page.width - 8) return null;
+
+  const fontSize = flatFontSizeForLine(line);
+  const visualPrompt = cleanVisualPrompt(prompt);
+  if (!visualPrompt || visualPrompt === "[blank]") return null;
+
+  const expectedValueKind = inferExpectedValueKindFromText(visualPrompt, nearbyText.join(" "), "free_text");
+  const visualLabel = visualPrompt.replace(/\[blank\]/g, "_____").slice(0, 140);
+  return {
+    id,
+    fieldName: flatFieldName(pageIndex, x, y, visualLabel),
+    type: "text",
+    pageIndex,
+    x: roundUnit(x / page.width),
+    y: overlayTopFromBaseline(page, y, fontSize),
+    width: roundUnit(Math.min(width, page.width - x - 12) / page.width),
+    height: roundUnit((fontSize + 3) / page.height),
+    fontSize,
+    visualLabel,
+    visualPrompt,
+    expectedValueKind,
+    nearbyText,
+    doNotFillReason: flatDoNotFillReason(visualPrompt),
+  };
+}
+
+function lineContext(lines: FlatTextLine[], index: number): string[] {
+  return [lines[index - 1]?.text, lines[index]?.text, lines[index + 1]?.text].filter(Boolean);
+}
+
+function addFlatIntent(intents: FlatFieldIntent[], seen: Set<string>, intent: FlatFieldIntent | null): void {
+  if (!intent) return;
+  const key = `${intent.pageIndex}:${Math.round(intent.x * 1000)}:${Math.round(intent.y * 1000)}:${intent.type}`;
+  if (seen.has(key)) return;
+  seen.add(key);
+  intents.push(intent);
+}
+
+function buildFlatTextFieldIntents(descriptor: Awaited<ReturnType<typeof inspectPdfForm>>): FlatFieldIntent[] {
+  const intents: FlatFieldIntent[] = [];
+  const seen = new Set<string>();
+
+  for (const page of descriptor.pages.slice(0, MAX_FLAT_OVERLAY_PAGES)) {
+    const lines = getFlatTextLines(page);
+    const answerLeft = defaultFlatAnswerLeft(page);
+
+    for (let lineIndex = 0; lineIndex < lines.length; lineIndex += 1) {
+      const line = lines[lineIndex];
+      const items = line.items;
+      const previousLine = lines[lineIndex - 1];
+      const nextLine = lines[lineIndex + 1];
+      const nearbyText = lineContext(lines, lineIndex);
+      if (items.length === 0) continue;
+
+      const first = items[0];
+      if (
+        first.x - answerLeft >= MIN_FLAT_TEXT_GAP &&
+        (isQuotedRoleLine(line.text) || (isMostlyPunctuationLine(line.text) && previousLine))
+      ) {
+        const promptPrefix = previousLine && !isQuotedRoleLine(line.text) ? `${previousLine.text} ` : "";
+        addFlatIntent(
+          intents,
+          seen,
+          makeFlatTextIntent({
+            id: `flat_${page.pageIndex}_${line.lineIndex}_before`,
+            page,
+            pageIndex: page.pageIndex,
+            line,
+            x: answerLeft,
+            y: line.y,
+            width: first.x - answerLeft - 3,
+            prompt: `${promptPrefix}[blank] ${line.text}`,
+            nearbyText,
+          })
+        );
+      }
+
+      for (let itemIndex = 0; itemIndex < items.length - 1; itemIndex += 1) {
+        const left = items[itemIndex];
+        const right = items[itemIndex + 1];
+        const gapStart = left.x + left.width;
+        const gapEnd = right.x;
+        const gapWidth = gapEnd - gapStart;
+        if (gapWidth < MIN_FLAT_TEXT_GAP) continue;
+        if (isMostlyPunctuationLine(left.text) && isMostlyPunctuationLine(right.text)) continue;
+
+        const leftText = textAroundGap(items, itemIndex, "left");
+        const rightText = textAroundGap(items, itemIndex, "right");
+        const prompt = cleanVisualPrompt(`${leftText} [blank] ${rightText}`);
+        addFlatIntent(
+          intents,
+          seen,
+          makeFlatTextIntent({
+            id: `flat_${page.pageIndex}_${line.lineIndex}_gap_${itemIndex}`,
+            page,
+            pageIndex: page.pageIndex,
+            line,
+            x: gapStart + 2,
+            y: line.y,
+            width: gapWidth - 4,
+            prompt,
+            nearbyText,
+          })
+        );
+      }
+
+      const last = items[items.length - 1];
+      const afterLastWidth = page.width - 36 - (last.x + last.width);
+      if (
+        afterLastWidth >= MIN_FLAT_TEXT_GAP &&
+        /(?:[:$]|\b(date|name|address|phone|email|amount|total|cost|budget|deposit)\b)\s*$/i.test(line.text) &&
+        !(nextLine && (isMostlyPunctuationLine(nextLine.text) || isQuotedRoleLine(nextLine.text)))
+      ) {
+        addFlatIntent(
+          intents,
+          seen,
+          makeFlatTextIntent({
+            id: `flat_${page.pageIndex}_${line.lineIndex}_after`,
+            page,
+            pageIndex: page.pageIndex,
+            line,
+            x: last.x + last.width + 2,
+            y: line.y,
+            width: afterLastWidth - 4,
+            prompt: `${line.text} [blank]`,
+            nearbyText,
+          })
+        );
+      }
+    }
+  }
+
+  return intents
+    .filter((intent) => intent.width >= roundUnit(MIN_FLAT_TEXT_GAP / Math.max(1, descriptor.pages[intent.pageIndex]?.width || 612)))
+    .slice(0, MAX_FLAT_FIELD_CANDIDATES);
+}
+
+function isFlatSelectionControl(intent: FlatFieldIntent): boolean {
+  return intent.type === "checkbox";
+}
+
+function flatCandidateRequiresExplicitContext(intent: FlatFieldIntent): boolean {
+  if (isFlatSelectionControl(intent)) return true;
+  const text = intent.visualPrompt.toLowerCase();
+  const hasContactOrRecipientBlank = /\b(payment|paid by|payable|payee|recipient|remit|contact|broker|agent|guarantor)\b/.test(text);
+  const asksForContactDetail = /\b(name|phone|telephone|email|address|at|to)\b/.test(text);
+  const isAmountBlank = /\$|\b(amount|total|budget|fee|cost|price|deposit|premium|deductible|rent)\b/.test(text);
+  return hasContactOrRecipientBlank && asksForContactDetail && !isAmountBlank;
+}
+
+function factExplicitlySupportsFlatContext(fact: ModelEvidenceFact, intent: FlatFieldIntent): boolean {
+  if (!flatCandidateRequiresExplicitContext(intent)) return true;
+
+  const factText = factTextForMatching(fact).toLowerCase();
+  if (isFlatSelectionControl(intent)) return hasExplicitSelectionEvidence(factText);
+
+  return /\b(payment|payee|recipient|paid to|pay to|payable to|remit|send|mail|contact|phone|telephone|email|address|broker|agent|guarantor)\b/i.test(
+    factText
+  );
+}
+
+function optionLabelForFlatIntent(intent: FlatFieldIntent): string | undefined {
+  return intent.optionLabel;
+}
+
+function isEntityFlatBlank(intent: FlatFieldIntent): boolean {
+  const text = intent.visualPrompt.toLowerCase();
+  if (/\[blank\]\s*\(["“][^"”]+["”]\)/i.test(intent.visualPrompt)) return true;
+  if (/\b(named person|person\(s\)|occupant|individual|client|customer|applicant|patient|employee|insured|claimant)\b/i.test(text)) return true;
+  if (/\b(name|organization|company|business|entity|landlord|tenant|owner|recipient|payee)\b/i.test(text)) {
+    return !/(?:[$%]|\b(except|exception|exceptions|days?|hours?|amount|pay|paid|charge|charges|utilities|obligations?|forwarding|address|garden|landscaping|month|rent|deposit|fee|cost|price|date|time)\b)/i.test(text);
+  }
+  return false;
+}
+
+function scoreFlatCandidateForFact(fact: ModelEvidenceFact, intent: FlatFieldIntent): number {
+  if (intent.doNotFillReason) return 0;
+  if (!factExplicitlySupportsFlatContext(fact, intent)) return 0;
+
+  const factKind = normalizeValueKind(fact.valueKind);
+  if ((factKind === "person" || factKind === "organization") && !isEntityFlatBlank(intent)) return 0;
+
+  if (isFlatSelectionControl(intent)) {
+    if (factKind !== "option" && !hasExplicitSelectionEvidence(fact.sourceQuote)) return 0;
+  } else if (factKind === "option") {
+    return 0;
+  }
+
+  const factTokens = matchTokens(factTextForMatching(fact));
+  const factLabelTokens = matchTokens(fact.label);
+  const factQuoteTokens = matchTokens(fact.sourceQuote);
+  const primaryTokens = matchTokens(intent.visualPrompt);
+  const nearbyTokens = matchTokens(intent.nearbyText.join(" "));
+  const optionLabelTokens = matchTokens(optionLabelForFlatIntent(intent) || "");
+
+  const kindScore = isKindCompatible(factKind, intent.expectedValueKind) ? 5 : 0;
+  const labelScore = countStrongOverlap(factLabelTokens, primaryTokens) * 6 + countStrongOverlap(factLabelTokens, nearbyTokens);
+  const quoteScore = Math.min(countStrongOverlap(factQuoteTokens, primaryTokens), 4) * 2.5;
+  const valueScore = Math.min(countStrongOverlap(matchTokens(fact.value), primaryTokens), 3) * 2;
+  const lowSignalScore = Math.min(countOverlap(factTokens, primaryTokens), 4) * 0.5;
+  const optionLabelScore = isFlatSelectionControl(intent)
+    ? countStrongOverlap(matchTokens(fact.value), optionLabelTokens) * 12 + countStrongOverlap(factQuoteTokens, optionLabelTokens) * 4
+    : 0;
+  const genericPersonScore =
+    factKind === "person" && /\b(named person|person\(s\)|occupant|individual|client|customer|applicant|patient|employee)\b/i.test(intent.visualPrompt)
+      ? 8
+      : 0;
+  const geometryScore = 0.25;
+  const supportScore = labelScore + quoteScore + valueScore + lowSignalScore + optionLabelScore + genericPersonScore;
+  if (supportScore < 1.5) return 0;
+
+  const score =
+    kindScore + labelScore + quoteScore + valueScore + lowSignalScore + optionLabelScore + genericPersonScore + geometryScore;
+  return score >= 4 ? score : 0;
+}
+
+function flatCandidatesForFact(fact: ModelEvidenceFact, intents: FlatFieldIntent[]): FlatFieldCandidate[] {
+  return intents
+    .map((intent) => ({
+      fieldId: intent.id,
+      fieldName: intent.fieldName,
+      type: intent.type,
+      visualLabel: intent.visualLabel,
+      visualPrompt: intent.visualPrompt,
+      expectedValueKind: intent.expectedValueKind,
+      pageIndex: intent.pageIndex,
+      optionLabel: optionLabelForFlatIntent(intent),
+      score: scoreFlatCandidateForFact(fact, intent),
+    }))
+    .filter((candidate) => candidate.score > 0)
+    .sort((left, right) => right.score - left.score)
+    .slice(0, MAX_CANDIDATES_PER_FACT);
+}
+
+async function mapFlatFactCandidatesWithModel({
+  openai,
+  descriptor,
+  facts,
+  intents,
+  contextBlocks,
+}: {
+  openai: OpenAI;
+  descriptor: Awaited<ReturnType<typeof inspectPdfForm>>;
+  facts: ModelEvidenceFact[];
+  intents: FlatFieldIntent[];
+  contextBlocks: string[];
+}): Promise<{
+  parsed: ModelCandidateResponse;
+  candidatesByFact: Map<number, Set<string>>;
+  candidatePayload: Array<{ factIndex: number; fact: ModelEvidenceFact; candidates: FlatFieldCandidate[] }>;
+}> {
+  const mappingFacts = facts.slice(0, MAX_FACTS_FOR_FIELD_MATCHING);
+  const candidatePayload = mappingFacts
+    .map((fact, factIndex) => ({
+      factIndex,
+      fact,
+      candidates: flatCandidatesForFact(fact, intents),
+    }))
+    .filter((entry) => entry.candidates.length > 0);
+  const candidatesByFact = new Map(candidatePayload.map((entry) => [entry.factIndex, new Set(entry.candidates.map((candidate) => candidate.fieldId))]));
+  const pagesWithCandidates = Array.from(new Set(candidatePayload.flatMap((entry) => entry.candidates.map((candidate) => candidate.pageIndex))))
+    .sort((left, right) => left - right)
+    .slice(0, MAX_FLAT_OVERLAY_PAGES)
+    .map((pageIndex) => descriptor.pages[pageIndex])
+    .filter(Boolean)
+    .map((page) => ({
+      pageIndex: page.pageIndex,
+      width: page.width,
+      height: page.height,
+      textPreview: page.textPreview,
+      textLines: (page.textLines || []).slice(0, 160),
+    }));
+
+  if (candidatePayload.length === 0) {
+    return {
+      parsed: {
+        decisions: [],
+        unfilledFields: [],
+        summary: {
+          extractedFacts: mappingFacts.map((fact) => `${fact.label}: ${fact.value}`),
+          assumptions: [],
+          warnings: ["No blank candidates matched the extracted facts."],
+        },
+      },
+      candidatesByFact,
+      candidatePayload,
+    };
+  }
+
+  const response = await openai.chat.completions.create({
+    model: process.env.PDF_OVERLAY_MODEL || process.env.PDF_AUTOFILL_MODEL || DEFAULT_OPENAI_CHAT_MODEL,
+    temperature: 0,
+    response_format: candidateDecisionResponseFormat,
+    messages: [
+      {
+        role: "system",
+        content: `You are a careful flat-PDF field matching agent.
+
+The application has already detected blank answer areas from PDF text geometry. Each candidate has exact overlay coordinates. Your job is only to choose candidate field IDs for each extracted fact.
+
+Rules:
+- Return only fieldIds from the supplied candidate lists. Return an empty fieldIds array when no candidate is clearly correct.
+- Prefer visualPrompt over coordinates. visualPrompt uses [blank] to show the detected blank in nearby document text.
+- It is valid to choose multiple field IDs for one fact only when the same value belongs in repeated matching blanks.
+- For person/entity facts, choose both a direct role blank and a generic matching entity blank when both are visible and correct, such as blanks labeled named person(s), occupants, applicants, customers, clients, owners, organizations, or companies.
+- Do not choose a payment-recipient, contact-detail, broker, agent, guarantor, signature, initials, attestation, legal identifier, or unrelated blank from a party/name/amount fact.
+- Never choose a checkbox, printed option, or choice candidate from topical overlap alone. Selection controls require sourceQuote evidence that explicitly selects, checks, chooses, marks, prefers, or names the selected option.
+- For text fields, choose high-confidence and medium-confidence matches when value kind and visualPrompt agree. Leave role-conflicting or low-confidence blanks empty.
+- Keep values concise and copied from the fact unless a shorter form-ready value is needed.
+- Return structured JSON only.`,
+      },
+      {
+        role: "user",
+        content: `PDF metadata:
+${JSON.stringify({ title: descriptor.title, author: descriptor.author, subject: descriptor.subject, pageCount: descriptor.pages.length }, null, 2)}
+
+Relevant PDF page text:
+${JSON.stringify(pagesWithCandidates, null, 2)}
+
+Detected blank candidates:
+${JSON.stringify(candidatePayload, null, 2)}
+
+Original evidence:
+${contextBlocks.join("\n\n")}`,
+      },
+    ],
+  });
+
+  return {
+    parsed: parseModelJson<ModelCandidateResponse>(response.choices[0]?.message?.content || "{}"),
+    candidatesByFact,
+    candidatePayload,
+  };
+}
+
+function overlayValueFromDecision(decision: ModelCandidateDecision, fact: ModelEvidenceFact, intent: FlatFieldIntent): string | boolean {
+  if (intent.type === "checkbox") return true;
+  return cleanModelScalarValue(decision.value || fact.value) as string;
+}
+
+function overlayInputsFromFlatCandidateDecisions({
+  parsed,
+  facts,
+  intents,
+  candidatesByFact,
+  evidenceText,
+}: {
+  parsed: ModelCandidateResponse;
+  facts: ModelEvidenceFact[];
+  intents: FlatFieldIntent[];
+  candidatesByFact: Map<number, Set<string>>;
+  evidenceText: string;
+}): { requestedOverlays: PdfOverlayInput[]; decisionTrace: Array<Record<string, unknown>>; warnings: string[] } {
+  const intentById = new Map(intents.map((intent) => [intent.id, intent]));
+  const bestByFieldName = new Map<string, { overlay: PdfOverlayInput; confidence: number }>();
+  const decisionTrace: Array<Record<string, unknown>> = [];
+  const warnings: string[] = [];
+
+  for (const decision of parsed.decisions || []) {
+    const factIndex = Math.floor(Number(decision.factIndex));
+    const fact = facts[factIndex];
+    if (!fact) continue;
+
+    const allowedCandidates = candidatesByFact.get(factIndex) || new Set<string>();
+    const confidence = typeof decision.confidence === "number" ? decision.confidence : 0;
+    const sourceQuote = decisionSourceQuote(decision, fact);
+
+    for (const fieldId of decision.fieldIds || []) {
+      const intent = intentById.get(fieldId);
+      const trace = {
+        factIndex,
+        factLabel: fact.label,
+        factValue: fact.value,
+        factKind: normalizeValueKind(fact.valueKind),
+        fieldId,
+        fieldName: intent?.fieldName,
+        expectedKind: intent?.expectedValueKind,
+        visualPrompt: intent?.visualPrompt,
+        decision: decision.reasoning,
+        confidence,
+        accepted: false,
+        rejectedReason: "",
+      };
+
+      if (!intent || !allowedCandidates.has(fieldId)) {
+        trace.rejectedReason = "field was not in the candidate set";
+        decisionTrace.push(trace);
+        continue;
+      }
+      if (intent.doNotFillReason) {
+        trace.rejectedReason = intent.doNotFillReason;
+        decisionTrace.push(trace);
+        continue;
+      }
+      if (confidence < 0.45) {
+        trace.rejectedReason = "confidence below fill threshold";
+        decisionTrace.push(trace);
+        continue;
+      }
+      if (!isKindCompatible(normalizeValueKind(fact.valueKind), intent.expectedValueKind)) {
+        trace.rejectedReason = "value kind conflicted with blank intent";
+        decisionTrace.push(trace);
+        continue;
+      }
+      if (!factExplicitlySupportsFlatContext({ ...fact, sourceQuote }, intent)) {
+        trace.rejectedReason = "blank required explicit context that was not present in evidence";
+        decisionTrace.push(trace);
+        continue;
+      }
+      if (isFlatSelectionControl(intent) && !hasExplicitSelectionEvidence(sourceQuote)) {
+        trace.rejectedReason = "selection control lacked explicit selection evidence";
+        decisionTrace.push(trace);
+        continue;
+      }
+
+      const value = overlayValueFromDecision(decision, fact, intent);
+      if (isFlatSelectionControl(intent)) {
+        if (isFalseValue(value)) {
+          trace.rejectedReason = "false selection controls are not applied";
+          decisionTrace.push(trace);
+          continue;
+        }
+      } else if (!isTextValueSupportedByEvidence(value, evidenceText)) {
+        trace.rejectedReason = "value was not directly supported by evidence text";
+        decisionTrace.push(trace);
+        continue;
+      }
+
+      const overlay: PdfOverlayInput = {
+        label: intent.fieldName,
+        value,
+        pageIndex: intent.pageIndex,
+        x: intent.x,
+        y: intent.y,
+        width: intent.width,
+        height: intent.height,
+        fontSize: intent.fontSize,
+        kind: intent.type,
+        confidence,
+        visualLabel: intent.visualLabel,
+        sourceQuote,
+        valueKind: normalizeValueKind(fact.valueKind),
+      };
+      const previous = bestByFieldName.get(intent.fieldName);
+      if (!previous || confidence > previous.confidence) {
+        bestByFieldName.set(intent.fieldName, { overlay, confidence });
+      }
+      if (confidence < 0.75) {
+        warnings.push(`Medium-confidence overlay for ${intent.visualLabel}: ${sourceQuote}`);
+      }
+      trace.accepted = true;
+      decisionTrace.push(trace);
+    }
+  }
+
+  return {
+    requestedOverlays: [...bestByFieldName.values()].map((entry) => entry.overlay),
+    decisionTrace,
+    warnings: Array.from(new Set(warnings)),
+  };
+}
+
 async function fillFlatPdfOverlay({
   openai,
   templateBytes,
@@ -1476,6 +2167,7 @@ async function fillFlatPdfOverlay({
   descriptor,
   contextBlocks,
   warnings,
+  includeDecisionTrace,
 }: {
   openai: OpenAI;
   templateBytes: Uint8Array;
@@ -1483,145 +2175,43 @@ async function fillFlatPdfOverlay({
   descriptor: Awaited<ReturnType<typeof inspectPdfForm>>;
   contextBlocks: string[];
   warnings: string[];
+  includeDecisionTrace: boolean;
 }) {
-  const pageImages = await renderPdfPageImages(templateBytes, {
-    maxPages: MAX_FLAT_OVERLAY_PAGES,
-    scale: 1.5,
-    includeCoordinateGrid: true,
-  });
-
-  if (pageImages.length === 0) {
+  const flatIntents = buildFlatTextFieldIntents(descriptor);
+  if (flatIntents.length === 0) {
     return NextResponse.json({
       status: "no_fillable_fields",
-      message: "This PDF has no fillable fields, and its pages could not be rendered for overlay filling.",
+      message:
+        "This PDF has no embedded fields and no readable text geometry for deterministic overlay placement. Scanned PDFs need OCR before filling.",
       document: descriptor,
       summary: {
-        warnings,
-      },
-    });
-  }
-
-  const pageSummaries = descriptor.pages.slice(0, MAX_FLAT_OVERLAY_PAGES).map((page) => ({
-    pageIndex: page.pageIndex,
-    width: page.width,
-    height: page.height,
-    textPreview: page.textPreview,
-    textLines: (page.textLines || []).slice(0, 140).map((line) => ({
-      text: line.text,
-      x: line.x === undefined ? undefined : roundUnit(line.x / page.width),
-      y: roundUnit(1 - line.y / page.height),
-      width: line.width === undefined ? undefined : roundUnit(line.width / page.width),
-      height: line.height === undefined ? undefined : roundUnit(line.height / page.height),
-    })),
-  }));
-  const imageSummaries = pageImages.map(({ dataUrl: _dataUrl, mimeType: _mimeType, ...image }) => image);
-
-  const response = await openai.chat.completions.create({
-    model: process.env.PDF_OVERLAY_MODEL || process.env.PDF_AUTOFILL_MODEL || DEFAULT_OPENAI_CHAT_MODEL,
-    temperature: 0.05,
-    response_format: overlayResponseFormat,
-    messages: [
-      {
-        role: "system",
-        content: `You are a careful PDF overlay form filling agent.
-
-The PDF has no fillable AcroForm fields. You must propose text overlays on top of the original PDF pages.
-
-Rules:
-- Use only evidence supplied by the user. Do not invent values.
-- Never overlay signatures, initials, attestations, or certification/perjury confirmations.
-- Do not overlay tax IDs, account numbers, legal identifiers, or similar sensitive identifiers unless explicitly provided.
-- Only place overlays in visible blank answer areas: underlines, empty boxes, empty table cells, or open form spaces meant to receive user input.
-- Do not draw on top of existing completed prose, instructions, sample values, boilerplate clauses, headings, labels, or signatures.
-- If a fact has no visible blank answer area, return it as unfilled instead of forcing a placement.
-- The page images include a light coordinate grid labeled from 0.00 to 1.00 on both axes.
-- Use normalized coordinates from the TOP-LEFT of the full page image, including margins: x and y must be between 0 and 1.
-- For text overlays, put x/y at the top-left of the blank answer area, just inside the line or box.
-- Use the grid labels to estimate placement. Page text is helper context only; the page image is the layout source of truth.
-- When page textLines are available, their x/y/width/height are also normalized from the TOP-LEFT and can be used to align overlays near labels.
-- For checkboxes, use kind "checkbox", value "true", and place x/y near the center of the target box.
-- For printed choice tables or rating scales, do not write the selected printed option as text; use kind "checkbox" with value "true" at the center of the selected option cell.
-- Return JSON only, with this shape:
-{
-  "documentTitle": "human readable form name",
-  "overlays": [
-    { "label": "visible field label", "value": "value to draw", "pageIndex": 0, "x": 0.1, "y": 0.2, "width": 0.3, "height": 0.03, "fontSize": 10, "kind": "text", "confidence": 0.0, "sourceQuote": "short evidence quote", "reasoning": "short placement reason" }
-  ],
-  "unfilledFields": [
-    { "fieldName": "visible field label", "reason": "why missing", "followUpQuestion": "one concise question" }
-  ],
-  "summary": {
-    "extractedFacts": ["important facts used"],
-    "assumptions": [],
-    "warnings": ["placement risks or low-confidence items"]
-  }
-}`,
-      },
-      {
-        role: "user",
-        content: [
-          {
-            type: "text",
-            text: `PDF metadata:
-${JSON.stringify({ title: descriptor.title, author: descriptor.author, subject: descriptor.subject, pageCount: descriptor.pages.length }, null, 2)}
-
-PDF page text and dimensions:
-${JSON.stringify(pageSummaries, null, 2)}
-
-Rendered page image coordinate spaces:
-${JSON.stringify(imageSummaries, null, 2)}
-
-Evidence:
-${contextBlocks.join("\n\n")}`,
-          },
-          ...pageImages.map((image) => ({
-            type: "image_url" as const,
-            image_url: {
-              url: image.dataUrl,
-              detail: "high" as const,
-            },
-          })),
+        warnings: [
+          "Flat PDF overlay mode could not find answer blanks from PDF text geometry.",
+          ...warnings,
         ],
       },
-    ],
-  });
-
-  const raw = response.choices[0]?.message?.content || "{}";
-  const parsed = parseModelJson<ModelOverlayResponse>(raw);
-  const requestedOverlays: PdfOverlayInput[] = [];
-
-  for (const overlay of parsed.overlays || []) {
-    if (!overlay.label || isForbiddenOverlayLabel(overlay.label)) continue;
-    if (typeof overlay.confidence === "number" && overlay.confidence < 0.5) continue;
-    if (overlay.kind === "checkbox" && !hasExplicitSelectionEvidence(overlay.sourceQuote || "")) continue;
-
-    const x = clampUnit(overlay.x);
-    const y = clampUnit(overlay.y);
-    if (x === null || y === null) continue;
-    const pageIndex = Math.max(0, Math.min(pageImages.length - 1, Math.floor(Number(overlay.pageIndex) || 0)));
-    const pageImage = pageImages[pageIndex];
-
-    requestedOverlays.push({
-      label: overlay.label,
-      value: cleanModelScalarValue(overlay.value) as PdfOverlayInput["value"],
-      pageIndex,
-      x,
-      y,
-      width: clampUnit(overlay.width) ?? 0.28,
-      height: clampUnit(overlay.height) ?? undefined,
-      fontSize: overlay.fontSize,
-      kind: overlay.kind === "checkbox" ? "checkbox" : "text",
-      confidence: overlay.confidence,
-      coordinateSpace: pageImage
-        ? {
-            width: pageImage.width,
-            height: pageImage.height,
-            scale: pageImage.scale,
-            transform: pageImage.transform,
-          }
-        : undefined,
     });
   }
+
+  const evidence = await extractEvidenceFacts(openai, contextBlocks);
+  warnings.push(...(evidence.warnings || []));
+  const facts = expandEvidenceFacts(evidence.facts || []);
+  const evidenceText = contextBlocks.join("\n\n");
+  const { parsed, candidatesByFact, candidatePayload } = await mapFlatFactCandidatesWithModel({
+    openai,
+    descriptor,
+    facts,
+    intents: flatIntents,
+    contextBlocks,
+  });
+  const { requestedOverlays, decisionTrace, warnings: decisionWarnings } = overlayInputsFromFlatCandidateDecisions({
+    parsed,
+    facts,
+    intents: flatIntents,
+    candidatesByFact,
+    evidenceText,
+  });
+  warnings.push(...decisionWarnings);
 
   const filled = await fillPdfOverlay(templateBytes, requestedOverlays);
   const pdfBase64 = Buffer.from(filled.pdfBytes).toString("base64");
@@ -1639,14 +2229,40 @@ ${contextBlocks.join("\n\n")}`,
     skippedFields: filled.skipped,
     unfilledFields: parsed.unfilledFields || [],
     summary: {
-      extractedFacts: parsed.summary?.extractedFacts || [],
+      extractedFacts: [
+        ...facts.map((fact) => `${fact.label}: ${fact.value}`),
+        ...(parsed.summary?.extractedFacts || []),
+      ],
       assumptions: parsed.summary?.assumptions || [],
       warnings: [
         "Flat PDF overlay mode was used because this PDF has no fillable fields. Review placement before sending.",
+        ...(facts.length > MAX_FACTS_FOR_FIELD_MATCHING ? [`${facts.length - MAX_FACTS_FOR_FIELD_MATCHING} extracted facts were omitted from flat-field matching due to fact-count limits.`] : []),
+        ...(candidatePayload.length === 0 ? ["No flat blank candidates matched the extracted evidence facts."] : []),
         ...(parsed.summary?.warnings || []),
         ...warnings,
       ],
     },
+    ...(includeDecisionTrace
+      ? {
+          decisionTrace,
+          flatFieldCandidateTrace: candidatePayload.map((entry) => ({
+            factIndex: entry.factIndex,
+            factLabel: entry.fact.label,
+            factValue: entry.fact.value,
+            factKind: entry.fact.valueKind,
+            candidates: entry.candidates.map((candidate) => ({
+              fieldId: candidate.fieldId,
+              fieldName: candidate.fieldName,
+              visualPrompt: candidate.visualPrompt,
+              expectedValueKind: candidate.expectedValueKind,
+              optionLabel: candidate.optionLabel,
+              type: candidate.type,
+              pageIndex: candidate.pageIndex,
+              score: candidate.score,
+            })),
+          })),
+        }
+      : {}),
   });
 }
 
@@ -1734,12 +2350,13 @@ export async function POST(request: Request) {
         descriptor,
         contextBlocks,
         warnings,
+        includeDecisionTrace,
       });
     }
 
     const evidence = await extractEvidenceFacts(openai, contextBlocks);
     warnings.push(...(evidence.warnings || []));
-    const facts = evidence.facts || [];
+    const facts = expandEvidenceFacts(evidence.facts || []);
     const intents = buildFieldIntents(descriptor);
     const omittedFieldCount = Math.max(0, descriptor.fields.length - intents.length);
     const evidenceText = contextBlocks.join("\n\n");
